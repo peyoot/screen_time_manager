@@ -147,6 +147,18 @@ class ScreenTimeMachine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 从计时阶段手动触发一次全屏休息（用户主动点击"立即休息"）。
+  ///
+  /// 仅在 [AppPhase.tracking] 阶段允许调用；其他阶段抛出 [StateError]。
+  /// 休息结束后正常回到计时阶段并重新累计阈值。
+  void restNow() {
+    if (_state.phase != AppPhase.tracking) {
+      throw StateError('仅计时阶段可手动触发休息');
+    }
+    _enterRest(_clock());
+    notifyListeners();
+  }
+
   /// 放弃当前答题，直接进入全屏强制休息。
   /// 非答题阶段调用抛出 [StateError]。
   void giveUpQuiz() {
