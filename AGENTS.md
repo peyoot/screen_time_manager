@@ -27,6 +27,31 @@
   - `ohos/`: ArkTS实现，负责长时任务、通知刷新。
 - **通信**: 所有平台能力通过 `MethodChannel` 暴露，命名空间 `com.screen_time_manager/platform`。
 
+## Backend
+
+### 架构
+- 后端使用自托管 Supabase（PostgreSQL + PostgREST + GoTrue）。
+- 前期在 Ubuntu 服务器上用 Docker Compose 部署，后续可迁移到火山引擎 Supabase。
+- 两个环境通过标准 PostgreSQL 备份文件（pg_dump）互相迁移，客户端通过环境变量切换 URL 和 ANON KEY。
+
+### 数据同步
+- 本地 SQLite 优先，登录后与 Supabase 双向同步。
+- 同步引擎处理冲突：会话记录只增不改，设置以云端为准，家长策略优先级最高。
+
+### 备份策略
+- 自托管阶段必须配置定时备份（cron + pg_dump）。
+- 备份脚本：`/usr/local/bin/supabase-backup.sh`（待创建），日志输出到 `/var/log/supabase-backup.log`。
+- 备份参数：`pg_dump -Fc -Z 9`，只导出 `public` schema，排除 Supabase 内部 schema（auth、_realtime 等）。
+- 失败告警：脚本通过 webhook（环境变量读取）发送告警到钉钉/企微。
+- 保留策略：自动删除超过 7 天的备份文件。
+- 异地灾备：备份完成后通过 rsync/scp 推送到远程位置。
+- 未来数据量增大后，再评估切换到 `pg_basebackup + WAL 归档`。
+
+### 迁移注意事项
+- PostgreSQL 版本必须匹配（自托管和火山引擎保持一致，推荐 15 或 16）。
+- auth.users 数据不通过 pg_dump 迁移，用户在新环境重新注册或用 Admin API 导入。
+- Edge Functions 和 Storage 需要单独迁移。
+
 ## Testing
 - 共享层逻辑（状态机、题库解析、随机抽取）必须有单元测试。
 - 平台插件需在对应真机或模拟器上手动验证。
