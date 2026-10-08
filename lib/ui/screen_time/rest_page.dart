@@ -36,8 +36,8 @@ class _RestPageState extends State<RestPage> {
     final duration = widget.controller.machine.settings.restDuration;
     _restStart = endsAt?.subtract(duration) ?? DateTime.now();
     _tick();
-    // 毫秒级刷新：每 50ms 更新一次秒表显示。
-    _timer = Timer.periodic(const Duration(milliseconds: 50), (_) => _tick());
+    // 毫秒级刷新：每 16ms 更新一次秒表显示（约 60fps），确保三位毫秒变化可见。
+    _timer = Timer.periodic(const Duration(milliseconds: 16), (_) => _tick());
   }
 
   void _tick() {
@@ -150,7 +150,7 @@ class _StopwatchDisplay extends StatelessWidget {
     final theme = Theme.of(context);
     final mm = duration.inMinutes.toString().padLeft(2, '0');
     final ss = (duration.inSeconds % 60).toString().padLeft(2, '0');
-    final ms = (duration.inMilliseconds % 1000 ~/ 10).toString().padLeft(2, '0');
+    final ms = (duration.inMilliseconds % 1000).toString().padLeft(3, '0');
 
     return Text(
       '$mm:$ss.$ms',
