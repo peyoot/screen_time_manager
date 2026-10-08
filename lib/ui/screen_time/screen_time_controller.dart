@@ -17,6 +17,7 @@ import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
 import '../../state_machine/app_phase.dart';
 import '../../state_machine/screen_time_machine.dart';
+import '../locale_controller.dart';
 
 /// 桥接状态机与题库服务的 UI 控制器。
 class ScreenTimeController extends ChangeNotifier {
@@ -28,6 +29,9 @@ class ScreenTimeController extends ChangeNotifier {
 
   /// 每轮答题抽取的题目数量。
   final int questionsPerQuiz;
+
+  /// 语言控制器。
+  final LocaleController localeController = LocaleController();
 
   Timer? _timer;
 

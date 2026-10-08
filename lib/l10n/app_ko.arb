@@ -1,0 +1,124 @@
+{
+  "@@locale": "ko",
+  "appTitle": "스크린 타임 관리",
+  "homeTodayScreenTime": "오늘 누적 화면 사용",
+  "homeNextQuizIn": "다음 퀴즈까지 {time}",
+  "@homeNextQuizIn": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "homeExemptionsUsed": "사용한 면제",
+  "homeExemptionsCount": "{count} 회",
+  "@homeExemptionsCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "homeReminderRound": "알림 횟수",
+  "homeRoundNth": "{n}번째",
+  "@homeRoundNth": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "homeManualRest": "지금 휴식하기",
+  "homeBankTooltip": "문제 은행 관리",
+  "homeLanguageTooltip": "언어",
+
+  "reminderTitle": "휴식할 시간입니다",
+  "reminderContinuous": "연속으로 {minutes} 분 동안 화면을 사용했습니다",
+  "@reminderContinuous": {
+    "placeholders": {"minutes": {"type": "int"}}
+  },
+  "reminderFirstFree": "첫 알림은 무료로 계속 사용할 수 있습니다",
+  "reminderQuizToPass": "퀴즈를 풀어 면제받고 계속 사용",
+  "reminderContinueFree": "계속 사용 (무료)",
+  "reminderContinueQuiz": "계속 사용 (퀴즈 면제)",
+  "reminderRestNow": "지금 휴식",
+
+  "quizTitle": "퀴즈 면제 ({current}/{total})",
+  "@quizTitle": {
+    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+  },
+  "quizGiveUpTooltip": "퀴즈 포기",
+  "quizYourAnswer": "당신의 답",
+  "quizAnswerRequired": "답을 입력해주세요",
+  "quizShowHint": "힌트 보기",
+  "quizHint": "힌트: {hint}",
+  "@quizHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "quizSubmit": "답 제출",
+  "quizInsufficient": "문제 은행의 문제가 부족합니다",
+  "quizGoRest": "휴식하러 가기",
+
+  "restTitle": "휴식 중",
+  "restTarget": "목표 시간 {minutes} 분 {seconds} 초",
+  "@restTarget": {
+    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+  },
+  "restAutoReturn": "휴식이 끝나면 자동으로 돌아갑니다",
+
+  "bankGroups": "문제 그룹",
+  "bankNewGroup": "새 그룹",
+  "bankImportToNew": "새 그룹으로 가져오기",
+  "bankImportToGroup": "'{name}'(으)로 가져오기",
+  "@bankImportToGroup": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "bankEmptyHint": "그룹이 없습니다. 오른쪽 아래에서 생성 또는 가져오기",
+  "bankGroupSummary": "{count} 문항 · {type}",
+  "@bankGroupSummary": {
+    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+  },
+  "bankGroupDisabled": "비활성화됨",
+  "bankActionEdit": "수정",
+  "bankActionImport": "가져오기",
+  "bankActionDelete": "삭제",
+  "bankRenameGroup": "그룹 이름 변경",
+  "bankNameLabel": "이름",
+  "bankCancel": "취소",
+  "bankConfirm": "확인",
+  "bankDeleteGroup": "그룹 삭제",
+  "bankDeleteGroupMsg": "그룹 '{name}' 및 {count} 문항을 삭제하시겠습니까?",
+  "@bankDeleteGroupMsg": {
+    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+  },
+
+  "groupDetailTitle": "그룹 상세",
+  "groupDetailNotFound": "그룹을 찾을 수 없습니다",
+  "groupDetailSelected": "{count} 문항 선택됨",
+  "@groupDetailSelected": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailAddTooltip": "수동 추가",
+  "groupDetailSelectTooltip": "다중 선택",
+  "groupDetailExitSelectTooltip": "선택 종료",
+  "groupDetailDeleteSelectedTooltip": "선택 삭제",
+  "groupDetailDeleteSelectedTitle": "선택한 문제 삭제",
+  "groupDetailDeleteSelectedMsg": "선택한 {count} 문항을 삭제하시겠습니까?",
+  "@groupDetailDeleteSelectedMsg": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailEmpty": "문제가 없습니다. 오른쪽 위에서 추가하세요",
+  "groupDetailAnswer": "정답: {answer}",
+  "@groupDetailAnswer": {
+    "placeholders": {"answer": {"type": "String"}}
+  },
+  "groupDetailHint": "힌트: {hint}",
+  "@groupDetailHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "groupDetailAddTitle": "문제 추가",
+  "groupDetailQuestionLabel": "문제",
+  "groupDetailAnswerLabel": "정답",
+  "groupDetailHintLabel": "힌트 (선택 사항)",
+  "groupDetailAddConfirm": "추가",
+  "groupDetailAddRequired": "문제와 정답은 필수입니다",
+
+  "importNameLabel": "그룹 이름",
+  "importNameHint": "CSV는 필수, JSON은 비워두면 groupName 사용",
+  "importContentCsv": "CSV 내용",
+  "importContentJson": "JSON 내용",
+  "importHintCsv": "question,answer,hint\n1+1은?,2,힌트",
+  "importHintJson": "&#123;\"groupName\":\"내 은행\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;",
+  "importButton": "가져오기",
+  "importErrorNameRequired": "그룹 이름을 입력하세요",
+  "importErrorCsvEmpty": "CSV에서 문제를 파싱하지 못했습니다",
+  "importErrorJsonEmpty": "JSON에서 문제를 파싱하지 못했습니다"
+}

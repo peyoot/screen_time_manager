@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
@@ -55,19 +56,20 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
   }
 
   Future<void> _deleteSelected(QuestionGroup group) async {
+    final l10n = S.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('删除所选题目'),
-        content: Text('确定删除选中的 ${_selectedIds.length} 道题？'),
+        title: Text(l10n.groupDetailDeleteSelectedTitle),
+        content: Text(l10n.groupDetailDeleteSelectedMsg(_selectedIds.length)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('取消'),
+            child: Text(l10n.bankCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('删除'),
+            child: Text(l10n.bankConfirm),
           ),
         ],
       ),
@@ -88,6 +90,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
     return ListenableBuilder(
       listenable: widget.service,
       builder: (context, _) {
@@ -95,18 +98,18 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
         if (group == null) {
           // 分组已被删除（正常流程下不会走到这里）。
           return Scaffold(
-            appBar: AppBar(title: const Text('分组详情')),
-            body: const Center(child: Text('分组不存在')),
+            appBar: AppBar(title: Text(l10n.groupDetailTitle)),
+            body: Center(child: Text(l10n.groupDetailNotFound)),
           );
         }
         final questions = group.questions;
         return Scaffold(
           appBar: AppBar(
-            title: Text(_selecting ? '已选 ${_selectedIds.length} 题' : group.name),
+            title: Text(_selecting ? l10n.groupDetailSelected(_selectedIds.length) : group.name),
             actions: [
               if (!_selecting)
                 IconButton(
-                  tooltip: '手动添加',
+                  tooltip: l10n.groupDetailAddTooltip,
                   icon: const Icon(Icons.add),
                   onPressed: () async {
                     final question = await _showAddDialog();
@@ -116,7 +119,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                   },
                 ),
               IconButton(
-                tooltip: _selecting ? '退出选择' : '批量选择',
+                tooltip: _selecting ? l10n.groupDetailExitSelectTooltip : l10n.groupDetailSelectTooltip,
                 icon: Icon(_selecting ? Icons.close : Icons.checklist),
                 onPressed: () => setState(() {
                   _selecting = !_selecting;
@@ -125,7 +128,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
               ),
               if (_selecting)
                 IconButton(
-                  tooltip: '删除所选',
+                  tooltip: l10n.groupDetailDeleteSelectedTooltip,
                   icon: const Icon(Icons.delete),
                   onPressed: _selectedIds.isEmpty
                       ? null
@@ -134,7 +137,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
             ],
           ),
           body: questions.isEmpty
-              ? const Center(child: Text('暂无题目，点击右上角添加'))
+              ? Center(child: Text(l10n.groupDetailEmpty))
               : ListView.separated(
                   itemCount: questions.length,
                   separatorBuilder: (_, _) => const Divider(height: 1),
@@ -148,6 +151,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
 
   /// 构建单道题目条目：选择模式下显示勾选框，平时显示答案与提示。
   Widget _buildTile(BankQuestion question) {
+    final l10n = S.of(context);
     final selected = _selectedIds.contains(question.id);
     return ListTile(
       leading: _selecting
@@ -160,10 +164,10 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('答案：${question.answer}'),
+          Text(l10n.groupDetailAnswer(question.answer)),
           if (question.hint != null && question.hint!.isNotEmpty)
             Text(
-              '提示：${question.hint}',
+              l10n.groupDetailHint(question.hint!),
               style: Theme.of(context).textTheme.bodySmall,
             ),
         ],
@@ -207,7 +211,7 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
     final answer = _answerController.text.trim();
     final hint = _hintController.text.trim();
     if (question.isEmpty || answer.isEmpty) {
-      setState(() => _error = '题干和答案不能为空');
+      setState(() => _error = S.of(context).groupDetailAddRequired);
       return;
     }
     Navigator.of(context).pop(
@@ -221,8 +225,9 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
     return AlertDialog(
-      title: const Text('添加题目'),
+      title: Text(l10n.groupDetailAddTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -231,17 +236,17 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
               controller: _questionController,
               autofocus: true,
               maxLines: 2,
-              decoration: const InputDecoration(labelText: '题干'),
+              decoration: InputDecoration(labelText: l10n.groupDetailQuestionLabel),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _answerController,
-              decoration: const InputDecoration(labelText: '答案'),
+              decoration: InputDecoration(labelText: l10n.groupDetailAnswerLabel),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _hintController,
-              decoration: const InputDecoration(labelText: '提示（可选）'),
+              decoration: InputDecoration(labelText: l10n.groupDetailHintLabel),
             ),
             if (_error != null)
               Padding(
@@ -260,9 +265,9 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
+          child: Text(l10n.bankCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('添加')),
+        FilledButton(onPressed: _submit, child: Text(l10n.groupDetailAddConfirm)),
       ],
     );
   }

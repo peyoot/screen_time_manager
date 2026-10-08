@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import 'quiz_page.dart';
 import 'screen_time_controller.dart';
@@ -28,6 +29,7 @@ class ReminderPage extends StatelessWidget {
         final state = controller.machine.state;
         final isFirstFree = state.quizRound <= 1;
         final theme = Theme.of(context);
+        final l10n = S.of(context);
 
         return Scaffold(
           backgroundColor: theme.colorScheme.surfaceContainerHighest,
@@ -45,7 +47,7 @@ class ReminderPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    '该休息一下了',
+                    l10n.reminderTitle,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -53,13 +55,13 @@ class ReminderPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '你已连续亮屏 ${state.sinceLastGrant.inMinutes} 分钟',
+                    l10n.reminderContinuous(state.sinceLastGrant.inMinutes),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isFirstFree ? '首次提醒可直接继续使用' : '答题豁免即可继续使用',
+                    isFirstFree ? l10n.reminderFirstFree : l10n.reminderQuizToPass,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -69,13 +71,13 @@ class ReminderPage extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: controller.continueUsage,
                     icon: const Icon(Icons.play_arrow),
-                    label: Text(isFirstFree ? '继续使用（免费）' : '继续使用（答题豁免）'),
+                    label: Text(isFirstFree ? l10n.reminderContinueFree : l10n.reminderContinueQuiz),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: controller.giveUp,
                     icon: const Icon(Icons.bedtime_outlined),
-                    label: const Text('立即休息'),
+                    label: Text(l10n.reminderRestNow),
                   ),
                 ],
               ),

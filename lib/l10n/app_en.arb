@@ -1,0 +1,124 @@
+{
+  "@@locale": "en",
+  "appTitle": "Screen Time Manager",
+  "homeTodayScreenTime": "Screen time today",
+  "homeNextQuizIn": "Next quiz in {time}",
+  "@homeNextQuizIn": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "homeExemptionsUsed": "Exemptions",
+  "homeExemptionsCount": "{count} times",
+  "@homeExemptionsCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "homeReminderRound": "Reminder round",
+  "homeRoundNth": "Round {n}",
+  "@homeRoundNth": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "homeManualRest": "Take a break now",
+  "homeBankTooltip": "Question bank",
+  "homeLanguageTooltip": "Language",
+
+  "reminderTitle": "Time for a break",
+  "reminderContinuous": "You've been on screen for {minutes} minutes",
+  "@reminderContinuous": {
+    "placeholders": {"minutes": {"type": "int"}}
+  },
+  "reminderFirstFree": "First reminder is free to continue",
+  "reminderQuizToPass": "Answer questions to continue",
+  "reminderContinueFree": "Continue (free)",
+  "reminderContinueQuiz": "Continue (quiz)",
+  "reminderRestNow": "Rest now",
+
+  "quizTitle": "Quiz exemption ({current}/{total})",
+  "@quizTitle": {
+    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+  },
+  "quizGiveUpTooltip": "Give up",
+  "quizYourAnswer": "Your answer",
+  "quizAnswerRequired": "Please enter your answer",
+  "quizShowHint": "Show hint",
+  "quizHint": "Hint: {hint}",
+  "@quizHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "quizSubmit": "Submit",
+  "quizInsufficient": "Not enough questions in the bank",
+  "quizGoRest": "Go rest",
+
+  "restTitle": "Resting",
+  "restTarget": "Target: {minutes}m {seconds}s",
+  "@restTarget": {
+    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+  },
+  "restAutoReturn": "Will return automatically after rest",
+
+  "bankGroups": "Question Groups",
+  "bankNewGroup": "New Group",
+  "bankImportToNew": "Import to new group",
+  "bankImportToGroup": "Import to \"{name}\"",
+  "@bankImportToGroup": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "bankEmptyHint": "No groups yet. Create or import one.",
+  "bankGroupSummary": "{count} questions · {type}",
+  "@bankGroupSummary": {
+    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+  },
+  "bankGroupDisabled": "Disabled",
+  "bankActionEdit": "Edit",
+  "bankActionImport": "Import",
+  "bankActionDelete": "Delete",
+  "bankRenameGroup": "Rename Group",
+  "bankNameLabel": "Name",
+  "bankCancel": "Cancel",
+  "bankConfirm": "OK",
+  "bankDeleteGroup": "Delete Group",
+  "bankDeleteGroupMsg": "Delete group \"{name}\" and its {count} questions?",
+  "@bankDeleteGroupMsg": {
+    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+  },
+
+  "groupDetailTitle": "Group Details",
+  "groupDetailNotFound": "Group not found",
+  "groupDetailSelected": "{count} selected",
+  "@groupDetailSelected": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailAddTooltip": "Add manually",
+  "groupDetailSelectTooltip": "Select multiple",
+  "groupDetailExitSelectTooltip": "Exit selection",
+  "groupDetailDeleteSelectedTooltip": "Delete selected",
+  "groupDetailDeleteSelectedTitle": "Delete Selected",
+  "groupDetailDeleteSelectedMsg": "Delete the selected {count} questions?",
+  "@groupDetailDeleteSelectedMsg": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailEmpty": "No questions yet. Add one from the top right.",
+  "groupDetailAnswer": "Answer: {answer}",
+  "@groupDetailAnswer": {
+    "placeholders": {"answer": {"type": "String"}}
+  },
+  "groupDetailHint": "Hint: {hint}",
+  "@groupDetailHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "groupDetailAddTitle": "Add Question",
+  "groupDetailQuestionLabel": "Question",
+  "groupDetailAnswerLabel": "Answer",
+  "groupDetailHintLabel": "Hint (optional)",
+  "groupDetailAddConfirm": "Add",
+  "groupDetailAddRequired": "Question and answer cannot be empty",
+
+  "importNameLabel": "Group name",
+  "importNameHint": "Required for CSV; leave empty for JSON to use groupName",
+  "importContentCsv": "CSV content",
+  "importContentJson": "JSON content",
+  "importHintCsv": "question,answer,hint\nWhat is 1+1?,2,hint",
+  "importHintJson": "&#123;\"groupName\":\"My bank\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;",
+  "importButton": "Import",
+  "importErrorNameRequired": "Please enter a group name",
+  "importErrorCsvEmpty": "No questions parsed from CSV",
+  "importErrorJsonEmpty": "No questions parsed from JSON"
+}

@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import 'screen_time_controller.dart';
 
@@ -53,6 +54,7 @@ class _RestPageState extends State<RestPage> {
     final settings = controller.machine.settings;
     final total = settings.restDuration;
     final theme = Theme.of(context);
+    final l10n = S.of(context);
     final progress = total.inMilliseconds == 0
         ? 0.0
         : (_elapsed.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0);
@@ -73,7 +75,7 @@ class _RestPageState extends State<RestPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                '休息中',
+                l10n.restTitle,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -83,7 +85,7 @@ class _RestPageState extends State<RestPage> {
               _StopwatchDisplay(elapsed: _elapsed),
               const SizedBox(height: 16),
               Text(
-                '目标时长 ${total.inMinutes} 分 ${total.inSeconds % 60} 秒',
+                l10n.restTarget(total.inMinutes, total.inSeconds % 60),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -93,7 +95,7 @@ class _RestPageState extends State<RestPage> {
               LinearProgressIndicator(value: progress, minHeight: 8),
               const Spacer(),
               Text(
-                '休息结束后将自动返回',
+                l10n.restAutoReturn,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,

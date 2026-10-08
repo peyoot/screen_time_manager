@@ -1,0 +1,124 @@
+{
+  "@@locale": "ja",
+  "appTitle": "スクリーンタイム管理",
+  "homeTodayScreenTime": "今日の累計画面点灯",
+  "homeNextQuizIn": "次のクイズまであと {time}",
+  "@homeNextQuizIn": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "homeExemptionsUsed": "使用済み免除",
+  "homeExemptionsCount": "{count} 回",
+  "@homeExemptionsCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "homeReminderRound": "リマインダー",
+  "homeRoundNth": "第 {n} 回",
+  "@homeRoundNth": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "homeManualRest": "今すぐ休憩",
+  "homeBankTooltip": "問題バンク管理",
+  "homeLanguageTooltip": "言語",
+
+  "reminderTitle": "休憩しましょう",
+  "reminderContinuous": "{minutes} 分連続で画面を見ています",
+  "@reminderContinuous": {
+    "placeholders": {"minutes": {"type": "int"}}
+  },
+  "reminderFirstFree": "初回リマインダーは無料で続行できます",
+  "reminderQuizToPass": "クイズに答えて免除で続行",
+  "reminderContinueFree": "続行（無料）",
+  "reminderContinueQuiz": "続行（クイズ免除）",
+  "reminderRestNow": "今すぐ休憩",
+
+  "quizTitle": "クイズ免除（{current}/{total}）",
+  "@quizTitle": {
+    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+  },
+  "quizGiveUpTooltip": "クイズを諦める",
+  "quizYourAnswer": "あなたの答え",
+  "quizAnswerRequired": "答えを入力してください",
+  "quizShowHint": "ヒントを見る",
+  "quizHint": "ヒント：{hint}",
+  "@quizHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "quizSubmit": "回答を送信",
+  "quizInsufficient": "問題バンクの問題が不足しています",
+  "quizGoRest": "休憩へ",
+
+  "restTitle": "休憩中",
+  "restTarget": "目標時間 {minutes} 分 {seconds} 秒",
+  "@restTarget": {
+    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+  },
+  "restAutoReturn": "休憩終了後に自動で戻ります",
+
+  "bankGroups": "問題グループ",
+  "bankNewGroup": "新規グループ",
+  "bankImportToNew": "新規グループへインポート",
+  "bankImportToGroup": "「{name}」へインポート",
+  "@bankImportToGroup": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "bankEmptyHint": "グループがありません。右下から作成またはインポート",
+  "bankGroupSummary": "{count} 問 · {type}",
+  "@bankGroupSummary": {
+    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+  },
+  "bankGroupDisabled": "無効",
+  "bankActionEdit": "編集",
+  "bankActionImport": "インポート",
+  "bankActionDelete": "削除",
+  "bankRenameGroup": "グループ名変更",
+  "bankNameLabel": "名前",
+  "bankCancel": "キャンセル",
+  "bankConfirm": "OK",
+  "bankDeleteGroup": "グループ削除",
+  "bankDeleteGroupMsg": "グループ「{name}」とその {count} 問を削除しますか？",
+  "@bankDeleteGroupMsg": {
+    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+  },
+
+  "groupDetailTitle": "グループ詳細",
+  "groupDetailNotFound": "グループが見つかりません",
+  "groupDetailSelected": "{count} 問選択中",
+  "@groupDetailSelected": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailAddTooltip": "手動追加",
+  "groupDetailSelectTooltip": "複数選択",
+  "groupDetailExitSelectTooltip": "選択終了",
+  "groupDetailDeleteSelectedTooltip": "選択を削除",
+  "groupDetailDeleteSelectedTitle": "選択した問題を削除",
+  "groupDetailDeleteSelectedMsg": "選択した {count} 問を削除しますか？",
+  "@groupDetailDeleteSelectedMsg": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailEmpty": "問題がありません。右上から追加してください",
+  "groupDetailAnswer": "答え：{answer}",
+  "@groupDetailAnswer": {
+    "placeholders": {"answer": {"type": "String"}}
+  },
+  "groupDetailHint": "ヒント：{hint}",
+  "@groupDetailHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "groupDetailAddTitle": "問題を追加",
+  "groupDetailQuestionLabel": "問題文",
+  "groupDetailAnswerLabel": "答え",
+  "groupDetailHintLabel": "ヒント（任意）",
+  "groupDetailAddConfirm": "追加",
+  "groupDetailAddRequired": "問題文と答えは必須です",
+
+  "importNameLabel": "グループ名",
+  "importNameHint": "CSV は必須；JSON は空欄なら groupName を使用",
+  "importContentCsv": "CSV 内容",
+  "importContentJson": "JSON 内容",
+  "importHintCsv": "question,answer,hint\n1+1は？,2,ヒント",
+  "importHintJson": "&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;",
+  "importButton": "インポート",
+  "importErrorNameRequired": "グループ名を入力してください",
+  "importErrorCsvEmpty": "CSV から問題が解析できませんでした",
+  "importErrorJsonEmpty": "JSON から問題が解析できませんでした"
+}

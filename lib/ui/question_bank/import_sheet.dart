@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/csv_question_parser.dart';
@@ -57,15 +58,16 @@ class _ImportSheetState extends State<ImportSheet> {
   /// 校验并解析输入文本，成功后回调并关闭面板，失败则在面板内报错。
   void _submit() {
     final name = _nameController.text.trim();
+    final l10n = S.of(context);
     try {
       if (_format == ImportFormat.csv) {
         if (widget.requireGroupName && name.isEmpty) {
-          setState(() => _error = '请填写分组名称');
+          setState(() => _error = l10n.importErrorNameRequired);
           return;
         }
         final questions = parseCsvQuestions(_contentController.text);
         if (questions.isEmpty) {
-          setState(() => _error = 'CSV 中没有解析到任何题目');
+          setState(() => _error = l10n.importErrorCsvEmpty);
           return;
         }
         widget.onImport(
@@ -75,7 +77,7 @@ class _ImportSheetState extends State<ImportSheet> {
       } else {
         final group = QuestionGroup.parse(_contentController.text);
         if (group.questions.isEmpty) {
-          setState(() => _error = 'JSON 中没有解析到任何题目');
+          setState(() => _error = l10n.importErrorJsonEmpty);
           return;
         }
         widget.onImport(
@@ -94,6 +96,7 @@ class _ImportSheetState extends State<ImportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: SafeArea(
@@ -125,10 +128,10 @@ class _ImportSheetState extends State<ImportSheet> {
             if (widget.requireGroupName) ...[
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: '分组名称',
-                  hintText: 'CSV 必填；JSON 留空则使用 groupName',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.importNameLabel,
+                  hintText: l10n.importNameHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -138,11 +141,12 @@ class _ImportSheetState extends State<ImportSheet> {
               maxLines: 8,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
               decoration: InputDecoration(
-                labelText: _format == ImportFormat.csv ? 'CSV 内容' : 'JSON 内容',
+                labelText: _format == ImportFormat.csv
+                    ? l10n.importContentCsv
+                    : l10n.importContentJson,
                 hintText: _format == ImportFormat.csv
-                    ? 'question,answer,hint\n1+1等于几？,2,提示'
-                    : '{"groupName":"我的题库","type":"input",'
-                        '"questions":[{"question":"...","answer":"..."}]}',
+                    ? l10n.importHintCsv
+                    : l10n.importHintJson,
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -161,7 +165,7 @@ class _ImportSheetState extends State<ImportSheet> {
             FilledButton.icon(
               onPressed: _submit,
               icon: const Icon(Icons.download),
-              label: const Text('导入'),
+              label: Text(l10n.importButton),
             ),
           ],
         ),

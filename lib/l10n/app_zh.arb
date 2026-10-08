@@ -1,0 +1,124 @@
+{
+  "@@locale": "zh",
+  "appTitle": "屏幕时间管理",
+  "homeTodayScreenTime": "今日累计亮屏",
+  "homeNextQuizIn": "距下次答题还需 {time}",
+  "@homeNextQuizIn": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "homeExemptionsUsed": "已用豁免",
+  "homeExemptionsCount": "{count} 次",
+  "@homeExemptionsCount": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "homeReminderRound": "提醒轮次",
+  "homeRoundNth": "第 {n} 轮",
+  "@homeRoundNth": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "homeManualRest": "手动触发休息",
+  "homeBankTooltip": "题库管理",
+  "homeLanguageTooltip": "语言",
+
+  "reminderTitle": "该休息一下了",
+  "reminderContinuous": "你已连续亮屏 {minutes} 分钟",
+  "@reminderContinuous": {
+    "placeholders": {"minutes": {"type": "int"}}
+  },
+  "reminderFirstFree": "首次提醒可直接继续使用",
+  "reminderQuizToPass": "答题豁免即可继续使用",
+  "reminderContinueFree": "继续使用（免费）",
+  "reminderContinueQuiz": "继续使用（答题豁免）",
+  "reminderRestNow": "立即休息",
+
+  "quizTitle": "答题豁免（{current}/{total}）",
+  "@quizTitle": {
+    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+  },
+  "quizGiveUpTooltip": "放弃答题",
+  "quizYourAnswer": "你的答案",
+  "quizAnswerRequired": "请输入答案",
+  "quizShowHint": "查看提示",
+  "quizHint": "提示：{hint}",
+  "@quizHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "quizSubmit": "提交答案",
+  "quizInsufficient": "题库题目不足，无法答题豁免",
+  "quizGoRest": "去休息",
+
+  "restTitle": "休息中",
+  "restTarget": "目标时长 {minutes} 分 {seconds} 秒",
+  "@restTarget": {
+    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+  },
+  "restAutoReturn": "休息结束后将自动返回",
+
+  "bankGroups": "题库分组",
+  "bankNewGroup": "新建分组",
+  "bankImportToNew": "导入到新分组",
+  "bankImportToGroup": "导入到「{name}」",
+  "@bankImportToGroup": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "bankEmptyHint": "还没有分组，点击右下角新建或导入",
+  "bankGroupSummary": "{count} 题 · {type}",
+  "@bankGroupSummary": {
+    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+  },
+  "bankGroupDisabled": "已停用",
+  "bankActionEdit": "编辑",
+  "bankActionImport": "导入",
+  "bankActionDelete": "删除",
+  "bankRenameGroup": "重命名分组",
+  "bankNameLabel": "名称",
+  "bankCancel": "取消",
+  "bankConfirm": "确定",
+  "bankDeleteGroup": "删除分组",
+  "bankDeleteGroupMsg": "确定删除分组「{name}」及其 {count} 道题？",
+  "@bankDeleteGroupMsg": {
+    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+  },
+
+  "groupDetailTitle": "分组详情",
+  "groupDetailNotFound": "分组不存在",
+  "groupDetailSelected": "已选 {count} 题",
+  "@groupDetailSelected": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailAddTooltip": "手动添加",
+  "groupDetailSelectTooltip": "批量选择",
+  "groupDetailExitSelectTooltip": "退出选择",
+  "groupDetailDeleteSelectedTooltip": "删除所选",
+  "groupDetailDeleteSelectedTitle": "删除所选题目",
+  "groupDetailDeleteSelectedMsg": "确定删除选中的 {count} 道题？",
+  "@groupDetailDeleteSelectedMsg": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "groupDetailEmpty": "暂无题目，点击右上角添加",
+  "groupDetailAnswer": "答案：{answer}",
+  "@groupDetailAnswer": {
+    "placeholders": {"answer": {"type": "String"}}
+  },
+  "groupDetailHint": "提示：{hint}",
+  "@groupDetailHint": {
+    "placeholders": {"hint": {"type": "String"}}
+  },
+  "groupDetailAddTitle": "添加题目",
+  "groupDetailQuestionLabel": "题干",
+  "groupDetailAnswerLabel": "答案",
+  "groupDetailHintLabel": "提示（可选）",
+  "groupDetailAddConfirm": "添加",
+  "groupDetailAddRequired": "题干和答案不能为空",
+
+  "importNameLabel": "分组名称",
+  "importNameHint": "CSV 必填；JSON 留空则使用 groupName",
+  "importContentCsv": "CSV 内容",
+  "importContentJson": "JSON 内容",
+  "importHintCsv": "question,answer,hint\n1+1等于几？,2,提示",
+  "importHintJson": "&#123;\"groupName\":\"我的题库\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;",
+  "importButton": "导入",
+  "importErrorNameRequired": "请填写分组名称",
+  "importErrorCsvEmpty": "CSV 中没有解析到任何题目",
+  "importErrorJsonEmpty": "JSON 中没有解析到任何题目"
+}

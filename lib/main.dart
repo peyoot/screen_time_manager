@@ -7,14 +7,18 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'models/app_settings.dart';
 import 'models/question.dart';
 import 'models/question_bank.dart';
 import 'question_bank/question_bank_service.dart';
 import 'state_machine/screen_time_machine.dart';
+import 'ui/locale_controller.dart';
 import 'ui/screen_time/home_page.dart';
 import 'ui/screen_time/screen_time_controller.dart';
+
+import 'l10n/app_localizations.dart';
 
 void main() {
   final bankService = QuestionBankService.demo();
@@ -63,12 +67,25 @@ class ScreenTimeManagerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '屏幕时间管理',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-      ),
-      home: HomePage(controller: controller),
+    return ListenableBuilder(
+      listenable: controller.localeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: '屏幕时间管理',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+          ),
+          locale: controller.localeController.locale,
+          localizationsDelegates: const [
+            S.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: supportedLocales,
+          home: HomePage(controller: controller),
+        );
+      },
     );
   }
 }

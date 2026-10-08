@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../state_machine/app_phase.dart';
 import '../../state_machine/screen_time_state.dart';
@@ -44,18 +45,24 @@ class _TimingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = controller.machine.state;
+    final l10n = S.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('屏幕时间管理'),
+        title: Text(l10n.appTitle),
         actions: [
           IconButton(
-            tooltip: '题库管理',
+            tooltip: l10n.homeBankTooltip,
             icon: const Icon(Icons.quiz_outlined),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => GroupListPage(service: controller.bankService),
               ),
             ),
+          ),
+          IconButton(
+            tooltip: l10n.homeLanguageTooltip,
+            icon: const Icon(Icons.language),
+            onPressed: () => _showLanguagePicker(context, controller),
           ),
         ],
       ),
@@ -72,12 +79,53 @@ class _TimingView extends StatelessWidget {
             FilledButton.icon(
               onPressed: controller.manualRest,
               icon: const Icon(Icons.bedtime_outlined),
-              label: const Text('手动触发休息'),
+              label: Text(l10n.homeManualRest),
             ),
             const SizedBox(height: 16),
           ],
         ),
       ),
+    );
+  }
+
+  /// 显示语言选择底部弹窗。
+  void _showLanguagePicker(BuildContext context, ScreenTimeController controller) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) {
+        final l10n = S.of(sheetContext);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(l10n.homeLanguageTooltip),
+                leading: const Icon(Icons.language),
+              ),
+              const Divider(),
+              ...[
+                (null, '跟随系统'),
+                (const Locale('zh'), '中文'),
+                (const Locale('en'), 'English'),
+                (const Locale('ja'), '日本語'),
+                (const Locale('ko'), '한국어'),
+              ].map((entry) {
+                final (locale, name) = entry;
+                return ListTile(
+                  title: Text(name),
+                  trailing: controller.localeController.locale == locale
+                      ? const Icon(Icons.check)
+                      : null,
+                  onTap: () {
+                    controller.localeController.setLocale(locale);
+                    Navigator.of(sheetContext).pop();
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -91,13 +139,14 @@ class _TimeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = S.of(context);
     return Card(
       elevation: 4,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
         child: Column(
           children: [
-            Text('今日累计亮屏', style: theme.textTheme.titleMedium),
+            Text(l10n.homeTodayScreenTime, style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
             Text(
               _formatDuration(state.usedToday),
@@ -108,7 +157,7 @@ class _TimeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '距下次答题还需 ${_formatDuration(state.remainingToQuiz)}',
+              l10n.homeNextQuizIn(_formatDuration(state.remainingToQuiz)),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -129,21 +178,22 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
     return Row(
       children: [
         Expanded(
           child: _StatItem(
             icon: Icons.check_circle_outline,
-            label: '已用豁免',
-            value: '$exemptionCount 次',
+            label: l10n.homeExemptionsUsed,
+            value: l10n.homeExemptionsCount(exemptionCount),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _StatItem(
             icon: Icons.notifications_active_outlined,
-            label: '提醒轮次',
-            value: '第 ${state.quizRound} 轮',
+            label: l10n.homeReminderRound,
+            value: l10n.homeRoundNth(state.quizRound),
           ),
         ),
       ],

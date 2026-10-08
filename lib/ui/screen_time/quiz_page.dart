@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../state_machine/app_phase.dart';
 import 'screen_time_controller.dart';
@@ -36,7 +37,7 @@ class _QuizPageState extends State<QuizPage> {
   void _submit() {
     final input = _inputController.text.trim();
     if (input.isEmpty) {
-      setState(() => _errorText = '请输入答案');
+      setState(() => _errorText = S.of(context).quizAnswerRequired);
       return;
     }
     widget.controller.submitAnswer(input);
@@ -55,6 +56,7 @@ class _QuizPageState extends State<QuizPage> {
     final controller = widget.controller;
     final questions = controller.quizQuestions;
     final theme = Theme.of(context);
+    final l10n = S.of(context);
 
     if (questions.isEmpty) {
       return Scaffold(
@@ -64,11 +66,11 @@ class _QuizPageState extends State<QuizPage> {
             children: [
               const Icon(Icons.warning_amber_outlined, size: 64),
               const SizedBox(height: 16),
-              const Text('题库题目不足，无法答题豁免'),
+              Text(l10n.quizInsufficient),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: controller.giveUp,
-                child: const Text('去休息'),
+                child: Text(l10n.quizGoRest),
               ),
             ],
           ),
@@ -81,9 +83,9 @@ class _QuizPageState extends State<QuizPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('答题豁免（${index + 1}/${questions.length}）'),
+        title: Text(l10n.quizTitle(index + 1, questions.length)),
         leading: IconButton(
-          tooltip: '放弃答题',
+          tooltip: l10n.quizGiveUpTooltip,
           icon: const Icon(Icons.close),
           onPressed: controller.giveUp,
         ),
@@ -106,7 +108,7 @@ class _QuizPageState extends State<QuizPage> {
                 controller: _inputController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: '你的答案',
+                  labelText: l10n.quizYourAnswer,
                   errorText: _errorText,
                   border: const OutlineInputBorder(),
                 ),
@@ -119,21 +121,21 @@ class _QuizPageState extends State<QuizPage> {
                   child: TextButton.icon(
                     onPressed: () => setState(() => _hintVisible = true),
                     icon: const Icon(Icons.lightbulb_outline),
-                    label: const Text('查看提示'),
+                    label: Text(l10n.quizShowHint),
                   ),
                 ),
               if (_hintVisible && question.hint != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    '提示：${question.hint}',
+                    l10n.quizHint(question.hint!),
                     style: TextStyle(color: theme.colorScheme.tertiary),
                   ),
                 ),
               const Spacer(),
               FilledButton(
                 onPressed: _submit,
-                child: const Text('提交答案'),
+                child: Text(l10n.quizSubmit),
               ),
             ],
           ),

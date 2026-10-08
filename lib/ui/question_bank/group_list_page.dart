@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
@@ -21,12 +22,13 @@ class GroupListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('题库分组'),
+        title: Text(l10n.bankGroups),
         actions: [
           IconButton(
-            tooltip: '导入到新分组',
+            tooltip: l10n.bankImportToNew,
             icon: const Icon(Icons.upload_file),
             onPressed: () => _importToNewGroup(context),
           ),
@@ -35,15 +37,15 @@ class GroupListPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _createGroup(context),
         icon: const Icon(Icons.add),
-        label: const Text('新建分组'),
+        label: Text(l10n.bankNewGroup),
       ),
       body: ListenableBuilder(
         listenable: service,
         builder: (context, _) {
           final groups = service.groups;
           if (groups.isEmpty) {
-            return const Center(
-              child: Text('还没有分组，点击右下角新建或导入'),
+            return Center(
+              child: Text(l10n.bankEmptyHint),
             );
           }
           return ListView.separated(
@@ -58,11 +60,12 @@ class GroupListPage extends StatelessWidget {
 
   /// 构建单个分组条目：名称/题数/类型 + 启用开关 + 操作菜单。
   Widget _buildTile(BuildContext context, QuestionGroup group) {
+    final l10n = S.of(context);
     return ListTile(
       title: Text(group.name),
       subtitle: Text(
-        '${group.questions.length} 题 · ${group.type}'
-        '${group.enabled ? '' : ' · 已停用'}',
+        l10n.bankGroupSummary(group.questions.length, group.type) +
+            (group.enabled ? '' : ' · ${l10n.bankGroupDisabled}'),
       ),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -78,10 +81,10 @@ class GroupListPage extends StatelessWidget {
           ),
           PopupMenuButton<_GroupAction>(
             onSelected: (action) => _onAction(context, action, group),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: _GroupAction.edit, child: Text('编辑')),
-              PopupMenuItem(value: _GroupAction.import, child: Text('导入')),
-              PopupMenuItem(value: _GroupAction.delete, child: Text('删除')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: _GroupAction.edit, child: Text(l10n.bankActionEdit)),
+              PopupMenuItem(value: _GroupAction.import, child: Text(l10n.bankActionImport)),
+              PopupMenuItem(value: _GroupAction.delete, child: Text(l10n.bankActionDelete)),
             ],
           ),
         ],
@@ -131,7 +134,7 @@ class GroupListPage extends StatelessWidget {
   Future<void> _importToNewGroup(BuildContext context) async {
     await _showImportSheet(
       context,
-      title: '导入到新分组',
+      title: S.of(context).bankImportToNew,
       requireGroupName: true,
       onImport: (questions, groupName) =>
           service.importIntoNewGroup(name: groupName!, questions: questions),
@@ -141,7 +144,7 @@ class GroupListPage extends StatelessWidget {
   Future<void> _importToGroup(BuildContext context, QuestionGroup group) {
     return _showImportSheet(
       context,
-      title: '导入到「${group.name}」',
+      title: S.of(context).bankImportToGroup(group.name),
       requireGroupName: false,
       onImport: (questions, _) => service.addQuestions(group.id, questions),
     );
@@ -154,6 +157,7 @@ class GroupListPage extends StatelessWidget {
     String? initialValue,
   }) async {
     final controller = TextEditingController(text: initialValue);
+    final l10n = S.of(context);
     final result = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -163,17 +167,17 @@ class GroupListPage extends StatelessWidget {
           autofocus: true,
           onSubmitted: (value) =>
               Navigator.of(dialogContext).pop(value.trim()),
-          decoration: const InputDecoration(labelText: '名称'),
+          decoration: InputDecoration(labelText: l10n.bankNameLabel),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('取消'),
+            child: Text(l10n.bankCancel),
           ),
           FilledButton(
             onPressed: () =>
                 Navigator.of(dialogContext).pop(controller.text.trim()),
-            child: const Text('确定'),
+            child: Text(l10n.bankConfirm),
           ),
         ],
       ),
@@ -183,7 +187,7 @@ class GroupListPage extends StatelessWidget {
   }
 
   Future<void> _createGroup(BuildContext context) async {
-    final name = await _promptForText(context, title: '新建分组');
+    final name = await _promptForText(context, title: S.of(context).bankNewGroup);
     if (name == null || name.isEmpty) return;
     service.createGroup(name);
   }
@@ -191,7 +195,7 @@ class GroupListPage extends StatelessWidget {
   Future<void> _renameGroup(BuildContext context, QuestionGroup group) async {
     final name = await _promptForText(
       context,
-      title: '重命名分组',
+      title: S.of(context).bankRenameGroup,
       initialValue: group.name,
     );
     if (name == null || name.isEmpty) return;
@@ -199,19 +203,20 @@ class GroupListPage extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, QuestionGroup group) async {
+    final l10n = S.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('删除分组'),
-        content: Text('确定删除分组「${group.name}」及其 ${group.questions.length} 道题？'),
+        title: Text(l10n.bankDeleteGroup),
+        content: Text(l10n.bankDeleteGroupMsg(group.name, group.questions.length)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('取消'),
+            child: Text(l10n.bankCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('删除'),
+            child: Text(l10n.bankConfirm),
           ),
         ],
       ),
