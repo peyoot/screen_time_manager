@@ -53,6 +53,8 @@
     "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
   },
   "restAutoReturn": "Will return automatically after rest",
+  "restCountUp": "Count up",
+  "restCountDown": "Count down",
 
   "bankGroups": "Question Groups",
   "bankNewGroup": "New Group",

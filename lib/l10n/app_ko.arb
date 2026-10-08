@@ -53,6 +53,8 @@
     "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
   },
   "restAutoReturn": "휴식이 끝나면 자동으로 돌아갑니다",
+  "restCountUp": "카운트업",
+  "restCountDown": "카운트다운",
 
   "bankGroups": "문제 그룹",
   "bankNewGroup": "새 그룹",

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -108,6 +109,12 @@ class SJa extends S {
 
   @override
   String get restAutoReturn => '休憩終了後に自動で戻ります';
+
+  @override
+  String get restCountUp => 'カウントアップ';
+
+  @override
+  String get restCountDown => 'カウントダウン';
 
   @override
   String get bankGroups => '問題グループ';
@@ -241,7 +248,8 @@ class SJa extends S {
   String get importHintCsv => 'question,answer,hint\n1+1は？,2,ヒント';
 
   @override
-  String get importHintJson => '&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
+  String get importHintJson =>
+      '&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
 
   @override
   String get importButton => 'インポート';

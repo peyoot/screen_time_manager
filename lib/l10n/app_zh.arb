@@ -53,6 +53,8 @@
     "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
   },
   "restAutoReturn": "休息结束后将自动返回",
+  "restCountUp": "正计时",
+  "restCountDown": "倒计时",
 
   "bankGroups": "题库分组",
   "bankNewGroup": "新建分组",

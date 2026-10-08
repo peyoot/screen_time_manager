@@ -53,6 +53,8 @@
     "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
   },
   "restAutoReturn": "休憩終了後に自動で戻ります",
+  "restCountUp": "カウントアップ",
+  "restCountDown": "カウントダウン",
 
   "bankGroups": "問題グループ",
   "bankNewGroup": "新規グループ",

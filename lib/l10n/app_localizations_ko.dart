@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -108,6 +109,12 @@ class SKo extends S {
 
   @override
   String get restAutoReturn => '휴식이 끝나면 자동으로 돌아갑니다';
+
+  @override
+  String get restCountUp => '카운트업';
+
+  @override
+  String get restCountDown => '카운트다운';
 
   @override
   String get bankGroups => '문제 그룹';
@@ -241,7 +248,8 @@ class SKo extends S {
   String get importHintCsv => 'question,answer,hint\n1+1은?,2,힌트';
 
   @override
-  String get importHintJson => '&#123;\"groupName\":\"내 은행\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
+  String get importHintJson =>
+      '&#123;\"groupName\":\"내 은행\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
 
   @override
   String get importButton => '가져오기';
