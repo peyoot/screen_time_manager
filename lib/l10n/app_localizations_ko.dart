@@ -46,6 +46,27 @@ class SKo extends S {
   String get homeLanguageTooltip => '언어';
 
   @override
+  String get homeSettingsTooltip => '타이밍 설정';
+
+  @override
+  String get settingsTitle => '타이밍 설정';
+
+  @override
+  String get settingsQuizMinutes => '휴식 전 화면 켜짐 시간';
+
+  @override
+  String get settingsRestMinutes => '강제 휴식 시간';
+
+  @override
+  String get settingsMinutesUnit => '분';
+
+  @override
+  String get settingsInvalid => '0보다 큰 정수를 입력하세요';
+
+  @override
+  String get settingsSave => '저장';
+
+  @override
   String get reminderTitle => '휴식할 시간입니다';
 
   @override

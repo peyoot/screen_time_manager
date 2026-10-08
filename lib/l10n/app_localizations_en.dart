@@ -46,6 +46,27 @@ class SEn extends S {
   String get homeLanguageTooltip => 'Language';
 
   @override
+  String get homeSettingsTooltip => 'Timing settings';
+
+  @override
+  String get settingsTitle => 'Timing settings';
+
+  @override
+  String get settingsQuizMinutes => 'Screen time before break';
+
+  @override
+  String get settingsRestMinutes => 'Mandatory break duration';
+
+  @override
+  String get settingsMinutesUnit => 'min';
+
+  @override
+  String get settingsInvalid => 'Please enter positive integers';
+
+  @override
+  String get settingsSave => 'Save';
+
+  @override
   String get reminderTitle => 'Time for a break';
 
   @override

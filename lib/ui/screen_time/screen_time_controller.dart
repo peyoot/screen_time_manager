@@ -130,6 +130,19 @@ class ScreenTimeController extends ChangeNotifier {
     }
   }
 
+  /// 更新计时配置：亮屏触发时长与强制休息时长（单位：分钟）。
+  ///
+  /// 非法取值（<= 0）抛出 [ArgumentError]（由 [AppSettings] 构造函数校验）。
+  /// 若缩短亮屏时长且既有进度已达到新阈值，状态机会立即触发答题/休息。
+  void updateTiming({required int quizMinutes, required int restMinutes}) {
+    machine.updateSettings(
+      machine.settings.copyWith(
+        quizInterval: Duration(minutes: quizMinutes),
+        restDuration: Duration(minutes: restMinutes),
+      ),
+    );
+  }
+
   /// 休息页"申请豁免"：随机抽取一道题供用户作答。
   /// 今日豁免次数用完时不做任何操作（UI 已隐藏入口）。
   void requestRestExemption() {

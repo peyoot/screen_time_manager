@@ -46,6 +46,27 @@ class SJa extends S {
   String get homeLanguageTooltip => '言語';
 
   @override
+  String get homeSettingsTooltip => 'タイミング設定';
+
+  @override
+  String get settingsTitle => 'タイミング設定';
+
+  @override
+  String get settingsQuizMinutes => '休憩までの画面点灯時間';
+
+  @override
+  String get settingsRestMinutes => '強制休憩時間';
+
+  @override
+  String get settingsMinutesUnit => '分';
+
+  @override
+  String get settingsInvalid => '1 以上の整数を入力してください';
+
+  @override
+  String get settingsSave => '保存';
+
+  @override
   String get reminderTitle => '休憩しましょう';
 
   @override

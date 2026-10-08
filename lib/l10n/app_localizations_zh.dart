@@ -46,6 +46,27 @@ class SZh extends S {
   String get homeLanguageTooltip => '语言';
 
   @override
+  String get homeSettingsTooltip => '计时设置';
+
+  @override
+  String get settingsTitle => '计时设置';
+
+  @override
+  String get settingsQuizMinutes => '亮屏触发时长';
+
+  @override
+  String get settingsRestMinutes => '强制休息时长';
+
+  @override
+  String get settingsMinutesUnit => '分钟';
+
+  @override
+  String get settingsInvalid => '请输入大于 0 的整数';
+
+  @override
+  String get settingsSave => '保存';
+
+  @override
   String get reminderTitle => '该休息一下了';
 
   @override

@@ -219,11 +219,17 @@ class ScreenTimeMachine extends ChangeNotifier {
       }
       // 休息结束，回到计时阶段并重新累计阈值；
       // 超过结束时刻的余量在亮屏时计入新一轮。
+      //
+      // 豁免额度已用尽（0 次）时，完成一次完整休息视为"惩罚结束"，
+      // 豁免次数重新充满；通过答题提前结束休息（endRestEarly）不走这里，
+      // 因此不会重置。额度上限为 0 时重置结果仍是 0，行为不变。
+      final resetExemptions = !canExempt;
       final overflow = now.difference(endsAt);
       _state = _state.copyWith(
         phase: AppPhase.tracking,
         restEndsAt: null,
         sinceLastGrant: Duration.zero,
+        exemptionsUsedToday: resetExemptions ? 0 : _state.exemptionsUsedToday,
       );
       changed = true;
       delta = overflow < Duration.zero ? Duration.zero : overflow;

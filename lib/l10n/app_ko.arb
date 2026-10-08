@@ -19,6 +19,13 @@
   "homeManualRest": "지금 휴식하기",
   "homeBankTooltip": "문제 은행 관리",
   "homeLanguageTooltip": "언어",
+  "homeSettingsTooltip": "타이밍 설정",
+  "settingsTitle": "타이밍 설정",
+  "settingsQuizMinutes": "휴식 전 화면 켜짐 시간",
+  "settingsRestMinutes": "강제 휴식 시간",
+  "settingsMinutesUnit": "분",
+  "settingsInvalid": "0보다 큰 정수를 입력하세요",
+  "settingsSave": "저장",
 
   "reminderTitle": "휴식할 시간입니다",
   "reminderContinuous": "연속으로 {minutes} 분 동안 화면을 사용했습니다",

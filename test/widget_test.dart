@@ -203,4 +203,49 @@ void main() {
     expect(find.text('申请豁免'), findsNothing);
     expect(find.text('今日豁免次数已用完，请等待休息结束'), findsOneWidget);
   });
+
+  testWidgets('计时设置对话框可修改亮屏与休息时长', (tester) async {
+    final controller = buildController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 初始为测试配置 30 分钟亮屏 / 3 分钟休息。
+    expect(
+      controller.machine.settings.quizInterval,
+      const Duration(minutes: 30),
+    );
+
+    // 打开设置（英文环境 tooltip）。
+    await tester.tap(find.byTooltip('Timing settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Timing settings'), findsOneWidget);
+    expect(find.text('30'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+
+    // 非法输入（0）不允许保存，对话框保持打开并报错。
+    await tester.enterText(find.byType(TextField).first, '0');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter positive integers'), findsOneWidget);
+    expect(controller.machine.settings.quizInterval,
+        const Duration(minutes: 30));
+
+    // 合法输入：亮屏 1 分钟、休息 1 分钟。
+    await tester.enterText(find.byType(TextField).first, '1');
+    await tester.enterText(find.byType(TextField).last, '1');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(
+      controller.machine.settings.quizInterval,
+      const Duration(minutes: 1),
+    );
+    expect(
+      controller.machine.settings.restDuration,
+      const Duration(minutes: 1),
+    );
+  });
 }

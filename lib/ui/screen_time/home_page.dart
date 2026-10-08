@@ -60,6 +60,14 @@ class _TimingView extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: l10n.homeSettingsTooltip,
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => _TimingSettingsDialog(controller: controller),
+            ),
+          ),
+          IconButton(
             tooltip: l10n.homeLanguageTooltip,
             icon: const Icon(Icons.language),
             onPressed: () => _showLanguagePicker(context, controller),
@@ -244,4 +252,108 @@ String _formatDuration(Duration d) {
   final m = (d.inMinutes % 60).toString().padLeft(2, '0');
   final s = (d.inSeconds % 60).toString().padLeft(2, '0');
   return '$h:$m:$s';
+}
+
+/// 计时设置对话框：修改亮屏触发时长与强制休息时长（分钟）。
+///
+/// 打开时预填当前配置；两个字段都必须是正整数，否则在对话框内提示错误，
+/// 不会调用状态机更新。
+class _TimingSettingsDialog extends StatefulWidget {
+  final ScreenTimeController controller;
+
+  const _TimingSettingsDialog({required this.controller});
+
+  @override
+  State<_TimingSettingsDialog> createState() => _TimingSettingsDialogState();
+}
+
+class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
+  late final TextEditingController _quizController;
+  late final TextEditingController _restController;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final settings = widget.controller.machine.settings;
+    _quizController =
+        TextEditingController(text: '${settings.quizInterval.inMinutes}');
+    _restController =
+        TextEditingController(text: '${settings.restDuration.inMinutes}');
+  }
+
+  @override
+  void dispose() {
+    _quizController.dispose();
+    _restController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final quizMinutes = int.tryParse(_quizController.text.trim());
+    final restMinutes = int.tryParse(_restController.text.trim());
+    if (quizMinutes == null ||
+        restMinutes == null ||
+        quizMinutes <= 0 ||
+        restMinutes <= 0) {
+      setState(() => _error = S.of(context).settingsInvalid);
+      return;
+    }
+    widget.controller.updateTiming(
+      quizMinutes: quizMinutes,
+      restMinutes: restMinutes,
+    );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = S.of(context);
+    return AlertDialog(
+      title: Text(l10n.settingsTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _quizController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: l10n.settingsQuizMinutes,
+              suffixText: l10n.settingsMinutesUnit,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _restController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: l10n.settingsRestMinutes,
+              suffixText: l10n.settingsMinutesUnit,
+            ),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.bankCancel),
+        ),
+        FilledButton(onPressed: _save, child: Text(l10n.settingsSave)),
+      ],
+    );
+  }
 }

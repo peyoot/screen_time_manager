@@ -3,12 +3,12 @@ import 'package:screen_time_manager/models/app_settings.dart';
 
 void main() {
   test('默认配置取值合理', () {
-    const interval = Duration(minutes: 30);
     final s = AppSettings.defaults;
-    expect(s.quizInterval, interval);
+    expect(s.quizInterval, const Duration(minutes: 15));
     expect(s.questionsPerQuiz, 1);
     expect(s.requiredCorrectCount, 1);
-    expect(s.restDuration, const Duration(minutes: 3));
+    expect(s.restDuration, const Duration(minutes: 10));
+    expect(s.dailyExemptionLimit, 2);
   });
 
   group('AppSettings.fromJson', () {

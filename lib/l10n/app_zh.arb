@@ -19,6 +19,13 @@
   "homeManualRest": "手动触发休息",
   "homeBankTooltip": "题库管理",
   "homeLanguageTooltip": "语言",
+  "homeSettingsTooltip": "计时设置",
+  "settingsTitle": "计时设置",
+  "settingsQuizMinutes": "亮屏触发时长",
+  "settingsRestMinutes": "强制休息时长",
+  "settingsMinutesUnit": "分钟",
+  "settingsInvalid": "请输入大于 0 的整数",
+  "settingsSave": "保存",
 
   "reminderTitle": "该休息一下了",
   "reminderContinuous": "你已连续亮屏 {minutes} 分钟",

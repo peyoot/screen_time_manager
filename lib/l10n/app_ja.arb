@@ -19,6 +19,13 @@
   "homeManualRest": "今すぐ休憩",
   "homeBankTooltip": "問題バンク管理",
   "homeLanguageTooltip": "言語",
+  "homeSettingsTooltip": "タイミング設定",
+  "settingsTitle": "タイミング設定",
+  "settingsQuizMinutes": "休憩までの画面点灯時間",
+  "settingsRestMinutes": "強制休憩時間",
+  "settingsMinutesUnit": "分",
+  "settingsInvalid": "1 以上の整数を入力してください",
+  "settingsSave": "保存",
 
   "reminderTitle": "休憩しましょう",
   "reminderContinuous": "{minutes} 分連続で画面を見ています",

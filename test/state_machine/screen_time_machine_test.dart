@@ -28,6 +28,15 @@ void main() {
   late DateTime clock;
   late List<AppPhase> phaseLog;
 
+  /// 测试专用固定配置（与 AppSettings.defaults 解耦，默认值调整不影响本文件）。
+  final testSettings = AppSettings(
+    quizInterval: const Duration(minutes: 30),
+    questionsPerQuiz: 1,
+    requiredCorrectCount: 1,
+    restDuration: const Duration(minutes: 3),
+    dailyExemptionLimit: 2,
+  );
+
   ScreenTimeMachine buildMachine({
     AppSettings? settings,
     QuestionBank? bank,
@@ -35,7 +44,7 @@ void main() {
     int seed = 42,
   }) {
     final machine = ScreenTimeMachine(
-      settings: settings ?? AppSettings.defaults,
+      settings: settings ?? testSettings,
       questionBank: bank ?? buildBank(10),
       clock: () => clock,
       random: Random(seed),
@@ -63,7 +72,7 @@ void main() {
       expect(m.state.usedToday, Duration.zero);
       expect(m.state.sinceLastGrant, Duration.zero);
       expect(m.state.isScreenOn, isTrue);
-      expect(m.state.remainingToQuiz, AppSettings.defaults.quizInterval);
+      expect(m.state.remainingToQuiz, testSettings.quizInterval);
       expect(m.state.quiz, isNull);
     });
 
@@ -267,7 +276,7 @@ void main() {
     test('未配置题库时达到阈值直接进入休息', () {
       // 直接构造，绕过 buildMachine 中“非空默认题库”的便捷行为。
       final m = ScreenTimeMachine(
-        settings: AppSettings.defaults,
+        settings: testSettings,
         questionBank: null,
         clock: () => clock,
         initiallyScreenOn: true,
@@ -376,12 +385,53 @@ void main() {
     });
 
     test('额度为 0 时第一次达到阈值就直接休息', () {
-      final settings = AppSettings.defaults.copyWith(dailyExemptionLimit: 0);
+      final settings = testSettings.copyWith(dailyExemptionLimit: 0);
       final m = buildMachine(settings: settings);
       expect(m.canExempt, isFalse);
       advance(m, const Duration(minutes: 30));
       expect(m.state.phase, AppPhase.resting);
       expect(m.state.exemptionsUsedToday, 0);
+    });
+
+    test('额度用尽后完成完整休息，豁免次数重新充满', () {
+      final m = buildMachine();
+      passRounds(m, 2);
+      advance(m, const Duration(minutes: 30)); // 第三次直接强制休息
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.remainingExemptions, 0);
+
+      // 完整休息 3 分钟结束（非答题提前结束）→ 次数重置为 2。
+      advance(m, const Duration(minutes: 3));
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.remainingExemptions, 2);
+      expect(m.state.exemptionsUsedToday, 0);
+
+      // 重置后可再次答题豁免。
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.quiz);
+      m.answerCurrentQuestion(1);
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.remainingExemptions, 1);
+    });
+
+    test('仍有额度时完成普通休息不重置已用次数', () {
+      final m = buildMachine();
+      passRounds(m, 1); // 已用 1 次，剩余 1
+      expect(m.remainingExemptions, 1);
+
+      m.restNow(); // 手动休息，完整结束
+      advance(m, const Duration(minutes: 3));
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.remainingExemptions, 1); // 不重置
+    });
+
+    test('答题提前结束休息不触发重置', () {
+      final m = buildMachine();
+      passRounds(m, 1); // 剩余 1
+      m.restNow();
+      m.endRestEarly(); // 用掉最后一次额度提前结束
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.remainingExemptions, 0);
     });
 
     test('跨自然日后豁免次数归零，可再次答题豁免', () {

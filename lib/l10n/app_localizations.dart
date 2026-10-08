@@ -161,6 +161,48 @@ abstract class S {
   /// **'语言'**
   String get homeLanguageTooltip;
 
+  /// No description provided for @homeSettingsTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'计时设置'**
+  String get homeSettingsTooltip;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'计时设置'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsQuizMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'亮屏触发时长'**
+  String get settingsQuizMinutes;
+
+  /// No description provided for @settingsRestMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'强制休息时长'**
+  String get settingsRestMinutes;
+
+  /// No description provided for @settingsMinutesUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟'**
+  String get settingsMinutesUnit;
+
+  /// No description provided for @settingsInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入大于 0 的整数'**
+  String get settingsInvalid;
+
+  /// No description provided for @settingsSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get settingsSave;
+
   /// No description provided for @reminderTitle.
   ///
   /// In zh, this message translates to:

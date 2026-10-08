@@ -19,6 +19,13 @@
   "homeManualRest": "Take a break now",
   "homeBankTooltip": "Question bank",
   "homeLanguageTooltip": "Language",
+  "homeSettingsTooltip": "Timing settings",
+  "settingsTitle": "Timing settings",
+  "settingsQuizMinutes": "Screen time before break",
+  "settingsRestMinutes": "Mandatory break duration",
+  "settingsMinutesUnit": "min",
+  "settingsInvalid": "Please enter positive integers",
+  "settingsSave": "Save",
 
   "reminderTitle": "Time for a break",
   "reminderContinuous": "You've been on screen for {minutes} minutes",

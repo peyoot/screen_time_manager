@@ -69,13 +69,13 @@ class AppSettings {
   }
 
   /// 一组适合首次使用的默认配置：
-  /// 每累计亮屏 30 分钟触发 1 道题，失败后强制休息 3 分钟，
+  /// 每累计亮屏 15 分钟触发答题，失败后强制休息 10 分钟，
   /// 每天最多通过答题豁免 2 次。
   static final AppSettings defaults = AppSettings(
-    quizInterval: const Duration(minutes: 30),
+    quizInterval: const Duration(minutes: 15),
     questionsPerQuiz: 1,
     requiredCorrectCount: 1,
-    restDuration: const Duration(minutes: 3),
+    restDuration: const Duration(minutes: 10),
     dailyExemptionLimit: 2,
   );
 

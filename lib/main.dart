@@ -40,11 +40,11 @@ void main() {
   );
 
   final machine = ScreenTimeMachine(
-    settings: AppSettings(
-      quizInterval: const Duration(minutes: 30),
+    // 计时阈值采用默认值（亮屏 15 分钟触发、休息 10 分钟），
+    // 仅调整每轮题量为 2 道；用户可在主界面设置菜单中修改时长。
+    settings: AppSettings.defaults.copyWith(
       questionsPerQuiz: 2,
       requiredCorrectCount: 1,
-      restDuration: const Duration(minutes: 3),
     ),
     questionBank: machineBank,
     random: Random(2026),
