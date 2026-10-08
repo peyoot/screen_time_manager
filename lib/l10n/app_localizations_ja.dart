@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -248,8 +247,7 @@ class SJa extends S {
   String get importHintCsv => 'question,answer,hint\n1+1は？,2,ヒント';
 
   @override
-  String get importHintJson =>
-      '&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
+  String get importHintJson => '&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
 
   @override
   String get importButton => 'インポート';

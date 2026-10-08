@@ -97,16 +97,23 @@ class _RestPageState extends State<RestPage> {
                 isCountDown: _countDown,
               ),
               const SizedBox(height: 8),
-              // 正计时/倒计时切换按钮。
-              TextButton.icon(
+              // 正计时/倒计时切换按钮：显示将要切换到的模式（与当前相反）。
+              OutlinedButton.icon(
                 onPressed: () => setState(() => _countDown = !_countDown),
                 icon: Icon(
-                  _countDown ? Icons.timer_outlined : Icons.timer_10_outlined,
+                  _countDown ? Icons.arrow_upward : Icons.arrow_downward,
                   size: 18,
                 ),
-                label: Text(_countDown ? l10n.restCountDown : l10n.restCountUp),
-                style: TextButton.styleFrom(
-                  foregroundColor: theme.colorScheme.onSurfaceVariant,
+                label: Text(
+                  _countDown ? l10n.restCountUp : l10n.restCountDown,
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.colorScheme.primary,
+                  side: BorderSide(color: theme.colorScheme.outline),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
