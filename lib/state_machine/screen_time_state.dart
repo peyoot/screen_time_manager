@@ -36,6 +36,10 @@ class ScreenTimeState {
   /// 强制休息的结束时刻，仅在 [AppPhase.resting] 阶段非空。
   final DateTime? restEndsAt;
 
+  /// 当日已通过答题成功豁免的次数（亮屏阈值豁免与休息期豁免合计），
+  /// 跨自然日归零，上限由 AppSettings.dailyExemptionLimit 控制。
+  final int exemptionsUsedToday;
+
   const ScreenTimeState({
     required this.phase,
     required this.isScreenOn,
@@ -45,6 +49,7 @@ class ScreenTimeState {
     required this.quizRound,
     this.quiz,
     this.restEndsAt,
+    this.exemptionsUsedToday = 0,
   });
 
   /// 创建初始状态：计时阶段、零用量、无答题会话。
@@ -85,6 +90,7 @@ class ScreenTimeState {
     Duration? sinceLastGrant,
     Duration? quizInterval,
     int? quizRound,
+    int? exemptionsUsedToday,
     Object? quiz = _sentinel,
     Object? restEndsAt = _sentinel,
   }) {
@@ -99,6 +105,7 @@ class ScreenTimeState {
       restEndsAt: restEndsAt == _sentinel
           ? this.restEndsAt
           : restEndsAt as DateTime?,
+      exemptionsUsedToday: exemptionsUsedToday ?? this.exemptionsUsedToday,
     );
   }
 
@@ -112,12 +119,13 @@ class ScreenTimeState {
       other.quizInterval == quizInterval &&
       other.quizRound == quizRound &&
       other.quiz == quiz &&
-      other.restEndsAt == restEndsAt;
+      other.restEndsAt == restEndsAt &&
+      other.exemptionsUsedToday == exemptionsUsedToday;
 
   @override
   int get hashCode =>
       Object.hash(phase, isScreenOn, dailyUsage, sinceLastGrant, quizInterval,
-          quizRound, quiz, restEndsAt);
+          quizRound, quiz, restEndsAt, exemptionsUsedToday);
 
   @override
   String toString() => 'ScreenTimeState(phase: $phase, screenOn: $isScreenOn, '

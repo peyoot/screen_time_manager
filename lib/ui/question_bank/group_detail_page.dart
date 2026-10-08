@@ -1,4 +1,4 @@
-/// 题库分组详情页：题目列表、手动添加、批量删除。
+/// 题库分组详情页：题目列表、手动添加、编辑、批量删除。
 library;
 
 import 'package:flutter/material.dart';
@@ -10,8 +10,9 @@ import '../../question_bank/question_group.dart';
 
 /// 展示某个分组内的题目列表。
 ///
-/// 支持两种操作：
+/// 支持三种操作：
 /// - 右上角"添加"按钮：弹窗手动添加题目（题干/答案必填，提示可选）；
+/// - 每个条目右侧"编辑"按钮：弹窗预填并修改题目（id 保持不变）；
 /// - 右上角"批量选择"按钮：进入选择模式，勾选后批量删除；
 ///   非选择模式下长按任意条目也可直接进入选择模式。
 class GroupDetailPage extends StatefulWidget {
@@ -80,11 +81,25 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
     }
   }
 
-  /// 弹出手动添加题目对话框，返回新题目（取消时为 null）。
-  Future<BankQuestion?> _showAddDialog() {
+  /// 弹出题目编辑对话框；[initial] 为空时表示新增，非空时预填题目内容。
+  /// 返回编辑后的题目（取消时为 null）。
+  Future<BankQuestion?> _showQuestionDialog({BankQuestion? initial}) {
     return showDialog<BankQuestion>(
       context: context,
-      builder: (_) => const _QuestionEditDialog(),
+      builder: (_) => _QuestionEditDialog(initial: initial),
+    );
+  }
+
+  /// 编辑指定题目：弹出预填对话框，确认后写回题库（id 保持不变）。
+  Future<void> _editQuestion(QuestionGroup group, BankQuestion question) async {
+    final updated = await _showQuestionDialog(initial: question);
+    if (updated == null) return;
+    widget.service.updateQuestion(
+      group.id,
+      question.id,
+      question: updated.question,
+      answer: updated.answer,
+      hint: updated.hint,
     );
   }
 
@@ -112,7 +127,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                   tooltip: l10n.groupDetailAddTooltip,
                   icon: const Icon(Icons.add),
                   onPressed: () async {
-                    final question = await _showAddDialog();
+                    final question = await _showQuestionDialog();
                     if (question != null) {
                       widget.service.addQuestions(group.id, [question]);
                     }
@@ -149,7 +164,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
     );
   }
 
-  /// 构建单道题目条目：选择模式下显示勾选框，平时显示答案与提示。
+  /// 构建单道题目条目：选择模式下显示勾选框，平时显示答案、提示与编辑入口。
   Widget _buildTile(BankQuestion question) {
     final l10n = S.of(context);
     final selected = _selectedIds.contains(question.id);
@@ -172,6 +187,16 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
             ),
         ],
       ),
+      trailing: _selecting
+          ? null
+          : IconButton(
+              tooltip: l10n.groupDetailEditTooltip,
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () {
+                final group = widget.service.groupById(widget.groupId);
+                if (group != null) _editQuestion(group, question);
+              },
+            ),
       onTap: _selecting ? () => _toggleSelected(question.id) : null,
       onLongPress: _selecting
           ? null
@@ -183,19 +208,35 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
   }
 }
 
-/// 手动添加题目的对话框；提交前校验题干与答案非空。
+/// 题目新增/编辑对话框；提交前校验题干与答案非空。
+///
+/// 传入 [initial] 时进入编辑模式：预填原有内容、使用编辑标题与确认文案；
+/// 返回的对象在编辑模式下保留原 id，新增时由模型自动生成。
 class _QuestionEditDialog extends StatefulWidget {
-  const _QuestionEditDialog();
+  /// 编辑模式下的原题；为 null 表示新增。
+  final BankQuestion? initial;
+
+  const _QuestionEditDialog({this.initial});
 
   @override
   State<_QuestionEditDialog> createState() => _QuestionEditDialogState();
 }
 
 class _QuestionEditDialogState extends State<_QuestionEditDialog> {
-  final TextEditingController _questionController = TextEditingController();
-  final TextEditingController _answerController = TextEditingController();
-  final TextEditingController _hintController = TextEditingController();
+  late final TextEditingController _questionController;
+  late final TextEditingController _answerController;
+  late final TextEditingController _hintController;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _questionController =
+        TextEditingController(text: widget.initial?.question ?? '');
+    _answerController =
+        TextEditingController(text: widget.initial?.answer ?? '');
+    _hintController = TextEditingController(text: widget.initial?.hint ?? '');
+  }
 
   @override
   void dispose() {
@@ -205,7 +246,7 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
     super.dispose();
   }
 
-  /// 校验输入并关闭对话框返回新题目；校验失败则在对话框内报错。
+  /// 校验输入并关闭对话框返回题目；校验失败则在对话框内报错。
   void _submit() {
     final question = _questionController.text.trim();
     final answer = _answerController.text.trim();
@@ -216,6 +257,7 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
     }
     Navigator.of(context).pop(
       BankQuestion(
+        id: widget.initial?.id,
         question: question,
         answer: answer,
         hint: hint.isEmpty ? null : hint,
@@ -226,8 +268,9 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = S.of(context);
+    final isEditing = widget.initial != null;
     return AlertDialog(
-      title: Text(l10n.groupDetailAddTitle),
+      title: Text(isEditing ? l10n.groupDetailEditTitle : l10n.groupDetailAddTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -267,7 +310,12 @@ class _QuestionEditDialogState extends State<_QuestionEditDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.bankCancel),
         ),
-        FilledButton(onPressed: _submit, child: Text(l10n.groupDetailAddConfirm)),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(
+            isEditing ? l10n.groupDetailEditConfirm : l10n.groupDetailAddConfirm,
+          ),
+        ),
       ],
     );
   }

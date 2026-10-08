@@ -60,6 +60,58 @@ void main() {
       expect(service.groups.single, group);
       expect(group.questions.length, 2);
     });
+
+    test('编辑题目：更新题干/答案/提示且保持 id 与权重不变', () {
+      final service = QuestionBankService();
+      final groupId = service.createGroup('G').id;
+      service.addQuestions(groupId, buildQuestions('q', 2));
+      final target = service.groupById(groupId)!.questions.first;
+
+      // 先制造答错加权，编辑后权重应保留。
+      service.recordAnswer(target.id, correct: false);
+      expect(service.weightOf(target.id), 2);
+
+      service.updateQuestion(
+        groupId,
+        target.id,
+        question: '修改后的题干',
+        answer: '新答案',
+        hint: '新提示',
+      );
+
+      final updated = service
+          .groupById(groupId)!
+          .questions
+          .singleWhere((q) => q.id == target.id);
+      expect(updated.question, '修改后的题干');
+      expect(updated.answer, '新答案');
+      expect(updated.hint, '新提示');
+      expect(service.weightOf(target.id), 2);
+      expect(service.groupById(groupId)!.questions.length, 2);
+
+      // 提示清空（空字符串视为无提示）。
+      service.updateQuestion(
+        groupId,
+        target.id,
+        question: '题干',
+        answer: '答案',
+        hint: '',
+      );
+      expect(service.groupById(groupId)!.questions.first.hint, isNull);
+
+      // 题干或答案为空白时抛出 ArgumentError。
+      expect(
+        () => service.updateQuestion(groupId, target.id,
+            question: '  ', answer: '答案'),
+        throwsArgumentError,
+      );
+
+      // 不存在的题目/分组静默忽略，不抛错。
+      service.updateQuestion(groupId, 'not-exist',
+          question: 'x', answer: 'y');
+      service.updateQuestion('not-exist-group', target.id,
+          question: 'x', answer: 'y');
+    });
   });
 
   group('drawQuestions', () {

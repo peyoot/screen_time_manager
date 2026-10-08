@@ -21,7 +21,7 @@ class SKo extends S {
   }
 
   @override
-  String get homeExemptionsUsed => '사용한 면제';
+  String get homeExemptionsLeft => '남은 면제';
 
   @override
   String homeExemptionsCount(int count) {
@@ -54,13 +54,9 @@ class SKo extends S {
   }
 
   @override
-  String get reminderFirstFree => '첫 알림은 무료로 계속 사용할 수 있습니다';
-
-  @override
-  String get reminderQuizToPass => '퀴즈를 풀어 면제받고 계속 사용';
-
-  @override
-  String get reminderContinueFree => '계속 사용 (무료)';
+  String reminderQuizToPass(int count) {
+    return '정답을 맞히면 계속 사용할 수 있습니다. 오늘 남은 면제 $count회';
+  }
 
   @override
   String get reminderContinueQuiz => '계속 사용 (퀴즈 면제)';
@@ -131,6 +127,10 @@ class SKo extends S {
   String get restExemptRetry => '다시 시도';
 
   @override
+  String get restExemptUnavailable =>
+      '오늘의 면제 횟수를 모두 사용했습니다. 휴식이 끝날 때까지 기다려 주세요';
+
+  @override
   String get bankGroups => '문제 그룹';
 
   @override
@@ -197,6 +197,15 @@ class SKo extends S {
 
   @override
   String get groupDetailAddTooltip => '수동 추가';
+
+  @override
+  String get groupDetailEditTooltip => '문제 편집';
+
+  @override
+  String get groupDetailEditTitle => '문제 편집';
+
+  @override
+  String get groupDetailEditConfirm => '저장';
 
   @override
   String get groupDetailSelectTooltip => '다중 선택';

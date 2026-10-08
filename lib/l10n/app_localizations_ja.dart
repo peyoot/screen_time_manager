@@ -21,7 +21,7 @@ class SJa extends S {
   }
 
   @override
-  String get homeExemptionsUsed => '使用済み免除';
+  String get homeExemptionsLeft => '残り免除';
 
   @override
   String homeExemptionsCount(int count) {
@@ -54,13 +54,9 @@ class SJa extends S {
   }
 
   @override
-  String get reminderFirstFree => '初回リマインダーは無料で続行できます';
-
-  @override
-  String get reminderQuizToPass => 'クイズに答えて免除で続行';
-
-  @override
-  String get reminderContinueFree => '続行（無料）';
+  String reminderQuizToPass(int count) {
+    return '正解すると続行できます。本日の残り免除回数：$count 回';
+  }
 
   @override
   String get reminderContinueQuiz => '続行（クイズ免除）';
@@ -131,6 +127,9 @@ class SJa extends S {
   String get restExemptRetry => 'もう一度挑戦';
 
   @override
+  String get restExemptUnavailable => '本日の免除回数を使い切りました。休憩終了までお待ちください';
+
+  @override
   String get bankGroups => '問題グループ';
 
   @override
@@ -197,6 +196,15 @@ class SJa extends S {
 
   @override
   String get groupDetailAddTooltip => '手動追加';
+
+  @override
+  String get groupDetailEditTooltip => '問題を編集';
+
+  @override
+  String get groupDetailEditTitle => '問題を編集';
+
+  @override
+  String get groupDetailEditConfirm => '保存';
 
   @override
   String get groupDetailSelectTooltip => '複数選択';

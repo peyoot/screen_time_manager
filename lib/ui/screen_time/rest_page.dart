@@ -217,8 +217,17 @@ class _RestExemptionSectionState extends State<_RestExemptionSection> {
     final theme = Theme.of(context);
     final l10n = S.of(context);
 
-    // 未申请豁免：入口按钮。
+    // 未申请豁免：有剩余额度时显示入口，否则提示今日额度已用完。
     if (question == null) {
+      if (!controller.canExempt) {
+        return Text(
+          l10n.restExemptUnavailable,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        );
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

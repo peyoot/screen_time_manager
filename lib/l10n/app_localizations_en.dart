@@ -21,11 +21,11 @@ class SEn extends S {
   }
 
   @override
-  String get homeExemptionsUsed => 'Exemptions';
+  String get homeExemptionsLeft => 'Exemptions left';
 
   @override
   String homeExemptionsCount(int count) {
-    return '$count times';
+    return '$count';
   }
 
   @override
@@ -54,13 +54,9 @@ class SEn extends S {
   }
 
   @override
-  String get reminderFirstFree => 'First reminder is free to continue';
-
-  @override
-  String get reminderQuizToPass => 'Answer questions to continue';
-
-  @override
-  String get reminderContinueFree => 'Continue (free)';
+  String reminderQuizToPass(int count) {
+    return 'Answer correctly to continue. $count exemption(s) left today';
+  }
 
   @override
   String get reminderContinueQuiz => 'Continue (quiz)';
@@ -132,6 +128,10 @@ class SEn extends S {
   String get restExemptRetry => 'Try again';
 
   @override
+  String get restExemptUnavailable =>
+      'No exemptions left today. Please wait for the break to end';
+
+  @override
   String get bankGroups => 'Question Groups';
 
   @override
@@ -198,6 +198,15 @@ class SEn extends S {
 
   @override
   String get groupDetailAddTooltip => 'Add manually';
+
+  @override
+  String get groupDetailEditTooltip => 'Edit question';
+
+  @override
+  String get groupDetailEditTitle => 'Edit question';
+
+  @override
+  String get groupDetailEditConfirm => 'Save';
 
   @override
   String get groupDetailSelectTooltip => 'Select multiple';

@@ -119,11 +119,11 @@ abstract class S {
   /// **'距下次答题还需 {time}'**
   String homeNextQuizIn(String time);
 
-  /// No description provided for @homeExemptionsUsed.
+  /// No description provided for @homeExemptionsLeft.
   ///
   /// In zh, this message translates to:
-  /// **'已用豁免'**
-  String get homeExemptionsUsed;
+  /// **'可用豁免'**
+  String get homeExemptionsLeft;
 
   /// No description provided for @homeExemptionsCount.
   ///
@@ -173,23 +173,11 @@ abstract class S {
   /// **'你已连续亮屏 {minutes} 分钟'**
   String reminderContinuous(int minutes);
 
-  /// No description provided for @reminderFirstFree.
-  ///
-  /// In zh, this message translates to:
-  /// **'首次提醒可直接继续使用'**
-  String get reminderFirstFree;
-
   /// No description provided for @reminderQuizToPass.
   ///
   /// In zh, this message translates to:
-  /// **'答题豁免即可继续使用'**
-  String get reminderQuizToPass;
-
-  /// No description provided for @reminderContinueFree.
-  ///
-  /// In zh, this message translates to:
-  /// **'继续使用（免费）'**
-  String get reminderContinueFree;
+  /// **'答题通过即可继续使用，今日剩余豁免 {count} 次'**
+  String reminderQuizToPass(int count);
 
   /// No description provided for @reminderContinueQuiz.
   ///
@@ -311,6 +299,12 @@ abstract class S {
   /// **'再试一次'**
   String get restExemptRetry;
 
+  /// No description provided for @restExemptUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日豁免次数已用完，请等待休息结束'**
+  String get restExemptUnavailable;
+
   /// No description provided for @bankGroups.
   ///
   /// In zh, this message translates to:
@@ -430,6 +424,24 @@ abstract class S {
   /// In zh, this message translates to:
   /// **'手动添加'**
   String get groupDetailAddTooltip;
+
+  /// No description provided for @groupDetailEditTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑题目'**
+  String get groupDetailEditTooltip;
+
+  /// No description provided for @groupDetailEditTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑题目'**
+  String get groupDetailEditTitle;
+
+  /// No description provided for @groupDetailEditConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get groupDetailEditConfirm;
 
   /// No description provided for @groupDetailSelectTooltip.
   ///

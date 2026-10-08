@@ -57,7 +57,9 @@ void main() {
     expect(find.text('Screen Time Manager'), findsOneWidget);
     expect(find.text('Screen time today'), findsOneWidget);
     expect(find.text('Take a break now'), findsOneWidget);
-    expect(find.text('Exemptions'), findsOneWidget);
+    expect(find.text('Exemptions left'), findsOneWidget);
+    // 默认每日 2 次豁免，初始剩余 2 次。
+    expect(find.text('2'), findsOneWidget);
   });
 
   testWidgets('从主计时页可跳转到题库分组管理页', (tester) async {
@@ -160,7 +162,45 @@ void main() {
     expect(controller.phase, AppPhase.tracking);
     expect(find.text('休息中'), findsNothing);
     expect(find.text('今日累计亮屏'), findsOneWidget);
-    // 豁免次数 +1。
+    // 消耗一次后剩余 1 次（默认每日 2 次）。
     expect(find.text('1 次'), findsOneWidget);
+  });
+
+  testWidgets('每日豁免次数用完后休息页不再显示申请入口', (tester) async {
+    final controller = buildController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+    controller.localeController.setLocale(const Locale('zh'));
+    await tester.pumpAndSettle();
+
+    // 连续两次：手动休息 → 申请豁免 → 答对提前结束。
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.text('手动触发休息'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.ensureVisible(find.text('申请豁免'));
+      await tester.tap(find.text('申请豁免'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(controller.restQuizQuestion, isNotNull);
+      await tester.enterText(
+        find.byType(TextField),
+        controller.restQuizQuestion!.answer,
+      );
+      await tester.ensureVisible(find.text('提交答案'));
+      await tester.tap(find.text('提交答案'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(controller.phase, AppPhase.tracking);
+    }
+
+    expect(controller.remainingExemptions, 0);
+
+    // 第三次休息：申请入口消失，只显示"次数用完"提示。
+    await tester.tap(find.text('手动触发休息'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('休息中'), findsOneWidget);
+    expect(find.text('申请豁免'), findsNothing);
+    expect(find.text('今日豁免次数已用完，请等待休息结束'), findsOneWidget);
   });
 }

@@ -21,7 +21,7 @@ class SZh extends S {
   }
 
   @override
-  String get homeExemptionsUsed => '已用豁免';
+  String get homeExemptionsLeft => '可用豁免';
 
   @override
   String homeExemptionsCount(int count) {
@@ -54,13 +54,9 @@ class SZh extends S {
   }
 
   @override
-  String get reminderFirstFree => '首次提醒可直接继续使用';
-
-  @override
-  String get reminderQuizToPass => '答题豁免即可继续使用';
-
-  @override
-  String get reminderContinueFree => '继续使用（免费）';
+  String reminderQuizToPass(int count) {
+    return '答题通过即可继续使用，今日剩余豁免 $count 次';
+  }
 
   @override
   String get reminderContinueQuiz => '继续使用（答题豁免）';
@@ -131,6 +127,9 @@ class SZh extends S {
   String get restExemptRetry => '再试一次';
 
   @override
+  String get restExemptUnavailable => '今日豁免次数已用完，请等待休息结束';
+
+  @override
   String get bankGroups => '题库分组';
 
   @override
@@ -197,6 +196,15 @@ class SZh extends S {
 
   @override
   String get groupDetailAddTooltip => '手动添加';
+
+  @override
+  String get groupDetailEditTooltip => '编辑题目';
+
+  @override
+  String get groupDetailEditTitle => '编辑题目';
+
+  @override
+  String get groupDetailEditConfirm => '保存';
 
   @override
   String get groupDetailSelectTooltip => '批量选择';

@@ -6,8 +6,8 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsUsed": "Exemptions",
-  "homeExemptionsCount": "{count} times",
+  "homeExemptionsLeft": "Exemptions left",
+  "homeExemptionsCount": "{count}",
   "@homeExemptionsCount": {
     "placeholders": {"count": {"type": "int"}}
   },
@@ -25,9 +25,10 @@
   "@reminderContinuous": {
     "placeholders": {"minutes": {"type": "int"}}
   },
-  "reminderFirstFree": "First reminder is free to continue",
-  "reminderQuizToPass": "Answer questions to continue",
-  "reminderContinueFree": "Continue (free)",
+  "reminderQuizToPass": "Answer correctly to continue. {count} exemption(s) left today",
+  "@reminderQuizToPass": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "reminderContinueQuiz": "Continue (quiz)",
   "reminderRestNow": "Rest now",
 
@@ -59,6 +60,7 @@
   "restExemptRequest": "Request exemption",
   "restExemptWrong": "Wrong answer. Correct answer: {answer}",
   "restExemptRetry": "Try again",
+  "restExemptUnavailable": "No exemptions left today. Please wait for the break to end",
 
   "bankGroups": "Question Groups",
   "bankNewGroup": "New Group",
@@ -93,6 +95,9 @@
     "placeholders": {"count": {"type": "int"}}
   },
   "groupDetailAddTooltip": "Add manually",
+  "groupDetailEditTooltip": "Edit question",
+  "groupDetailEditTitle": "Edit question",
+  "groupDetailEditConfirm": "Save",
   "groupDetailSelectTooltip": "Select multiple",
   "groupDetailExitSelectTooltip": "Exit selection",
   "groupDetailDeleteSelectedTooltip": "Delete selected",

@@ -133,6 +133,45 @@ class QuestionBankService extends ChangeNotifier {
     });
   }
 
+  /// 编辑分组内指定 id 的题目（题干/答案/提示）。
+  ///
+  /// 保持题目 id 不变，因此既有的答错权重与抽题记忆不受影响。
+  /// 分组或题目不存在时静默忽略；题干或答案为空白时抛出 [ArgumentError]。
+  void updateQuestion(
+    String groupId,
+    String questionId, {
+    required String question,
+    required String answer,
+    String? hint,
+  }) {
+    final trimmedQuestion = question.trim();
+    final trimmedAnswer = answer.trim();
+    final trimmedHint = hint?.trim();
+    if (trimmedQuestion.isEmpty || trimmedAnswer.isEmpty) {
+      throw ArgumentError('题干和答案不能为空');
+    }
+    _mutateGroup(groupId, (group) {
+      final exists = group.questions.any((q) => q.id == questionId);
+      if (!exists) return group;
+      return group.copyWith(
+        questions: [
+          for (final q in group.questions)
+            if (q.id == questionId)
+              BankQuestion(
+                id: q.id,
+                question: trimmedQuestion,
+                answer: trimmedAnswer,
+                hint: trimmedHint == null || trimmedHint.isEmpty
+                    ? null
+                    : trimmedHint,
+              )
+            else
+              q,
+        ],
+      );
+    });
+  }
+
   // ------------------------------------------------------------------
   // 随机抽题
   // ------------------------------------------------------------------

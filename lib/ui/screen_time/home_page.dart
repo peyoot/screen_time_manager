@@ -74,7 +74,10 @@ class _TimingView extends StatelessWidget {
             const SizedBox(height: 32),
             _TimeCard(state: state),
             const SizedBox(height: 24),
-            _StatRow(state: state, exemptionCount: controller.exemptionCount),
+            _StatRow(
+              state: state,
+              remainingExemptions: controller.remainingExemptions,
+            ),
             const Spacer(),
             FilledButton.icon(
               onPressed: controller.manualRest,
@@ -172,9 +175,12 @@ class _TimeCard extends StatelessWidget {
 /// 豁免次数与当前轮次统计行。
 class _StatRow extends StatelessWidget {
   final ScreenTimeState state;
-  final int exemptionCount;
+  final int remainingExemptions;
 
-  const _StatRow({required this.state, required this.exemptionCount});
+  const _StatRow({
+    required this.state,
+    required this.remainingExemptions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -184,8 +190,8 @@ class _StatRow extends StatelessWidget {
         Expanded(
           child: _StatItem(
             icon: Icons.check_circle_outline,
-            label: l10n.homeExemptionsUsed,
-            value: l10n.homeExemptionsCount(exemptionCount),
+            label: l10n.homeExemptionsLeft,
+            value: l10n.homeExemptionsCount(remainingExemptions),
           ),
         ),
         const SizedBox(width: 12),

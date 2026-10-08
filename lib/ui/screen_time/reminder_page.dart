@@ -10,8 +10,10 @@ import 'screen_time_controller.dart';
 /// 全屏提醒页。
 ///
 /// 展示当前已亮屏时长与阈值，提供两个出口：
-/// - "继续使用"：首次豁免免费直接通过；其余轮次进入 [QuizPage] 答题。
+/// - "继续使用"：进入 [QuizPage] 答题，答对则消耗一次豁免额度继续使用；
 /// - "立即休息"：放弃本轮答题，进入全屏休息。
+///
+/// 今日豁免次数用完时状态机会直接进入休息，本页不会出现。
 class ReminderPage extends StatelessWidget {
   final ScreenTimeController controller;
 
@@ -22,12 +24,11 @@ class ReminderPage extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        // 已点击"继续使用"且本轮需要答题：切换到答题页。
+        // 已点击"继续使用"：切换到答题页。
         if (controller.reminderShown) {
           return QuizPage(controller: controller);
         }
         final state = controller.machine.state;
-        final isFirstFree = state.quizRound <= 1;
         final theme = Theme.of(context);
         final l10n = S.of(context);
 
@@ -61,7 +62,7 @@ class ReminderPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isFirstFree ? l10n.reminderFirstFree : l10n.reminderQuizToPass,
+                    l10n.reminderQuizToPass(controller.remainingExemptions),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -71,7 +72,7 @@ class ReminderPage extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: controller.continueUsage,
                     icon: const Icon(Icons.play_arrow),
-                    label: Text(isFirstFree ? l10n.reminderContinueFree : l10n.reminderContinueQuiz),
+                    label: Text(l10n.reminderContinueQuiz),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(

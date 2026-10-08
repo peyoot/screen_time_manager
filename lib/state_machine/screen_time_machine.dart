@@ -36,6 +36,15 @@ class ScreenTimeMachine extends ChangeNotifier {
   /// 当前题库（可能尚未导入）。
   QuestionBank? get questionBank => _bank;
 
+  /// 今日剩余可用的答题豁免次数（不会为负）。
+  int get remainingExemptions {
+    final left = _settings.dailyExemptionLimit - _state.exemptionsUsedToday;
+    return left < 0 ? 0 : left;
+  }
+
+  /// 当前是否还能通过答题豁免（亮屏阈值或休息期均以此判定）。
+  bool get canExempt => remainingExemptions > 0;
+
   /// 创建状态机。
   ///
   /// - [settings]：触发阈值与答题规则；
@@ -135,11 +144,12 @@ class ScreenTimeMachine extends ChangeNotifier {
     if (!nextSession.isComplete) {
       _state = _state.copyWith(quiz: nextSession);
     } else if (nextSession.passed) {
-      // 豁免通过：清空答题会话并重新开始累计下一轮阈值。
+      // 豁免通过：消耗一次今日豁免额度，清空答题会话并重新开始累计。
       _state = _state.copyWith(
         phase: AppPhase.tracking,
         quiz: null,
         sinceLastGrant: Duration.zero,
+        exemptionsUsedToday: _state.exemptionsUsedToday + 1,
       );
     } else {
       _enterRest(_clock());
@@ -172,16 +182,20 @@ class ScreenTimeMachine extends ChangeNotifier {
   /// 休息期间通过答题豁免提前结束休息。
   ///
   /// 仅在 [AppPhase.resting] 阶段允许调用；其他阶段抛出 [StateError]。
-  /// 效果与自然休息结束一致：回到计时阶段并重新累计阈值。
-  /// 是否"答对"由 UI 层判定，状态机只负责阶段流转。
+  /// 今日豁免次数已用完时同样抛出 [StateError]，调用方应先检查 [canExempt]。
+  /// 效果与自然休息结束一致：回到计时阶段并重新累计阈值，同时消耗一次额度。
   void endRestEarly() {
     if (_state.phase != AppPhase.resting) {
       throw StateError('当前不在休息阶段，无法豁免休息');
+    }
+    if (!canExempt) {
+      throw StateError('今日豁免次数已用完，无法提前结束休息');
     }
     _state = _state.copyWith(
       phase: AppPhase.tracking,
       restEndsAt: null,
       sinceLastGrant: Duration.zero,
+      exemptionsUsedToday: _state.exemptionsUsedToday + 1,
     );
     notifyListeners();
   }
@@ -239,10 +253,11 @@ class ScreenTimeMachine extends ChangeNotifier {
     }
   }
 
-  /// 进入一轮豁免答题；题库缺失或题量不足时无法豁免，改为强制休息。
+  /// 进入一轮豁免答题；今日额度用完、题库缺失或题量不足时直接强制休息。
   void _enterQuizOrRest(DateTime now) {
     final bank = _bank;
-    if (bank != null &&
+    if (canExempt &&
+        bank != null &&
         bank.questions.length >= _settings.questionsPerQuiz) {
       final drawn = bank.drawRandom(
         _settings.questionsPerQuiz,
@@ -272,7 +287,7 @@ class ScreenTimeMachine extends ChangeNotifier {
   }
 
   /// 跨自然日归零。进行中的答题轮次保留其进度（答题已触发），
-  /// 其他阶段阈值进度随新一天清零。返回状态是否发生变化。
+  /// 其他阶段阈值进度与当日豁免次数随新一天清零。返回状态是否发生变化。
   bool _rolloverIfNeeded(DateTime now) {
     final usage = _state.dailyUsage;
     if (usage.isSameDay(now)) return false;
@@ -282,6 +297,7 @@ class ScreenTimeMachine extends ChangeNotifier {
           _state.phase == AppPhase.quiz
               ? _state.sinceLastGrant
               : Duration.zero,
+      exemptionsUsedToday: 0,
     );
     return true;
   }

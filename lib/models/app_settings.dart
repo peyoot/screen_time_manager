@@ -19,12 +19,19 @@ class AppSettings {
   /// 答题失败或放弃答题后，全屏休息页的强制停留时长。
   final Duration restDuration;
 
+  /// 每个自然日内允许通过答题豁免（避免/提前结束休息）的次数上限。
+  ///
+  /// 亮屏阈值答题通过与休息期申请豁免共用该额度，跨自然日归零。
+  /// 取 0 表示完全不允许豁免，达到阈值直接进入强制休息。
+  final int dailyExemptionLimit;
+
   /// 创建配置并立即校验全部不变量，非法取值抛出 [ArgumentError]。
   AppSettings({
     required this.quizInterval,
     required this.questionsPerQuiz,
     required this.requiredCorrectCount,
     required this.restDuration,
+    this.dailyExemptionLimit = 2,
   }) {
     if (quizInterval <= Duration.zero) {
       throw ArgumentError.value(quizInterval, 'quizInterval', '必须大于 0');
@@ -52,15 +59,24 @@ class AppSettings {
         'questionsPerQuiz($questionsPerQuiz)',
       );
     }
+    if (dailyExemptionLimit < 0) {
+      throw ArgumentError.value(
+        dailyExemptionLimit,
+        'dailyExemptionLimit',
+        '不能为负',
+      );
+    }
   }
 
   /// 一组适合首次使用的默认配置：
-  /// 每累计亮屏 30 分钟触发 1 道题，失败后强制休息 3 分钟。
+  /// 每累计亮屏 30 分钟触发 1 道题，失败后强制休息 3 分钟，
+  /// 每天最多通过答题豁免 2 次。
   static final AppSettings defaults = AppSettings(
     quizInterval: const Duration(minutes: 30),
     questionsPerQuiz: 1,
     requiredCorrectCount: 1,
     restDuration: const Duration(minutes: 3),
+    dailyExemptionLimit: 2,
   );
 
   /// 从 JSON 构造配置。
@@ -72,6 +88,7 @@ class AppSettings {
     final questionsPerQuiz = json['questionsPerQuiz'];
     final requiredCorrectCount = json['requiredCorrectCount'];
     final restDurationSeconds = json['restDurationSeconds'];
+    final dailyExemptionLimit = json['dailyExemptionLimit'];
 
     if (quizIntervalSeconds is! num || quizIntervalSeconds <= 0) {
       throw const FormatException('quizIntervalSeconds 必须是正数');
@@ -85,12 +102,17 @@ class AppSettings {
     if (restDurationSeconds is! num || restDurationSeconds <= 0) {
       throw const FormatException('restDurationSeconds 必须是正数');
     }
+    if (dailyExemptionLimit != null &&
+        (dailyExemptionLimit is! int || dailyExemptionLimit < 0)) {
+      throw const FormatException('dailyExemptionLimit 必须是非负整数');
+    }
 
     return AppSettings(
       quizInterval: Duration(seconds: quizIntervalSeconds.toInt()),
       questionsPerQuiz: questionsPerQuiz,
       requiredCorrectCount: requiredCorrectCount,
       restDuration: Duration(seconds: restDurationSeconds.toInt()),
+      dailyExemptionLimit: (dailyExemptionLimit as int?) ?? 2,
     );
   }
 
@@ -100,6 +122,7 @@ class AppSettings {
         'questionsPerQuiz': questionsPerQuiz,
         'requiredCorrectCount': requiredCorrectCount,
         'restDurationSeconds': restDuration.inSeconds,
+        'dailyExemptionLimit': dailyExemptionLimit,
       };
 
   AppSettings copyWith({
@@ -107,6 +130,7 @@ class AppSettings {
     int? questionsPerQuiz,
     int? requiredCorrectCount,
     Duration? restDuration,
+    int? dailyExemptionLimit,
   }) {
     return AppSettings(
       quizInterval: quizInterval ?? this.quizInterval,
@@ -114,6 +138,7 @@ class AppSettings {
       requiredCorrectCount:
           requiredCorrectCount ?? this.requiredCorrectCount,
       restDuration: restDuration ?? this.restDuration,
+      dailyExemptionLimit: dailyExemptionLimit ?? this.dailyExemptionLimit,
     );
   }
 
@@ -123,16 +148,18 @@ class AppSettings {
       other.quizInterval == quizInterval &&
       other.questionsPerQuiz == questionsPerQuiz &&
       other.requiredCorrectCount == requiredCorrectCount &&
-      other.restDuration == restDuration;
+      other.restDuration == restDuration &&
+      other.dailyExemptionLimit == dailyExemptionLimit;
 
   @override
   int get hashCode =>
       Object.hash(quizInterval, questionsPerQuiz, requiredCorrectCount,
-          restDuration);
+          restDuration, dailyExemptionLimit);
 
   @override
   String toString() => 'AppSettings(quizInterval: $quizInterval, '
       'questionsPerQuiz: $questionsPerQuiz, '
       'requiredCorrectCount: $requiredCorrectCount, '
-      'restDuration: $restDuration)';
+      'restDuration: $restDuration, '
+      'dailyExemptionLimit: $dailyExemptionLimit)';
 }

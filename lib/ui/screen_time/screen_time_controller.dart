@@ -44,8 +44,11 @@ class ScreenTimeController extends ChangeNotifier {
   /// 是否已展示过提醒页（进入 quiz 阶段先显示提醒，再进入答题）。
   bool reminderShown = false;
 
-  /// 累计成功豁免的次数（答对达标回 tracking 时递增）。
-  int exemptionCount = 0;
+  /// 今日剩余可用豁免次数（状态机统一计数，跨天自动重置）。
+  int get remainingExemptions => machine.remainingExemptions;
+
+  /// 当前是否还能申请豁免。
+  bool get canExempt => machine.canExempt;
 
   /// 休息期豁免：当前抽取的题目（休息阶段申请豁免后非空）。
   BankQuestion? restQuizQuestion;
@@ -79,10 +82,7 @@ class ScreenTimeController extends ChangeNotifier {
         reminderShown = false;
       }
     } else if (phase == AppPhase.tracking) {
-      // 从 quiz 回到 tracking 且非首次进入：说明豁免成功。
-      if (quizQuestions.isNotEmpty) {
-        exemptionCount++;
-      }
+      // 回到计时阶段：重置所有答题 UI 状态（豁免计数由状态机维护）。
       quizQuestions = const [];
       quizIndex = 0;
       reminderShown = false;
@@ -109,15 +109,11 @@ class ScreenTimeController extends ChangeNotifier {
     }
   }
 
-  /// 提醒页点击"继续使用"：首次豁免免费，其余进入答题。
+  /// 提醒页点击"继续使用"：进入答题（能否豁免由剩余额度决定，
+  /// 额度用完时状态机不会进入 quiz 阶段，提醒页不会出现）。
   void continueUsage() {
-    if (machine.state.quizRound <= 1) {
-      // 首次豁免：直接判定通过（不答题）。
-      _passAllQuestions();
-    } else {
-      reminderShown = true;
-      notifyListeners();
-    }
+    reminderShown = true;
+    notifyListeners();
   }
 
   /// 提醒页/答题页点击"立即休息"：放弃本轮答题进入休息。
@@ -135,8 +131,9 @@ class ScreenTimeController extends ChangeNotifier {
   }
 
   /// 休息页"申请豁免"：随机抽取一道题供用户作答。
+  /// 今日豁免次数用完时不做任何操作（UI 已隐藏入口）。
   void requestRestExemption() {
-    if (machine.state.phase != AppPhase.resting) return;
+    if (machine.state.phase != AppPhase.resting || !machine.canExempt) return;
     try {
       restQuizQuestion = bankService.drawQuestions(1).first;
     } catch (_) {
@@ -149,11 +146,14 @@ class ScreenTimeController extends ChangeNotifier {
 
   /// 提交休息期豁免答案。
   ///
-  /// 答对返回 true 并提前结束休息（计入豁免次数）；答错返回 false，
-  /// 此时 [restQuizFailed] 置真，UI 展示正确答案并允许重新抽题作答。
+  /// 答对返回 true 并由状态机消耗一次豁免额度、提前结束休息；
+  /// 答错返回 false，此时 [restQuizFailed] 置真，
+  /// UI 展示正确答案并允许重新抽题作答（答错不消耗额度）。
   bool submitRestAnswer(String input) {
     final question = restQuizQuestion;
-    if (machine.state.phase != AppPhase.resting || question == null) {
+    if (machine.state.phase != AppPhase.resting ||
+        question == null ||
+        !machine.canExempt) {
       return false;
     }
     final correct = question.matchesAnswer(input);
@@ -161,8 +161,7 @@ class ScreenTimeController extends ChangeNotifier {
     if (correct) {
       restQuizQuestion = null;
       restQuizFailed = false;
-      exemptionCount++;
-      machine.endRestEarly(); // 触发阶段变化通知，页面自动切回计时。
+      machine.endRestEarly(); // 消耗额度并触发阶段变化，页面自动切回计时。
       return true;
     }
     restQuizFailed = true;
@@ -196,17 +195,6 @@ class ScreenTimeController extends ChangeNotifier {
     if (machine.state.phase == AppPhase.quiz) {
       quizIndex++;
       notifyListeners();
-    }
-  }
-
-  /// 模拟全部答对（用于首次免费豁免）。
-  void _passAllQuestions() {
-    final session = machine.state.quiz;
-    if (session == null) return;
-    while (!session.isComplete) {
-      final current = session.currentQuestion;
-      if (current == null) break;
-      machine.answerCurrentQuestion(current.correctIndex);
     }
   }
 

@@ -6,7 +6,7 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsUsed": "사용한 면제",
+  "homeExemptionsLeft": "남은 면제",
   "homeExemptionsCount": "{count} 회",
   "@homeExemptionsCount": {
     "placeholders": {"count": {"type": "int"}}
@@ -25,9 +25,10 @@
   "@reminderContinuous": {
     "placeholders": {"minutes": {"type": "int"}}
   },
-  "reminderFirstFree": "첫 알림은 무료로 계속 사용할 수 있습니다",
-  "reminderQuizToPass": "퀴즈를 풀어 면제받고 계속 사용",
-  "reminderContinueFree": "계속 사용 (무료)",
+  "reminderQuizToPass": "정답을 맞히면 계속 사용할 수 있습니다. 오늘 남은 면제 {count}회",
+  "@reminderQuizToPass": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "reminderContinueQuiz": "계속 사용 (퀴즈 면제)",
   "reminderRestNow": "지금 휴식",
 
@@ -59,6 +60,7 @@
   "restExemptRequest": "면제 신청",
   "restExemptWrong": "오답입니다. 정답: {answer}",
   "restExemptRetry": "다시 시도",
+  "restExemptUnavailable": "오늘의 면제 횟수를 모두 사용했습니다. 휴식이 끝날 때까지 기다려 주세요",
 
   "bankGroups": "문제 그룹",
   "bankNewGroup": "새 그룹",
@@ -93,6 +95,9 @@
     "placeholders": {"count": {"type": "int"}}
   },
   "groupDetailAddTooltip": "수동 추가",
+  "groupDetailEditTooltip": "문제 편집",
+  "groupDetailEditTitle": "문제 편집",
+  "groupDetailEditConfirm": "저장",
   "groupDetailSelectTooltip": "다중 선택",
   "groupDetailExitSelectTooltip": "선택 종료",
   "groupDetailDeleteSelectedTooltip": "선택 삭제",

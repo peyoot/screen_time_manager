@@ -334,4 +334,73 @@ void main() {
       expect(m.state.quizInterval, const Duration(hours: 1));
     });
   });
+
+  group('每日豁免次数限制', () {
+    /// 连续答对通过 [rounds] 轮阈值答题（默认配置每轮 30 分钟、1 题）。
+    void passRounds(ScreenTimeMachine m, int rounds) {
+      for (var i = 0; i < rounds; i++) {
+        advance(m, const Duration(minutes: 30));
+        expect(m.state.phase, AppPhase.quiz, reason: '第 ${i + 1} 轮应进入答题');
+        m.answerCurrentQuestion(1); // 正确答案下标固定为 1。
+        expect(m.state.phase, AppPhase.tracking);
+      }
+    }
+
+    test('默认每日 2 次：答对两轮各消耗一次，剩余 0', () {
+      final m = buildMachine();
+      expect(m.remainingExemptions, 2);
+      expect(m.canExempt, isTrue);
+
+      passRounds(m, 2);
+      expect(m.state.exemptionsUsedToday, 2);
+      expect(m.remainingExemptions, 0);
+      expect(m.canExempt, isFalse);
+    });
+
+    test('次数用完后再次达到阈值直接进入强制休息，不再答题', () {
+      final m = buildMachine();
+      passRounds(m, 2);
+
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.state.quiz, isNull);
+    });
+
+    test('次数用完后 endRestEarly 抛出 StateError', () {
+      final m = buildMachine();
+      passRounds(m, 2);
+      advance(m, const Duration(minutes: 30)); // 直接进入休息
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.endRestEarly, throwsStateError);
+      expect(m.state.phase, AppPhase.resting);
+    });
+
+    test('额度为 0 时第一次达到阈值就直接休息', () {
+      final settings = AppSettings.defaults.copyWith(dailyExemptionLimit: 0);
+      final m = buildMachine(settings: settings);
+      expect(m.canExempt, isFalse);
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.state.exemptionsUsedToday, 0);
+    });
+
+    test('跨自然日后豁免次数归零，可再次答题豁免', () {
+      final m = buildMachine();
+      passRounds(m, 2);
+      advance(m, const Duration(minutes: 30)); // 第三次直接休息
+      expect(m.state.phase, AppPhase.resting);
+
+      // 跨入第二天，休息已结束，计数归零。
+      clock = DateTime(2026, 10, 8, 0, 4, 0);
+      m.tick();
+      expect(m.state.exemptionsUsedToday, 0);
+      expect(m.remainingExemptions, 2);
+
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.quiz);
+      m.answerCurrentQuestion(1);
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.exemptionsUsedToday, 1);
+    });
+  });
 }

@@ -6,7 +6,7 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsUsed": "使用済み免除",
+  "homeExemptionsLeft": "残り免除",
   "homeExemptionsCount": "{count} 回",
   "@homeExemptionsCount": {
     "placeholders": {"count": {"type": "int"}}
@@ -25,9 +25,10 @@
   "@reminderContinuous": {
     "placeholders": {"minutes": {"type": "int"}}
   },
-  "reminderFirstFree": "初回リマインダーは無料で続行できます",
-  "reminderQuizToPass": "クイズに答えて免除で続行",
-  "reminderContinueFree": "続行（無料）",
+  "reminderQuizToPass": "正解すると続行できます。本日の残り免除回数：{count} 回",
+  "@reminderQuizToPass": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "reminderContinueQuiz": "続行（クイズ免除）",
   "reminderRestNow": "今すぐ休憩",
 
@@ -59,6 +60,7 @@
   "restExemptRequest": "免除を申請",
   "restExemptWrong": "不正解です。正しい答え：{answer}",
   "restExemptRetry": "もう一度挑戦",
+  "restExemptUnavailable": "本日の免除回数を使い切りました。休憩終了までお待ちください",
 
   "bankGroups": "問題グループ",
   "bankNewGroup": "新規グループ",
@@ -93,6 +95,9 @@
     "placeholders": {"count": {"type": "int"}}
   },
   "groupDetailAddTooltip": "手動追加",
+  "groupDetailEditTooltip": "問題を編集",
+  "groupDetailEditTitle": "問題を編集",
+  "groupDetailEditConfirm": "保存",
   "groupDetailSelectTooltip": "複数選択",
   "groupDetailExitSelectTooltip": "選択終了",
   "groupDetailDeleteSelectedTooltip": "選択を削除",
