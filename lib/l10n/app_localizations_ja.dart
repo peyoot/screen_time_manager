@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -114,6 +115,20 @@ class SJa extends S {
 
   @override
   String get restCountDown => 'カウントダウン';
+
+  @override
+  String get restExemptHint => '1問正解すると休憩を早めに終了できます';
+
+  @override
+  String get restExemptRequest => '免除を申請';
+
+  @override
+  String restExemptWrong(String answer) {
+    return '不正解です。正しい答え：$answer';
+  }
+
+  @override
+  String get restExemptRetry => 'もう一度挑戦';
 
   @override
   String get bankGroups => '問題グループ';
@@ -247,7 +262,8 @@ class SJa extends S {
   String get importHintCsv => 'question,answer,hint\n1+1は？,2,ヒント';
 
   @override
-  String get importHintJson => '&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
+  String get importHintJson =>
+      '&#123;\"groupName\":\"マイバンク\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
 
   @override
   String get importButton => 'インポート';

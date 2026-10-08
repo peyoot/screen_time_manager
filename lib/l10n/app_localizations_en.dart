@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -116,6 +117,21 @@ class SEn extends S {
   String get restCountDown => 'Count down';
 
   @override
+  String get restExemptHint =>
+      'Answer one question correctly to end the break early';
+
+  @override
+  String get restExemptRequest => 'Request exemption';
+
+  @override
+  String restExemptWrong(String answer) {
+    return 'Wrong answer. Correct answer: $answer';
+  }
+
+  @override
+  String get restExemptRetry => 'Try again';
+
+  @override
   String get bankGroups => 'Question Groups';
 
   @override
@@ -201,7 +217,8 @@ class SEn extends S {
   }
 
   @override
-  String get groupDetailEmpty => 'No questions yet. Add one from the top right.';
+  String get groupDetailEmpty =>
+      'No questions yet. Add one from the top right.';
 
   @override
   String groupDetailAnswer(String answer) {
@@ -235,7 +252,8 @@ class SEn extends S {
   String get importNameLabel => 'Group name';
 
   @override
-  String get importNameHint => 'Required for CSV; leave empty for JSON to use groupName';
+  String get importNameHint =>
+      'Required for CSV; leave empty for JSON to use groupName';
 
   @override
   String get importContentCsv => 'CSV content';
@@ -247,7 +265,8 @@ class SEn extends S {
   String get importHintCsv => 'question,answer,hint\nWhat is 1+1?,2,hint';
 
   @override
-  String get importHintJson => '&#123;\"groupName\":\"My bank\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
+  String get importHintJson =>
+      '&#123;\"groupName\":\"My bank\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
 
   @override
   String get importButton => 'Import';

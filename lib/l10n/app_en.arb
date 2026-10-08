@@ -55,6 +55,10 @@
   "restAutoReturn": "Will return automatically after rest",
   "restCountUp": "Count up",
   "restCountDown": "Count down",
+  "restExemptHint": "Answer one question correctly to end the break early",
+  "restExemptRequest": "Request exemption",
+  "restExemptWrong": "Wrong answer. Correct answer: {answer}",
+  "restExemptRetry": "Try again",
 
   "bankGroups": "Question Groups",
   "bankNewGroup": "New Group",

@@ -47,6 +47,12 @@ class ScreenTimeController extends ChangeNotifier {
   /// 累计成功豁免的次数（答对达标回 tracking 时递增）。
   int exemptionCount = 0;
 
+  /// 休息期豁免：当前抽取的题目（休息阶段申请豁免后非空）。
+  BankQuestion? restQuizQuestion;
+
+  /// 休息期豁免：上次作答是否答错（答错后展示正确答案并允许重试）。
+  bool restQuizFailed = false;
+
   ScreenTimeController({
     required this.machine,
     required this.bankService,
@@ -80,11 +86,15 @@ class ScreenTimeController extends ChangeNotifier {
       quizQuestions = const [];
       quizIndex = 0;
       reminderShown = false;
+      restQuizQuestion = null;
+      restQuizFailed = false;
     } else {
-      // resting：重置答题状态。
+      // resting：重置答题与休息期豁免状态。
       quizQuestions = const [];
       quizIndex = 0;
       reminderShown = false;
+      restQuizQuestion = null;
+      restQuizFailed = false;
     }
     notifyListeners();
   }
@@ -122,6 +132,42 @@ class ScreenTimeController extends ChangeNotifier {
     if (phase == AppPhase.tracking) {
       machine.restNow();
     }
+  }
+
+  /// 休息页"申请豁免"：随机抽取一道题供用户作答。
+  void requestRestExemption() {
+    if (machine.state.phase != AppPhase.resting) return;
+    try {
+      restQuizQuestion = bankService.drawQuestions(1).first;
+    } catch (_) {
+      // 题库题量不足时保持无题状态，页面停留在入口按钮。
+      restQuizQuestion = null;
+    }
+    restQuizFailed = false;
+    notifyListeners();
+  }
+
+  /// 提交休息期豁免答案。
+  ///
+  /// 答对返回 true 并提前结束休息（计入豁免次数）；答错返回 false，
+  /// 此时 [restQuizFailed] 置真，UI 展示正确答案并允许重新抽题作答。
+  bool submitRestAnswer(String input) {
+    final question = restQuizQuestion;
+    if (machine.state.phase != AppPhase.resting || question == null) {
+      return false;
+    }
+    final correct = question.matchesAnswer(input);
+    bankService.recordAnswer(question.id, correct: correct);
+    if (correct) {
+      restQuizQuestion = null;
+      restQuizFailed = false;
+      exemptionCount++;
+      machine.endRestEarly(); // 触发阶段变化通知，页面自动切回计时。
+      return true;
+    }
+    restQuizFailed = true;
+    notifyListeners();
+    return false;
   }
 
   /// 对当前题目提交答案。

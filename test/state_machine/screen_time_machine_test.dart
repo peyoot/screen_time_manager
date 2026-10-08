@@ -245,6 +245,22 @@ void main() {
       expect(() => m.answerCurrentQuestion(1), throwsStateError);
       expect(m.giveUpQuiz, throwsStateError);
     });
+
+    test('休息期间可通过 endRestEarly 提前结束休息', () {
+      final m = buildMachine();
+      m.restNow();
+      expect(m.state.phase, AppPhase.resting);
+
+      m.endRestEarly();
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.restEndsAt, isNull);
+      expect(m.state.sinceLastGrant, Duration.zero);
+    });
+
+    test('非休息阶段调用 endRestEarly 抛出 StateError', () {
+      final m = buildMachine();
+      expect(m.endRestEarly, throwsStateError);
+    });
   });
 
   group('题库缺失', () {

@@ -55,6 +55,13 @@
   "restAutoReturn": "休息结束后将自动返回",
   "restCountUp": "正计时",
   "restCountDown": "倒计时",
+  "restExemptHint": "答对一题可提前结束休息",
+  "restExemptRequest": "申请豁免",
+  "restExemptWrong": "回答错误，正确答案：{answer}",
+  "@restExemptWrong": {
+    "placeholders": {"answer": {"type": "String"}}
+  },
+  "restExemptRetry": "再试一次",
 
   "bankGroups": "题库分组",
   "bankNewGroup": "新建分组",

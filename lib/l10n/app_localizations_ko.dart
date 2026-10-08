@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -114,6 +115,20 @@ class SKo extends S {
 
   @override
   String get restCountDown => '카운트다운';
+
+  @override
+  String get restExemptHint => '한 문제를 맞히면 휴식을 일찍 끝낼 수 있습니다';
+
+  @override
+  String get restExemptRequest => '면제 신청';
+
+  @override
+  String restExemptWrong(String answer) {
+    return '오답입니다. 정답: $answer';
+  }
+
+  @override
+  String get restExemptRetry => '다시 시도';
 
   @override
   String get bankGroups => '문제 그룹';
@@ -247,7 +262,8 @@ class SKo extends S {
   String get importHintCsv => 'question,answer,hint\n1+1은?,2,힌트';
 
   @override
-  String get importHintJson => '&#123;\"groupName\":\"내 은행\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
+  String get importHintJson =>
+      '&#123;\"groupName\":\"내 은행\",\"type\":\"input\",\"questions\":[&#123;\"question\":\"...\",\"answer\":\"...\"&#125;]&#125;';
 
   @override
   String get importButton => '가져오기';

@@ -7,6 +7,7 @@ import 'package:screen_time_manager/models/app_settings.dart';
 import 'package:screen_time_manager/models/question.dart';
 import 'package:screen_time_manager/models/question_bank.dart';
 import 'package:screen_time_manager/question_bank/question_bank_service.dart';
+import 'package:screen_time_manager/state_machine/app_phase.dart';
 import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
 import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
 
@@ -106,5 +107,60 @@ void main() {
     controller.localeController.setLocale(null);
     await tester.pumpAndSettle();
     expect(find.text('Screen Time Manager'), findsOneWidget);
+  });
+
+  testWidgets('休息页豁免：答错显示正确答案可重试，答对提前结束休息', (tester) async {
+    final controller = buildController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 切换到中文以便断言文本。
+    controller.localeController.setLocale(const Locale('zh'));
+    await tester.pumpAndSettle();
+
+    // 手动触发休息，进入休息页。
+    await tester.tap(find.text('手动触发休息'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('休息中'), findsOneWidget);
+
+    // 申请豁免：随机抽出一道题。
+    await tester.tap(find.text('申请豁免'));
+    await tester.pump(const Duration(milliseconds: 100));
+    final firstQuestion = controller.restQuizQuestion;
+    expect(firstQuestion, isNotNull);
+
+    // 答错：显示正确答案与"再试一次"。
+    await tester.enterText(find.byType(TextField), '随便写的答案');
+    await tester.ensureVisible(find.text('提交答案'));
+    await tester.tap(find.text('提交答案'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.restQuizFailed, isTrue);
+    expect(find.textContaining('正确答案'), findsOneWidget);
+    expect(find.text('再试一次'), findsOneWidget);
+
+    // 再试一次：重新抽题，回到输入形态。
+    await tester.ensureVisible(find.text('再试一次'));
+    await tester.tap(find.text('再试一次'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.restQuizFailed, isFalse);
+    expect(find.byType(TextField), findsOneWidget);
+
+    // 用控制器里的题目答案作答：提前结束休息，回到计时页。
+    await tester.enterText(
+      find.byType(TextField),
+      controller.restQuizQuestion!.answer,
+    );
+    await tester.ensureVisible(find.text('提交答案'));
+    await tester.tap(find.text('提交答案'));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(controller.phase, AppPhase.tracking);
+    expect(find.text('休息中'), findsNothing);
+    expect(find.text('今日累计亮屏'), findsOneWidget);
+    // 豁免次数 +1。
+    expect(find.text('1 次'), findsOneWidget);
   });
 }

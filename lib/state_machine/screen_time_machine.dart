@@ -169,6 +169,23 @@ class ScreenTimeMachine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 休息期间通过答题豁免提前结束休息。
+  ///
+  /// 仅在 [AppPhase.resting] 阶段允许调用；其他阶段抛出 [StateError]。
+  /// 效果与自然休息结束一致：回到计时阶段并重新累计阈值。
+  /// 是否"答对"由 UI 层判定，状态机只负责阶段流转。
+  void endRestEarly() {
+    if (_state.phase != AppPhase.resting) {
+      throw StateError('当前不在休息阶段，无法豁免休息');
+    }
+    _state = _state.copyWith(
+      phase: AppPhase.tracking,
+      restEndsAt: null,
+      sinceLastGrant: Duration.zero,
+    );
+    notifyListeners();
+  }
+
   // ---------------------------------------------------------------------
   // 内部实现
   // ---------------------------------------------------------------------

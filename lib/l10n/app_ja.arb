@@ -55,6 +55,10 @@
   "restAutoReturn": "休憩終了後に自動で戻ります",
   "restCountUp": "カウントアップ",
   "restCountDown": "カウントダウン",
+  "restExemptHint": "1問正解すると休憩を早めに終了できます",
+  "restExemptRequest": "免除を申請",
+  "restExemptWrong": "不正解です。正しい答え：{answer}",
+  "restExemptRetry": "もう一度挑戦",
 
   "bankGroups": "問題グループ",
   "bankNewGroup": "新規グループ",

@@ -71,19 +71,19 @@ class _RestPageState extends State<RestPage> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surfaceContainerHighest,
+      // 可滚动布局：豁免答题表单展开时内容可能超出小屏高度。
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
               Icon(
                 Icons.hotel_outlined,
-                size: 80,
+                size: 72,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Text(
                 l10n.restTitle,
                 textAlign: TextAlign.center,
@@ -91,7 +91,7 @@ class _RestPageState extends State<RestPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               _StopwatchDisplay(
                 duration: displayDuration,
                 isCountDown: _countDown,
@@ -124,9 +124,15 @@ class _RestPageState extends State<RestPage> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               LinearProgressIndicator(value: progress, minHeight: 8),
-              const Spacer(),
+              const SizedBox(height: 24),
+              // 休息期答题豁免：答对一题可提前结束休息。
+              _RestExemptionSection(
+                key: ValueKey(controller.restQuizQuestion?.id),
+                controller: controller,
+              ),
+              const SizedBox(height: 24),
               Text(
                 l10n.restAutoReturn,
                 textAlign: TextAlign.center,
@@ -169,6 +175,125 @@ class _StopwatchDisplay extends StatelessWidget {
             ? theme.colorScheme.error
             : theme.colorScheme.primary,
       ),
+    );
+  }
+}
+
+/// 休息期答题豁免区域。
+///
+/// 三种形态：
+/// - 未申请：显示说明与"申请豁免"按钮；
+/// - 已抽题：题干 + 输入框 + 提示/提交；
+/// - 答错：显示正确答案与"再试一次"（重新随机抽题）。
+class _RestExemptionSection extends StatefulWidget {
+  final ScreenTimeController controller;
+
+  const _RestExemptionSection({super.key, required this.controller});
+
+  @override
+  State<_RestExemptionSection> createState() => _RestExemptionSectionState();
+}
+
+class _RestExemptionSectionState extends State<_RestExemptionSection> {
+  final TextEditingController _inputController = TextEditingController();
+  bool _hintVisible = false;
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final input = _inputController.text.trim();
+    if (input.isEmpty) return;
+    widget.controller.submitRestAnswer(input);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final question = controller.restQuizQuestion;
+    final theme = Theme.of(context);
+    final l10n = S.of(context);
+
+    // 未申请豁免：入口按钮。
+    if (question == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.restExemptHint,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.tonalIcon(
+            onPressed: controller.requestRestExemption,
+            icon: const Icon(Icons.quiz_outlined),
+            label: Text(l10n.restExemptRequest),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          question.question,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        if (question.hint != null && !controller.restQuizFailed)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _hintVisible = true),
+              icon: const Icon(Icons.lightbulb_outline, size: 18),
+              label: Text(l10n.quizShowHint),
+            ),
+          ),
+        if (_hintVisible && question.hint != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              l10n.quizHint(question.hint!),
+              style: TextStyle(color: theme.colorScheme.tertiary),
+            ),
+          ),
+        if (controller.restQuizFailed) ...[
+          // 答错：展示正确答案，允许重新抽题再答。
+          Text(
+            l10n.restExemptWrong(question.answer),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: controller.requestRestExemption,
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.restExemptRetry),
+          ),
+        ] else ...[
+          const SizedBox(height: 8),
+          TextField(
+            controller: _inputController,
+            decoration: InputDecoration(labelText: l10n.quizYourAnswer),
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 12),
+          FilledButton(onPressed: _submit, child: Text(l10n.quizSubmit)),
+        ],
+      ],
     );
   }
 }

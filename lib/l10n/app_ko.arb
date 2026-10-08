@@ -55,6 +55,10 @@
   "restAutoReturn": "휴식이 끝나면 자동으로 돌아갑니다",
   "restCountUp": "카운트업",
   "restCountDown": "카운트다운",
+  "restExemptHint": "한 문제를 맞히면 휴식을 일찍 끝낼 수 있습니다",
+  "restExemptRequest": "면제 신청",
+  "restExemptWrong": "오답입니다. 정답: {answer}",
+  "restExemptRetry": "다시 시도",
 
   "bankGroups": "문제 그룹",
   "bankNewGroup": "새 그룹",
