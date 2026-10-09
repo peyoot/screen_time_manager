@@ -43,9 +43,12 @@ Future<void> main() async {
   // 题库服务：注入 repo 后从 DB 载入分组与权重。
   final bankService = QuestionBankService(repository: questionRepo);
   await bankService.loadFromDb();
-  // 首次运行题库为空时塞入示例数据，便于用户体验。
+  // 首次运行题库为空时写入默认题库：所有语种加载英文分组，
+  // 中文环境额外追加"文化常识"古诗文飞花令分组。
   if (bankService.groups.isEmpty) {
-    _seedDemoQuestionBank(bankService);
+    final isChinese =
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'zh';
+    _seedDefaultQuestionBank(bankService, includeChinese: isChinese);
     await bankService.flush();
   }
 
@@ -88,52 +91,62 @@ Future<void> main() async {
   runApp(ScreenTimeManagerApp(controller: controller));
 }
 
-/// 首次运行时写入示例题库（与原 [QuestionBankService.demo] 内容一致）。
-void _seedDemoQuestionBank(QuestionBankService service) {
+/// 首次运行时写入默认题库。
+///
+/// 默认题库均为英文分组，便于跨语种使用；用户可自行导入所需题库。
+/// [includeChinese] 为 true 时额外追加中文"文化常识"古诗文飞花令分组。
+void _seedDefaultQuestionBank(
+  QuestionBankService service, {
+  required bool includeChinese,
+}) {
   service.importIntoNewGroup(
-    name: '安全知识',
+    name: 'Missing Piece',
     questions: [
       BankQuestion(
-        question: '发生火灾时，应拨打的火警电话是多少？',
-        answer: '119',
-        hint: '三位数的应急电话',
+        question: 'Better a cruel truth than a comfortable ___.',
+        answer: 'delusion',
+        hint: 'Synonym: illusion, false belief',
       ),
       BankQuestion(
-        question: '红灯亮时，行人应该怎么做？',
-        answer: '停在路口等待绿灯',
-        hint: '遵守交通信号',
-      ),
-      BankQuestion(
-        question: '雷雨天可以在大树下躲雨吗？',
-        answer: '不可以',
-        hint: '高大的树木容易引雷',
+        question: 'A journey of a thousand miles begins with a single ___.',
+        answer: 'step',
+        hint: 'Synonym: pace, stride',
       ),
     ],
   );
   service.importIntoNewGroup(
-    name: '生活常识',
+    name: 'Curious Mind',
     questions: [
       BankQuestion(
-        question: '二十四节气中的第一个节气是什么？',
-        answer: '立春',
-        hint: '春天的开始',
-      ),
-      BankQuestion(question: '人体最大的器官是什么？', answer: '皮肤'),
-      BankQuestion(
-        question: '水的化学式是什么？',
+        question: 'What is the molecular formula of water?',
         answer: 'H2O',
-        hint: '两个氢原子、一个氧原子',
+        hint: 'Two hydrogen atoms and one oxygen atom',
+      ),
+      BankQuestion(
+        question:
+            'What is the speed of light in vacuum, approximately (in km/s)?',
+        answer: '300000',
+        hint: 'About 3 × 10^5 km/s',
       ),
     ],
   );
-  final spare = service.importIntoNewGroup(
-    name: '备用题库',
-    questions: [
-      BankQuestion(question: '圆周率约为多少？（保留两位小数）', answer: '3.14'),
-      BankQuestion(question: '光速约为每秒多少万公里？', answer: '30万'),
-    ],
-  );
-  service.setGroupEnabled(spare.id, false);
+  if (includeChinese) {
+    service.importIntoNewGroup(
+      name: '文化常识',
+      questions: [
+        BankQuestion(
+          question: '人闲桂花落，夜静春山___。',
+          answer: '空',
+          hint: '形容无物、寂静的状态',
+        ),
+        BankQuestion(
+          question: '借问酒家何处有，牧童遥指杏花___。',
+          answer: '村',
+          hint: '人们聚居的所在',
+        ),
+      ],
+    );
+  }
 }
 
 /// 应用根组件。

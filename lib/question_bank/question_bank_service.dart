@@ -352,54 +352,43 @@ class QuestionBankService extends ChangeNotifier {
     _recentIds.remove(questionId);
   }
 
-  /// 创建带示例数据的服务，供 UI 假数据驱动阶段使用。
+  /// 创建带默认数据的服务，供 UI 假数据驱动阶段使用。
+  ///
+  /// 默认题库为纯英文分组（与 [main.dart] 中的 `_seedDefaultQuestionBank`
+  /// 英文部分保持一致），用户可自行导入所需题库。
   factory QuestionBankService.demo() {
     final service = QuestionBankService();
     service.importIntoNewGroup(
-      name: '安全知识',
+      name: 'Missing Piece',
       questions: [
         BankQuestion(
-          question: '发生火灾时，应拨打的火警电话是多少？',
-          answer: '119',
-          hint: '三位数的应急电话',
+          question: 'Better a cruel truth than a comfortable ___.',
+          answer: 'delusion',
+          hint: 'Synonym: illusion, false belief',
         ),
         BankQuestion(
-          question: '红灯亮时，行人应该怎么做？',
-          answer: '停在路口等待绿灯',
-          hint: '遵守交通信号',
-        ),
-        BankQuestion(
-          question: '雷雨天可以在大树下躲雨吗？',
-          answer: '不可以',
-          hint: '高大的树木容易引雷',
+          question: 'A journey of a thousand miles begins with a single ___.',
+          answer: 'step',
+          hint: 'Synonym: pace, stride',
         ),
       ],
     );
     service.importIntoNewGroup(
-      name: '生活常识',
+      name: 'Curious Mind',
       questions: [
         BankQuestion(
-          question: '二十四节气中的第一个节气是什么？',
-          answer: '立春',
-          hint: '春天的开始',
-        ),
-        BankQuestion(question: '人体最大的器官是什么？', answer: '皮肤'),
-        BankQuestion(
-          question: '水的化学式是什么？',
+          question: 'What is the molecular formula of water?',
           answer: 'H2O',
-          hint: '两个氢原子、一个氧原子',
+          hint: 'Two hydrogen atoms and one oxygen atom',
+        ),
+        BankQuestion(
+          question:
+              'What is the speed of light in vacuum, approximately (in km/s)?',
+          answer: '300000',
+          hint: 'About 3 × 10^5 km/s',
         ),
       ],
     );
-    final spare = service.importIntoNewGroup(
-      name: '备用题库',
-      questions: [
-        BankQuestion(question: '圆周率约为多少？（保留两位小数）', answer: '3.14'),
-        BankQuestion(question: '光速约为每秒多少万公里？', answer: '30万'),
-      ],
-    );
-    // 演示"停用"状态的分组：抽题时会跳过它。
-    service.setGroupEnabled(spare.id, false);
     return service;
   }
 }

@@ -76,11 +76,10 @@ void main() {
 
     // 题库分组页正常渲染。
     expect(find.text('Question Groups'), findsOneWidget);
-    expect(find.text('安全知识'), findsOneWidget);
-    expect(find.text('生活常识'), findsOneWidget);
-    expect(find.text('备用题库'), findsOneWidget);
+    expect(find.text('Missing Piece'), findsOneWidget);
+    expect(find.text('Curious Mind'), findsOneWidget);
     expect(find.text('New Group'), findsOneWidget);
-    expect(find.byType(Switch), findsNWidgets(3));
+    expect(find.byType(Switch), findsNWidgets(2));
   });
 
   testWidgets('语言切换后界面文本更新', (tester) async {
