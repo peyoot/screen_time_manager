@@ -10,9 +10,18 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../data/repositories/app_settings_repository.dart';
+import '../../data/repositories/rest_session_repository.dart';
+import '../../data/repositories/screen_session_repository.dart';
+import '../../data/repositories/snooze_record_repository.dart';
+import '../../models/rest_session.dart';
+import '../../models/screen_session.dart';
+import '../../models/snooze_record.dart';
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
 import '../../state_machine/app_phase.dart';
@@ -32,6 +41,25 @@ class ScreenTimeController extends ChangeNotifier {
 
   /// 语言控制器。
   final LocaleController localeController = LocaleController();
+
+  // 可选的持久化后端；为 null 时跳过对应写入（测试/无 DB 阶段）。
+  final AppSettingsRepository? appSettingsRepo;
+  final ScreenSessionRepository? screenSessionRepo;
+  final RestSessionRepository? restSessionRepo;
+  final SnoozeRecordRepository? snoozeRecordRepo;
+  final Uuid _uuid = const Uuid();
+  final DateTime Function() _clock;
+
+  // 会话记录的运行时跟踪状态（内存，结束时刻落库）。
+  DateTime? _screenSessionStart;
+  String? _currentScreenSessionId;
+  int _screenExemptions = 0;
+  int _screenQuizCorrect = 0;
+  int _screenQuizWrong = 0;
+  DateTime? _restStart;
+  Duration? _restPlanned;
+  bool _restEndedEarly = false;
+  AppPhase _lastPhase = AppPhase.tracking;
 
   Timer? _timer;
 
@@ -60,10 +88,18 @@ class ScreenTimeController extends ChangeNotifier {
     required this.machine,
     required this.bankService,
     this.questionsPerQuiz = 2,
+    this.appSettingsRepo,
+    this.screenSessionRepo,
+    this.restSessionRepo,
+    this.snoozeRecordRepo,
+    DateTime Function()? clock,
     bool autoStart = true,
-  }) {
+  }) : _clock = clock ?? DateTime.now {
     machine.addListener(_onMachinePhaseChange);
-    // 假数据驱动：默认屏幕点亮，真实平台由原生层上报亮灭屏。
+    // 屏幕会话起点：真实平台由原生层上报亮灭屏时再切分。
+    _screenSessionStart = _clock();
+    _currentScreenSessionId = _uuid.v4();
+    _lastPhase = machine.state.phase;
     machine.setScreenOn(true);
     if (autoStart) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) => machine.tick());
@@ -73,8 +109,21 @@ class ScreenTimeController extends ChangeNotifier {
   AppPhase get phase => machine.state.phase;
 
   /// 状态机阶段变化时的回调：进入 quiz 时抽题，离开时重置答题 UI 状态。
+  /// 同时记录休息会话（rest_session）的起止。
   void _onMachinePhaseChange() {
     final phase = machine.state.phase;
+    // 离开 resting 阶段：落库一条休息会话。
+    if (_lastPhase == AppPhase.resting && phase != AppPhase.resting) {
+      _flushRestSession(naturalCompletion: !_restEndedEarly);
+      _restEndedEarly = false;
+    }
+    // 进入 resting 阶段：记录起点与计划时长。
+    if (phase == AppPhase.resting && _lastPhase != AppPhase.resting) {
+      _restStart = _clock();
+      _restPlanned = machine.settings.restDuration;
+    }
+    _lastPhase = phase;
+
     if (phase == AppPhase.quiz) {
       if (quizQuestions.isEmpty) {
         _drawQuizQuestions();
@@ -97,6 +146,31 @@ class ScreenTimeController extends ChangeNotifier {
       restQuizFailed = false;
     }
     notifyListeners();
+  }
+
+  /// 把已结束的休息会话写入 DB（仅 [restSessionRepo] 存在时）。
+  void _flushRestSession({required bool naturalCompletion}) {
+    final start = _restStart;
+    final planned = _restPlanned;
+    final repo = restSessionRepo;
+    if (start == null || planned == null || repo == null) {
+      _restStart = null;
+      _restPlanned = null;
+      return;
+    }
+    final end = _clock();
+    final actual = end.difference(start);
+    final session = RestSession(
+      id: _uuid.v4(),
+      startedAt: start,
+      endedAt: end,
+      plannedDuration: planned,
+      actualDuration: actual,
+      completed: naturalCompletion,
+    );
+    _restStart = null;
+    _restPlanned = null;
+    repo.insert(session).catchError((_) {});
   }
 
   /// 从启用分组中抽取 [questionsPerQuiz] 道输入式题目。
@@ -141,6 +215,45 @@ class ScreenTimeController extends ChangeNotifier {
         restDuration: Duration(minutes: restMinutes),
       ),
     );
+    appSettingsRepo?.upsert(machine.settings).catchError((_) {});
+  }
+
+  /// 平台层上报亮灭屏。结束当前亮屏会话并落库（灭屏时），
+  /// 亮屏时开启新会话。无 [screenSessionRepo] 时仅转发给状态机。
+  void reportScreenOn(bool isOn) {
+    if (isOn) {
+      machine.setScreenOn(true);
+      _screenSessionStart = _clock();
+      _currentScreenSessionId = _uuid.v4();
+      _screenExemptions = 0;
+      _screenQuizCorrect = 0;
+      _screenQuizWrong = 0;
+    } else {
+      _flushScreenSession();
+      machine.setScreenOn(false);
+    }
+  }
+
+  /// 把当前亮屏会话写入 DB（灭屏或应用退出时）。
+  void _flushScreenSession() {
+    final start = _screenSessionStart;
+    final repo = screenSessionRepo;
+    if (start == null || repo == null) {
+      _screenSessionStart = null;
+      return;
+    }
+    final end = _clock();
+    final session = ScreenSession(
+      id: _uuid.v4(),
+      startedAt: start,
+      endedAt: end,
+      exemptionCount: _screenExemptions,
+      quizCorrectCount: _screenQuizCorrect,
+      quizWrongCount: _screenQuizWrong,
+    );
+    _screenSessionStart = null;
+    _currentScreenSessionId = null;
+    repo.insert(session).catchError((_) {});
   }
 
   /// 休息页"申请豁免"：随机抽取一道题供用户作答。
@@ -171,12 +284,28 @@ class ScreenTimeController extends ChangeNotifier {
     }
     final correct = question.matchesAnswer(input);
     bankService.recordAnswer(question.id, correct: correct);
+    final round = machine.state.quizRound;
     if (correct) {
+      _recordSnooze(
+        questionIds: [question.id],
+        passed: true,
+        correctCount: 1,
+        wrongCount: 0,
+        round: round,
+      );
       restQuizQuestion = null;
       restQuizFailed = false;
+      _restEndedEarly = true;
       machine.endRestEarly(); // 消耗额度并触发阶段变化，页面自动切回计时。
       return true;
     }
+    _recordSnooze(
+      questionIds: [question.id],
+      passed: false,
+      correctCount: 0,
+      wrongCount: 1,
+      round: round,
+    );
     restQuizFailed = true;
     notifyListeners();
     return false;
@@ -202,19 +331,62 @@ class ScreenTimeController extends ChangeNotifier {
     // 答对选正确下标，答错选第一个干扰项。
     final optionIndex =
         correct ? current.correctIndex : (current.correctIndex == 0 ? 1 : 0);
+    // 调用前快照：本轮抽到的题目 id 与已答对错统计，便于结束后落库。
+    final drawnIds = quizQuestions.map((q) => q.id).toList();
+    final round = machine.state.quizRound;
+    final correctSoFar = session.correctCount + (correct ? 1 : 0);
+    final wrongSoFar = session.answeredCount - session.correctCount +
+        (correct ? 0 : 1);
     machine.answerCurrentQuestion(optionIndex);
 
-    // 状态机通知会触发 _onMachinePhaseChange；若仍在 quiz，推进到下一题。
-    if (machine.state.phase == AppPhase.quiz) {
+    // 离开 quiz 阶段：本轮答题结束，写入豁免明细。
+    if (machine.state.phase != AppPhase.quiz) {
+      _recordSnooze(
+        questionIds: drawnIds,
+        passed: machine.state.phase == AppPhase.tracking,
+        correctCount: correctSoFar,
+        wrongCount: wrongSoFar,
+        round: round,
+      );
+      if (machine.state.phase == AppPhase.tracking) {
+        _screenExemptions++;
+      }
+      _screenQuizCorrect += correctSoFar;
+      _screenQuizWrong += wrongSoFar;
+    } else if (machine.state.phase == AppPhase.quiz) {
       quizIndex++;
       notifyListeners();
     }
+  }
+
+  /// 写入一条豁免明细（snooze_record）。仅 [snoozeRecordRepo] 存在时落库。
+  void _recordSnooze({
+    required List<String> questionIds,
+    required bool passed,
+    required int correctCount,
+    required int wrongCount,
+    required int round,
+  }) {
+    final repo = snoozeRecordRepo;
+    if (repo == null) return;
+    final record = SnoozeRecord(
+      id: _uuid.v4(),
+      screenSessionId: _currentScreenSessionId,
+      quizRound: round,
+      questionIdsJson: jsonEncode(questionIds),
+      passed: passed,
+      correctCount: correctCount,
+      wrongCount: wrongCount,
+    );
+    repo.insert(record).catchError((_) {});
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     machine.removeListener(_onMachinePhaseChange);
+    // 应用退出时落库当前亮屏会话（若仍进行中）。
+    _flushScreenSession();
     super.dispose();
   }
 }

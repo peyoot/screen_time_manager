@@ -1,22 +1,78 @@
 /// 题库内存服务：分组管理 + 加权随机抽题。
 ///
-/// 当前阶段全部数据保存在内存中（假数据驱动），接入持久化时只需替换
-/// 该类内部实现，UI 与状态机不受影响。抽题结果后续将供答题豁免页使用。
+/// 采用 cache-aside 模式：内存缓存提供同步读，写操作先改内存再
+/// write-through 到可选的 [QuestionRepository]；无 repo 注入时（测试/demo）
+/// 行为退化为纯内存。持久化写入异步执行，调用方可通过 [flush] 等待落库。
 library;
 
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/repositories/question_repository.dart';
 import 'bank_question.dart';
 import 'question_group.dart';
 
 /// 题库服务（ChangeNotifier），分组增删改后通知 UI 刷新。
 class QuestionBankService extends ChangeNotifier {
   /// 最近抽过不重复的记忆容量：抽题时会尽量避开最近抽过的题。
-  QuestionBankService({this.recentMemorySize = 10, this.maxWeight = 8})
-      : assert(recentMemorySize >= 0, 'recentMemorySize 不能为负'),
+  QuestionBankService({
+    this.recentMemorySize = 10,
+    this.maxWeight = 8,
+    this._repository,
+  })  : assert(recentMemorySize >= 0, 'recentMemorySize 不能为负'),
         assert(maxWeight >= 1, 'maxWeight 至少为 1');
+
+  /// 可选的持久化后端；为 `null` 时纯内存。
+  final QuestionRepository? _repository;
+
+  /// 串行的写入门：每次写入等待上一次完成后再执行，
+  /// 保证同一题目的 insert→update 顺序不被并发打乱。
+  Future<void> _lastWrite = Future<void>.value();
+
+  /// 从 DB 载入全部分组与题目，并按累计答错次数初始化内存权重。
+  ///
+  /// 供启动时调用；调用前应清空内存状态（首次构造时默认为空）。
+  /// 无 [repository] 时为空操作。
+  Future<void> loadFromDb() async {
+    final repo = _repository;
+    if (repo == null) return;
+    final groups = await repo.loadAll();
+    final counts = await repo.loadAllCounts();
+    _groups
+      ..clear()
+      ..addAll(groups);
+    _weights.clear();
+    for (final entry in counts.entries) {
+      final w = _weightFromWrongCount(entry.value.wrong);
+      if (w > 1) _weights[entry.key] = w;
+    }
+    notifyListeners();
+  }
+
+  /// 等待全部挂起的 DB 写入完成（测试用）。
+  Future<void> flush() => _lastWrite;
+
+  /// 把一次异步写入串入写入门，吞掉异常（内存已是最新值）。
+  void _persist(Future<void> Function() op) {
+    if (_repository == null) return;
+    _lastWrite = _lastWrite.then((_) => op()).catchError((_) {});
+  }
+
+  /// 由累计答错次数推导初始权重：每次答错翻倍，封顶 [maxWeight]。
+  int _weightFromWrongCount(int wrongCount) {
+    if (wrongCount <= 0) return 1;
+    final shifts = min(wrongCount, _log2(maxWeight));
+    return min(1 << shifts, maxWeight);
+  }
+
+  static int _log2(int n) {
+    var k = 0;
+    while ((1 << k) < n) {
+      k++;
+    }
+    return k;
+  }
 
   /// 最近抽过不重复的记忆容量。
   final int recentMemorySize;
@@ -66,6 +122,7 @@ class QuestionBankService extends ChangeNotifier {
       questions: const [],
     );
     _groups.add(group);
+    _persist(() => _repository!.insertGroup(group));
     notifyListeners();
     return group;
   }
@@ -82,18 +139,27 @@ class QuestionBankService extends ChangeNotifier {
       questions: questions,
     );
     _groups.add(group);
+    _persist(() => _repository!.insertGroup(group));
     notifyListeners();
     return group;
   }
 
   /// 重命名分组。
   void renameGroup(String groupId, String name) {
-    _mutateGroup(groupId, (group) => group.copyWith(name: name));
+    _mutateGroup(groupId, (group) {
+      final updated = group.copyWith(name: name);
+      _persist(() => _repository!.updateGroup(updated));
+      return updated;
+    });
   }
 
   /// 切换分组启用状态。
   void setGroupEnabled(String groupId, bool enabled) {
-    _mutateGroup(groupId, (group) => group.copyWith(enabled: enabled));
+    _mutateGroup(groupId, (group) {
+      final updated = group.copyWith(enabled: enabled);
+      _persist(() => _repository!.updateGroup(updated));
+      return updated;
+    });
   }
 
   /// 删除分组，同时清理其题目的权重与最近抽题记录。
@@ -104,6 +170,7 @@ class QuestionBankService extends ChangeNotifier {
       _forgetQuestion(question.id);
     }
     _groups.removeAt(index);
+    _persist(() => _repository!.softDeleteGroup(groupId));
     notifyListeners();
   }
 
@@ -112,7 +179,12 @@ class QuestionBankService extends ChangeNotifier {
     if (questions.isEmpty) return;
     _mutateGroup(
       groupId,
-      (group) => group.copyWith(questions: [...group.questions, ...questions]),
+      (group) {
+        final updated =
+            group.copyWith(questions: [...group.questions, ...questions]);
+        _persist(() => _repository!.insertQuestions(groupId, questions));
+        return updated;
+      },
     );
   }
 
@@ -131,6 +203,7 @@ class QuestionBankService extends ChangeNotifier {
             group.questions.where((q) => !ids.contains(q.id)).toList(),
       );
     });
+    _persist(() => _repository!.softDeleteQuestions(ids));
   }
 
   /// 编辑分组内指定 id 的题目（题干/答案/提示）。
@@ -153,6 +226,12 @@ class QuestionBankService extends ChangeNotifier {
     _mutateGroup(groupId, (group) {
       final exists = group.questions.any((q) => q.id == questionId);
       if (!exists) return group;
+      _persist(() => _repository!.updateQuestion(
+            questionId,
+            question: trimmedQuestion,
+            answer: trimmedAnswer,
+            hint: trimmedHint,
+          ));
       return group.copyWith(
         questions: [
           for (final q in group.questions)
@@ -246,9 +325,10 @@ class QuestionBankService extends ChangeNotifier {
   void recordAnswer(String questionId, {required bool correct}) {
     if (correct) {
       _weights.remove(questionId);
-      return;
+    } else {
+      _weights[questionId] = min(weightOf(questionId) * 2, maxWeight);
     }
-    _weights[questionId] = min(weightOf(questionId) * 2, maxWeight);
+    _persist(() => _repository!.bumpCount(questionId, correct: correct));
   }
 
   // ------------------------------------------------------------------
