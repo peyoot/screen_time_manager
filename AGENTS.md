@@ -54,6 +54,10 @@
 - **状态机保持纯净**：`ScreenTimeMachine` 不直接碰 DB；会话记录在 `ScreenTimeController` 的阶段切换钩子（`_onMachinePhaseChange`）与 `submitAnswer`/`submitRestAnswer` 中落库。
 - 时间戳统一存 ISO-8601 TEXT（UTC）；时长存 INTEGER 秒；UUID 存 TEXT。
 - 会话表只增不改，结束时刻一次性 insert 完整行。
+- **平台分流（重要）**：`database.dart` 用条件导入选择实现，任何 Web 可达的代码**禁止 import `dart:io`**（`Platform` 在 Web 上抛 `Unsupported operation`）：
+  - 原生 → `db_platform_io.dart`：桌面用 `sqflite_common_ffi`，移动端用 sqflite 默认实现，路径走 `path_provider`；
+  - Web → `db_platform_web.dart`：用 `sqflite_common_ffi_web`（SQLite WASM + Shared Worker，数据持久化在 OPFS），路径只是虚拟文件名。
+  - 升级/重新安装 `sqflite_common_ffi_web` 后必须执行 `dart run sqflite_common_ffi_web:setup`，把 `web/sqflite_sw.js` 与 `web/sqlite3.wasm` 放到 `web/`（这两个文件是运行时必需的静态资源）。
 
 ### 云端数据库 (PostgreSQL)
 表结构与本地一一对应，增加 `user_id` 和 `device_id` 外键。

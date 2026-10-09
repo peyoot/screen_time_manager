@@ -74,26 +74,36 @@ class _TimingView extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 32),
-            _TimeCard(state: state),
-            const SizedBox(height: 24),
-            _StatRow(
-              state: state,
-              remainingExemptions: controller.remainingExemptions,
+      body: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            // 内容不足一屏时按钮仍贴底；超出时可滚动，避免短视口溢出。
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight - 48,
             ),
-            const Spacer(),
-            FilledButton.icon(
-              onPressed: controller.manualRest,
-              icon: const Icon(Icons.bedtime_outlined),
-              label: Text(l10n.homeManualRest),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 32),
+                  _TimeCard(state: state),
+                  const SizedBox(height: 24),
+                  _StatRow(
+                    state: state,
+                    remainingExemptions: controller.remainingExemptions,
+                  ),
+                  const Spacer(),
+                  FilledButton.icon(
+                    onPressed: controller.manualRest,
+                    icon: const Icon(Icons.bedtime_outlined),
+                    label: Text(l10n.homeManualRest),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );

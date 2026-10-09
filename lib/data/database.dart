@@ -1,45 +1,30 @@
 /// 数据库连接管理：打开、建表、版本迁移。
 ///
-/// - 移动端（Android/iOS/HarmonyOS）使用 `sqflite` 默认实现，
-///   DB 文件位于应用文档目录 `screen_time_manager.db`；
-/// - 桌面端（Linux）与单元测试通过 `sqflite_common_ffi` 初始化，
-///   测试中可注入 in-memory DB 路径。
+/// 平台差异通过条件导入隔离：
+/// - 原生（`dart:io` 可用）→ [db_platform_io.dart]：桌面用 `sqflite_common_ffi`，
+///   移动端用 sqflite 默认实现，DB 文件在应用文档目录；
+/// - Web（`dart.library.js_interop` 可用）→ [db_platform_web.dart]：
+///   用 `sqflite_common_ffi_web`（SQLite WASM + Shared Worker）。
+///
+/// 测试通过 [openAppDatabase] 的 `dbPath` 参数注入临时文件 DB。
 library;
 
-import 'dart:io' show Platform;
+import 'package:sqflite/sqflite.dart';
 
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-
+import 'db_platform_io.dart'
+    if (dart.library.js_interop) 'db_platform_web.dart' as platform;
 import 'schema.dart';
 
 /// 数据库文件名。
 const String kDbFileName = 'screen_time_manager.db';
 
-/// 全局标记：是否已为桌面/测试初始化 ffi。
-bool _ffiInitialized = false;
-
-/// 确保桌面平台使用 ffi 实现。
-///
-/// 在 Linux/macOS/Windows 桌面运行时必须调用一次；
-/// 移动端走 sqflite 默认实现，无需调用。测试中也可手动调用以启用 in-memory DB。
-void ensureFfiInitialized() {
-  if (_ffiInitialized) return;
-  if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
-  _ffiInitialized = true;
-}
-
 /// 打开（或创建）应用数据库。
 ///
-/// [dbPath] 用于测试注入 in-memory 路径（`":memory:"`）；
-/// 生产环境留空，将自动定位应用文档目录。
+/// [dbPath] 用于测试注入自定义路径；生产环境留空，按平台自动定位
+/// （原生：应用文档目录；Web：OPFS 中的虚拟文件名）。
 Future<Database> openAppDatabase({String? dbPath}) async {
-  ensureFfiInitialized();
-  final path = dbPath ?? await _resolveDbPath();
+  await platform.initDatabaseFactory();
+  final path = dbPath ?? await platform.resolveDatabasePath(kDbFileName);
   return openDatabase(
     path,
     version: kSchemaVersion,
@@ -51,10 +36,4 @@ Future<Database> openAppDatabase({String? dbPath}) async {
       }
     },
   );
-}
-
-/// 解析生产环境的 DB 文件路径（应用文档目录 + 文件名）。
-Future<String> _resolveDbPath() async {
-  final dir = await getApplicationDocumentsDirectory();
-  return p.join(dir.path, kDbFileName);
 }
