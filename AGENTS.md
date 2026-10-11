@@ -22,10 +22,10 @@
 ## Architecture
 - **共享层 (`lib/`)**: 包含 `state_machine/`, `question_bank/`, `ui/`, `data/`, `models/`, `l10n/`, `platform_channel/` 等模块。
 - **平台层**: 
-  - `android/`: Kotlin实现，负责前台服务、悬浮窗。
-  - `ios/`: Swift实现，负责DeviceActivityMonitor。
+  - `android/`: Kotlin实现，负责前台服务（保活+常驻通知）、亮灭屏广播、全屏 intent/悬浮窗拦截、FlutterEngine 缓存保活。
+  - `ios/`: Swift实现，负责DeviceActivityMonitor（Family Controls）。
   - `ohos/`: ArkTS实现，负责长时任务、通知刷新。
-- **通信**: 所有平台能力通过 `MethodChannel` 暴露，命名空间 `com.screen_time_manager/platform`。
+- **通信**: 平台能力统一走通道，命名空间 `com.screen_time_manager/platform`：MethodChannel 用于服务控制/权限/干预指令，EventChannel 用于原生→Dart 的亮灭屏事件流。
 
 ## Data Layer
 
@@ -101,6 +101,49 @@
 - 测试用 `sqflite_common_ffi`，每个用例通过 `openTestDb()`（`test/data/_helpers.dart`）打开**唯一临时文件 DB** 做隔离——不要用 `:memory:`，ffi 下它会被复用导致跨用例数据残留。
 - `QuestionBankService` 的写操作是异步串行的；测试断言 DB 前必须 `await service.flush()`。
 
+## Android 本地端实现路线（当前优先）
+
+**本地闭环优先**：亮屏计时、到点拦截、答题豁免、休息倒计时全部在端上完成，不依赖网络。后端（同步、家长控制）在本地端真机跑通后再接，不阻塞主流程。
+
+设计原则：
+- 状态机 / 题库 / UI 保持在 Flutter 共享层；原生层只做三件事：事件采集（亮灭屏）、进程保活（前台服务）、强制展示（全屏 intent / 悬浮窗）。
+- 通道层可注入：桌面 / Web / 测试环境退化为现有的 Timer 驱动，现有单元测试不回归。
+- 干预主路径复用 Flutter 现有 reminder / quiz / rest 页面（HomePage 已按 phase 自动切换），原生只负责"把用户拉到页面前"。
+
+### 第 1 步：平台通道层与工程准备
+- applicationId / Kotlin 包名从 `com.example.screen_time_manager` 改为 `com.screen_time_manager`。
+- 新建 `lib/platform_channel/`，通道名沿用 `com.screen_time_manager/platform`：
+  - EventChannel `screen_events`：原生亮屏 / 灭屏事件流 → `ScreenTimeController.reportScreenOn(bool)`（接口已存在）。
+  - MethodChannel `monitor`：`startMonitoring` / `stopMonitoring` / `isMonitoring`，以及权限状态查询与申请页跳转。
+  - MethodChannel `intervention`：Dart 阶段变为 quiz / resting 时通知原生发起干预；原生回传"用户已到达前台"。
+- 通道包装成可注入的抽象（如 `ScreenEventSource`），`main.dart` 仅在 Android 接线；其他平台维持 Timer 驱动。
+
+### 第 2 步：前台服务与亮灭屏监听（✅ 已实现）
+- `ScreenMonitorService`（`android/.../ScreenMonitorService.kt`）：前台服务保活 + 通知渠道（`screen_monitor`，IMPORTANCE_LOW）+ 常驻通知；`START_STICKY` 被系统回收后自动重建；通知文案目前为英文硬编码，后续由 Dart 经通道更新。
+- 服务内**动态注册** `ACTION_SCREEN_ON` / `ACTION_SCREEN_OFF` / `ACTION_USER_PRESENT` 接收器（API 33+ 注册需带 `RECEIVER_NOT_EXPORTED`），事件经 `ScreenEventBus` → EventChannel 推给 Dart；服务启动与事件订阅建立时各同步一次当前屏幕状态（去重在状态机侧）。
+- **缓存引擎接线（关键）**：`ScreenMonitorApp`（Application）在进程启动时预创建 `FlutterEngine` 并注册全部通道、执行默认 Dart 入口，然后以固定 ID `screen_monitor_engine` 放入 `FlutterEngineCache`；`MainActivity` 只覆写 `getCachedEngineId()` 复用该引擎（使用缓存引擎时 Activity 不会回调 `configureFlutterEngine`，通道必须在 Application 注册）。Activity 销毁/退后台后 Dart isolate 与每秒 tick 继续运行。
+- `monitor` 通道 start/stop 已接到真实服务；`isMonitoring` 以 `ScreenMonitorService.running` 为准。MainActivity 在 Android 13+ 首启时用经典 `requestPermissions` 申请 `POST_NOTIFICATIONS`（注意：当前 Flutter 版 `FlutterActivity` 不继承 ComponentActivity，不能用 `registerForActivityResult`）。
+- Manifest 声明：`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_SPECIAL_USE`（API 34+，服务标签带 `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` 说明）、`POST_NOTIFICATIONS`（API 33+）、`RECEIVE_BOOT_COMPLETED`（第 4 步用）、`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`。
+
+### 第 3 步：到点全屏干预
+- Dart 进入 quiz / resting → `intervention` 通道 → 原生发高优先级通知并以 `setFullScreenIntent` 拉起 MainActivity（锁屏状态下也可展示），Flutter 侧按当前 phase 直接呈现提醒 / 答题 / 休息页。
+- 兜底路径：`SYSTEM_ALERT_WINDOW`（`TYPE_APPLICATION_OVERLAY`）悬浮层，覆盖无法拉起 Activity 的场景（权限被拒、部分国产 ROM）。
+- 处理冷启动从通知进入：引擎启动先恢复 DB 中的设置与题库，再按状态机当前 phase 路由；首个版本可接受被杀后重置为 tracking（已完成的 session 记录已落库，不丢数据）。
+
+### 第 4 步：权限引导与开机自启
+- 首启引导（设置页提供入口）：通知权限、悬浮窗权限（`ACTION_MANAGE_OVERLAY_PERMISSION`）、电池优化白名单（`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`）、全屏通知授权（Android 14 对应设置页）、国产 ROM 自启动页跳转。
+- `BOOT_COMPLETED` 接收器开机后自动启动监控服务（前提：用户已启动过 App 并完成授权）。
+
+### 第 5 步：真机验收与健壮性
+- 验收清单：灭屏不计时长 / 亮屏重新累计；阈值到点在前台、后台、锁屏三种状态下都能拦截；答题豁免与休息倒计时流程完整；通知常驻与文案更新；重启自启。
+- 进程被杀恢复：后续把阈值进度 / phase 做轻量持久化（状态快照存 DB 或 prefs），重启后对账；第一版先保证已完成会话记录不丢。
+- 关注国产 ROM 后台存活率；若 FlutterEngine 保活方案不达标，再评估计时核心下沉 Kotlin（原生记录亮屏累计时长，Dart 仅在交互时启动对账）。
+
+### 本地端之后（顺序待定）
+1. 本地统计查询与按天聚合页（数据层实现顺序第 2 步）。
+2. iOS（Family Controls / DeviceActivity）与 HarmonyOS（长时任务）平台层。
+3. 同步引擎 + Supabase、家长控制（纯后端能力，不阻塞本地端）。
+
 ## Backend
 
 ### 架构
@@ -131,6 +174,12 @@
 - 平台插件需在对应真机或模拟器上手动验证。
 
 ## Security & Constraints
+- **Android 关键约束**:
+  - `ACTION_SCREEN_ON` / `ACTION_SCREEN_OFF` 只能在运行时动态注册（放在前台服务里），manifest 静态注册不生效。
+  - Android 13+ 需运行时申请 `POST_NOTIFICATIONS`；Android 14+ 前台服务必须声明 `foregroundServiceType`，本应用归为 `specialUse`（上架需说明用途）。
+  - Android 14+ `USE_FULL_SCREEN_INTENT` 默认仅授予通话 / 闹钟类应用，需引导用户手动授权，必须同时准备悬浮窗兜底路径。
+  - `TYPE_APPLICATION_OVERLAY` 悬浮窗需要 `SYSTEM_ALERT_WINDOW`（`Settings.canDrawOverlays`）。
+  - 国产 ROM（MIUI / EMUI / ColorOS / OriginOS 等）需引导"自启动 + 电池不优化"才能稳定后台保活。
 - **重要**: iOS端无法实现全局亮屏监听，必须使用Screen Time API监控指定App。
 - **重要**: HarmonyOS端无法获取系统悬浮窗权限，通知刷新依赖长时任务。
 - 不要修改 `pubspec.yaml` 中已锁定的核心依赖版本。
@@ -141,8 +190,14 @@
 - **共享层**：已实现数据模型、核心状态机（亮屏计时→豁免答题→全屏休息，含每日豁免额度上限与自然完成重置）、题库模块（分组 CRUD + 加权抽题 + 编辑）、核心 UI 页面（主页计时、提醒、答题、休息秒表）。
 - **国际化**：支持中/英/日/韩，跟随系统语言，主页可切换；扩展只需在 `lib/l10n/` 新建 `app_xx.arb` 并 `flutter gen-l10n`。
 - **本地数据层（SQLite）**：已实现建表 + CRUD + 接线（`lib/data/`）；`app_settings` 启动加载、`question_group`/`question` cache-aside 持久化、`screen_session`/`rest_session`/`snooze_record` 在控制器阶段切换时落库。`sync_queue` 仅建表 + 入队。
-- **测试**：144 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录）。
-- **下一步**：
-  1. 本地统计查询（按天聚合，数据层实现顺序第 2 步）。
-  2. 同步引擎接 Supabase（第 3 步）。
-  3. 平台层：Android 前台服务/悬浮窗、iOS Screen Time API、HarmonyOS 长时任务。
+- **默认题库**：纯英文，不做多语种翻译（用户自行导入所需题库）——`Missing Piece`（谚语填空）、`Curious Mind`（科普问答）；中文系统环境额外加载"文化常识"古诗文飞花令分组。
+- **测试**：148 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线）。
+- **Android 第 1 步已完成**：包名/applicationId 已改为 `com.screen_time_manager`；`lib/platform_channel/` 通道层就绪（screen_events / monitor / intervention，条件导入保证 Web 不引入 `dart:io`）；`ScreenTimeController` 支持注入亮灭屏事件流与干预桥，未注入时退化为 Timer 驱动；Kotlin 侧通道（含 `ScreenEventBus`、权限状态查询与设置页跳转）已注册；`flutter build apk --debug` 与 `flutter build web` 均通过。
+- **Android 第 2 步已完成**：`ScreenMonitorApp` 预创建并缓存 FlutterEngine（ID `screen_monitor_engine`），MainActivity 复用之；`ScreenMonitorService` 前台服务（specialUse + 常驻通知）内动态注册亮灭屏/解锁广播，事件经 EventChannel 驱动状态机，后台/灭屏期间 Dart 持续 tick；POST_NOTIFICATIONS 首启申请；合并后 Manifest 已核验。
+- **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
+  1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。
+  2. ✅ 前台服务 + 亮灭屏广播 + FlutterEngine 缓存保活。
+  3. ⏳ 到点全屏干预（full-screen intent 主路径 + 悬浮窗兜底）。
+  4. 权限引导与开机自启。
+  5. 真机验收与被杀恢复。
+- **后置**：本地统计聚合页、iOS / HarmonyOS 平台层、Supabase 同步引擎与家长控制（均不阻塞本地闭环）。

@@ -22,6 +22,7 @@ import '../../data/repositories/snooze_record_repository.dart';
 import '../../models/rest_session.dart';
 import '../../models/screen_session.dart';
 import '../../models/snooze_record.dart';
+import '../../platform_channel/platform_channels.dart';
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
 import '../../state_machine/app_phase.dart';
@@ -47,6 +48,14 @@ class ScreenTimeController extends ChangeNotifier {
   final ScreenSessionRepository? screenSessionRepo;
   final RestSessionRepository? restSessionRepo;
   final SnoozeRecordRepository? snoozeRecordRepo;
+
+  /// 可选的到点干预桥：阶段变为 quiz/resting 时通知原生把界面拉到前台。
+  /// 为 null（桌面/Web/测试）时不产生任何平台调用。
+  final InterventionBridge? interventionBridge;
+
+  /// 平台亮灭屏事件订阅（Android 前台服务经 EventChannel 推送）。
+  StreamSubscription<bool>? _screenEventsSub;
+
   final Uuid _uuid = const Uuid();
   final DateTime Function() _clock;
 
@@ -92,6 +101,8 @@ class ScreenTimeController extends ChangeNotifier {
     this.screenSessionRepo,
     this.restSessionRepo,
     this.snoozeRecordRepo,
+    this.interventionBridge,
+    Stream<bool>? screenOnEvents,
     DateTime Function()? clock,
     bool autoStart = true,
   }) : _clock = clock ?? DateTime.now {
@@ -101,6 +112,9 @@ class ScreenTimeController extends ChangeNotifier {
     _currentScreenSessionId = _uuid.v4();
     _lastPhase = machine.state.phase;
     machine.setScreenOn(true);
+    // Android：订阅原生亮灭屏事件；灭屏期间状态机不累计亮屏时长。
+    _screenEventsSub =
+        screenOnEvents?.listen((isOn) => reportScreenOn(isOn));
     if (autoStart) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) => machine.tick());
     }
@@ -112,17 +126,34 @@ class ScreenTimeController extends ChangeNotifier {
   /// 同时记录休息会话（rest_session）的起止。
   void _onMachinePhaseChange() {
     final phase = machine.state.phase;
+    final previousPhase = _lastPhase;
     // 离开 resting 阶段：落库一条休息会话。
-    if (_lastPhase == AppPhase.resting && phase != AppPhase.resting) {
+    if (previousPhase == AppPhase.resting && phase != AppPhase.resting) {
       _flushRestSession(naturalCompletion: !_restEndedEarly);
       _restEndedEarly = false;
     }
     // 进入 resting 阶段：记录起点与计划时长。
-    if (phase == AppPhase.resting && _lastPhase != AppPhase.resting) {
+    if (phase == AppPhase.resting && previousPhase != AppPhase.resting) {
       _restStart = _clock();
       _restPlanned = machine.settings.restDuration;
     }
     _lastPhase = phase;
+
+    // 到点干预：进入答题/休息时请求原生把界面拉到前台；
+    // 从这两个阶段回到计时时撤销干预。原生侧自行判断 App 是否已在前台。
+    final bridge = interventionBridge;
+    if (bridge != null) {
+      if (phase == AppPhase.quiz && previousPhase != AppPhase.quiz) {
+        unawaited(bridge.request(InterventionPhase.quiz));
+      } else if (phase == AppPhase.resting &&
+          previousPhase != AppPhase.resting) {
+        unawaited(bridge.request(InterventionPhase.resting));
+      } else if (phase == AppPhase.tracking &&
+          (previousPhase == AppPhase.quiz ||
+              previousPhase == AppPhase.resting)) {
+        unawaited(bridge.dismiss());
+      }
+    }
 
     if (phase == AppPhase.quiz) {
       if (quizQuestions.isEmpty) {
@@ -384,6 +415,7 @@ class ScreenTimeController extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _screenEventsSub?.cancel();
     machine.removeListener(_onMachinePhaseChange);
     // 应用退出时落库当前亮屏会话（若仍进行中）。
     _flushScreenSession();

@@ -7,6 +7,7 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MissingPluginException;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
@@ -17,6 +18,7 @@ import 'data/repositories/screen_session_repository.dart';
 import 'data/repositories/snooze_record_repository.dart';
 import 'models/question.dart';
 import 'models/question_bank.dart';
+import 'platform_channel/platform_monitoring.dart';
 import 'question_bank/bank_question.dart';
 import 'question_bank/question_bank_service.dart';
 import 'state_machine/screen_time_machine.dart';
@@ -78,6 +80,10 @@ Future<void> main() async {
     random: Random(2026),
   );
 
+  // 平台监控接线：Android 返回真实通道（亮灭屏事件流 + 干预桥），
+  // 桌面/Web 返回空资源包，控制器退化为 Timer 驱动。
+  final platformMonitoring = createPlatformMonitoring();
+
   final controller = ScreenTimeController(
     machine: machine,
     bankService: bankService,
@@ -86,7 +92,18 @@ Future<void> main() async {
     screenSessionRepo: screenSessionRepo,
     restSessionRepo: restSessionRepo,
     snoozeRecordRepo: snoozeRecordRepo,
+    interventionBridge: platformMonitoring.interventionBridge,
+    screenOnEvents: platformMonitoring.screenOnEvents,
   );
+
+  // Android：请求原生开始监控。第 1 步原生侧仅为通道脚手架；
+  // 第 2 步起这里会真正启动前台服务与亮灭屏广播。
+  // 旧引擎/未注册通道时静默忽略，不阻断启动。
+  try {
+    await platformMonitoring.monitor?.startMonitoring();
+  } on MissingPluginException {
+    debugPrint('monitor 通道未注册，跳过原生监控启动');
+  }
 
   runApp(ScreenTimeManagerApp(controller: controller));
 }
