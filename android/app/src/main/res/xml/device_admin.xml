@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Device Admin 策略清单：仅声明 force-lock，允许调用 DevicePolicyManager.lockNow()。
+  不申请 wipe-data / reset-password / password-限制等高危策略。
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <force-lock />
+    </uses-policies>
+</device-admin>

@@ -142,16 +142,21 @@ class ScreenTimeController extends ChangeNotifier {
     // 到点干预：进入答题/休息时请求原生把界面拉到前台；
     // 从这两个阶段回到计时时撤销干预。原生侧自行判断 App 是否已在前台。
     final bridge = interventionBridge;
-    if (bridge != null) {
-      if (phase == AppPhase.quiz && previousPhase != AppPhase.quiz) {
-        unawaited(bridge.request(InterventionPhase.quiz));
-      } else if (phase == AppPhase.resting &&
-          previousPhase != AppPhase.resting) {
-        unawaited(bridge.request(InterventionPhase.resting));
-      } else if (phase == AppPhase.tracking &&
-          (previousPhase == AppPhase.quiz ||
-              previousPhase == AppPhase.resting)) {
-        unawaited(bridge.dismiss());
+    if (phase == AppPhase.quiz && previousPhase != AppPhase.quiz) {
+      unawaited(bridge?.request(InterventionPhase.quiz));
+    } else if (phase == AppPhase.resting &&
+        previousPhase != AppPhase.resting) {
+      unawaited(bridge?.request(InterventionPhase.resting));
+      unawaited(bridge?.startScreenPinning());
+    } else if (phase == AppPhase.tracking) {
+      if (previousPhase == AppPhase.quiz) {
+        // 答题页本身不锁定屏幕，只需撤销干预通知。
+        unawaited(bridge?.dismiss());
+      } else if (previousPhase == AppPhase.resting) {
+        // 休息结束（自然完成或豁免通过）：撤销干预并退出屏幕固定，
+        // 之后恢复自由切换应用。
+        unawaited(bridge?.dismiss());
+        unawaited(bridge?.stopScreenPinning());
       }
     }
 

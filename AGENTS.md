@@ -179,6 +179,8 @@
   - Android 13+ 需运行时申请 `POST_NOTIFICATIONS`；Android 14+ 前台服务必须声明 `foregroundServiceType`，本应用归为 `specialUse`（上架需说明用途）。
   - Android 14+ `USE_FULL_SCREEN_INTENT` 默认仅授予通话 / 闹钟类应用，需引导用户手动授权，必须同时准备悬浮窗兜底路径。
   - `TYPE_APPLICATION_OVERLAY` 悬浮窗需要 `SYSTEM_ALERT_WINDOW`（`Settings.canDrawOverlays`）。
+  - 休息独占屏幕：普通应用的 `startLockTask()` 只是 Screen Pinning，系统保留长按返回+最近任务退出入口；真正不可退出的 Kiosk（LOCKED）仅 Device Owner 可用（ADB `dpm set-device-owner` 一次性设置）。`Activity.onLockTaskModeExiting()` 是 @hide 不可覆写，检测退出只能轮询 `ActivityManager.lockTaskModeState`。
+  - 休息期自动熄屏依赖 Device Admin（仅 force-lock 策略）：`DevicePolicyManager.lockNow()` 需用户一次性授权，无 Device Admin 时静默跳过。
   - 国产 ROM（MIUI / EMUI / ColorOS / OriginOS 等）需引导"自启动 + 电池不优化"才能稳定后台保活。
 - **重要**: iOS端无法实现全局亮屏监听，必须使用Screen Time API监控指定App。
 - **重要**: HarmonyOS端无法获取系统悬浮窗权限，通知刷新依赖长时任务。
@@ -194,6 +196,11 @@
 - **测试**：148 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线）。
 - **Android 第 1 步已完成**：包名/applicationId 已改为 `com.screen_time_manager`；`lib/platform_channel/` 通道层就绪（screen_events / monitor / intervention，条件导入保证 Web 不引入 `dart:io`）；`ScreenTimeController` 支持注入亮灭屏事件流与干预桥，未注入时退化为 Timer 驱动；Kotlin 侧通道（含 `ScreenEventBus`、权限状态查询与设置页跳转）已注册；`flutter build apk --debug` 与 `flutter build web` 均通过。
 - **Android 第 2 步已完成**：`ScreenMonitorApp` 预创建并缓存 FlutterEngine（ID `screen_monitor_engine`），MainActivity 复用之；`ScreenMonitorService` 前台服务（specialUse + 常驻通知）内动态注册亮灭屏/解锁广播，事件经 EventChannel 驱动状态机，后台/灭屏期间 Dart 持续 tick；POST_NOTIFICATIONS 首启申请；合并后 Manifest 已核验。
+- **休息期自动熄屏已实现**：`InterventionBridge.lockScreen` + Kotlin `DeviceAdminReceiver`（仅 force-lock 策略）+ `DevicePolicyManager.lockNow()`（反射调用 @hide `createAddAdminActiveIntent` 打开授权页，回退安全设置页）；rest_page.dart 进入休息 10 秒内无答题豁免操作则熄屏，点豁免/提交答案即取消计时器。
+- **休息期独占（仅 resting 锁定，quiz/tracking 不锁定）**：进入 resting 调 `startScreenPinning`，回到 tracking（自然结束或豁免通过）才 `stopScreenPinning`，quiz 阶段不固定。两层强度：
+  - **Device Owner 模式（真正不可退出）**：一次性 ADB `adb shell dpm set-device-owner com.screen_time_manager/.ScreenMonitorDeviceAdmin`（设备无账号时），App 启动时 `setLockTaskPackages` 白名单，之后 startLockTask 静默进入 Kiosk LOCKED 模式，无确认弹窗、无退出手势。
+  - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 500ms 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），发现退出立即重新 startLockTask；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity（overlay/full-screen intent，后者第 3 步补齐）。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
+  - Web/桌面侧 `_NoopInterventionBridge` 静默 no-op；接线测试覆盖"resting 固定/结束解除/quiz 不固定"。
 - **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
   1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。
   2. ✅ 前台服务 + 亮灭屏广播 + FlutterEngine 缓存保活。

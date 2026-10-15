@@ -117,6 +117,24 @@ abstract class InterventionBridge {
 
   /// 回到计时阶段，通知原生撤销干预（取消通知、移除悬浮层）。
   Future<void> dismiss();
+
+  // -- 休息期额外能力 --
+
+  /// 调用 DevicePolicyManager.lockNow() 熄屏。
+  /// 返回是否成功；未授权 Device Admin 时返回 false。
+  Future<bool> lockScreen();
+
+  /// 是否已授权 Device Admin（force-lock 策略）。
+  Future<bool> get isDeviceAdminEnabled;
+
+  /// 跳转到系统 Device Admin 授权页。
+  Future<void> openDeviceAdminSettings();
+
+  /// 进入屏幕固定模式（resting 阶段独占屏幕，防手动切任务）。
+  Future<bool> startScreenPinning();
+
+  /// 退出屏幕固定模式（resting → tracking 时调用）。
+  Future<bool> stopScreenPinning();
 }
 
 /// 基于 MethodChannel `intervention` 的生产实现。
@@ -138,5 +156,30 @@ class ChannelInterventionBridge implements InterventionBridge {
   @override
   Future<void> dismiss() {
     return _channel.invokeMethod<void>('dismiss');
+  }
+
+  @override
+  Future<bool> lockScreen() async {
+    return await _channel.invokeMethod<bool>('lockScreen') ?? false;
+  }
+
+  @override
+  Future<bool> get isDeviceAdminEnabled async {
+    return await _channel.invokeMethod<bool>('isDeviceAdminEnabled') ?? false;
+  }
+
+  @override
+  Future<void> openDeviceAdminSettings() {
+    return _channel.invokeMethod<void>('openDeviceAdminSettings');
+  }
+
+  @override
+  Future<bool> startScreenPinning() async {
+    return await _channel.invokeMethod<bool>('startScreenPinning') ?? false;
+  }
+
+  @override
+  Future<bool> stopScreenPinning() async {
+    return await _channel.invokeMethod<bool>('stopScreenPinning') ?? false;
   }
 }

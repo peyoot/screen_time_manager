@@ -20,6 +20,8 @@ import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
 class _RecordingInterventionBridge implements InterventionBridge {
   final List<InterventionPhase> requests = [];
   int dismissCount = 0;
+  int startPinCount = 0;
+  int stopPinCount = 0;
 
   @override
   Future<void> request(InterventionPhase phase) async {
@@ -29,6 +31,20 @@ class _RecordingInterventionBridge implements InterventionBridge {
   @override
   Future<void> dismiss() async {
     dismissCount++;
+  }
+
+  @override Future<bool> lockScreen() async => false;
+  @override Future<bool> get isDeviceAdminEnabled async => false;
+  @override Future<void> openDeviceAdminSettings() async {}
+  @override
+  Future<bool> startScreenPinning() async {
+    startPinCount++;
+    return true;
+  }
+  @override
+  Future<bool> stopScreenPinning() async {
+    stopPinCount++;
+    return true;
   }
 }
 
@@ -121,11 +137,16 @@ void main() {
       expect(machine.state.phase, AppPhase.resting);
       expect(bridge.requests, [InterventionPhase.resting]);
       expect(bridge.dismissCount, 0);
+      // 进入休息页：屏幕固定武装，用户无法切到其他应用。
+      expect(bridge.startPinCount, 1);
+      expect(bridge.stopPinCount, 0);
 
-      // 额度充足，答题豁免提前结束休息 → 回到计时并撤销干预。
+      // 额度充足，答题豁免提前结束休息 → 回到计时、撤销干预并解除固定，
+      // 恢复自由切换应用。
       machine.endRestEarly();
       expect(machine.state.phase, AppPhase.tracking);
       expect(bridge.dismissCount, 1);
+      expect(bridge.stopPinCount, 1);
     });
 
     test('累计亮屏达阈值触发 quiz 干预，答对达标后 dismiss', () {
@@ -168,12 +189,16 @@ void main() {
       expect(machine.state.phase, AppPhase.quiz);
       expect(bridge.requests, [InterventionPhase.quiz]);
       expect(bridge.dismissCount, 0);
+      // 答题页不锁定屏幕：用户仍可自由切到其他应用。
+      expect(bridge.startPinCount, 0);
 
       // 答对唯一一题：豁免通过，回到计时并撤销干预。
       final current = machine.state.quiz!.currentQuestion!;
       machine.answerCurrentQuestion(current.correctIndex);
       expect(machine.state.phase, AppPhase.tracking);
       expect(bridge.dismissCount, 1);
+      // quiz → tracking 从未固定过，不应调用解除。
+      expect(bridge.stopPinCount, 0);
     });
 
     test('未注入干预桥时阶段变化不抛错（桌面/Web/测试退化路径）', () {
