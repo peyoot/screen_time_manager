@@ -6,12 +6,14 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsLeft": "可用豁免",
-  "homeExemptionsCount": "{count} 次",
-  "@homeExemptionsCount": {
+  "homeRoundExemptions": "本轮可用豁免 {count} 次",
+  "@homeRoundExemptions": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestStats": "休息统计",
+  "homeRestExemptionsToday": "今日共豁免休息 {count} 次",
+  "@homeRestExemptionsToday": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeRestTriggeredToday": "今日触发休息 {count} 次",
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
@@ -21,6 +23,22 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "手动触发休息",
+  "adminPasswordTitle": "管理密码",
+  "adminPasswordStatusSet": "已设置",
+  "adminPasswordStatusNotSet": "未设置",
+  "adminPasswordSetAction": "设置",
+  "adminPasswordChangeAction": "修改",
+  "adminPasswordClearAction": "清除",
+  "adminPasswordEnterTitle": "输入管理密码",
+  "adminPasswordFieldLabel": "管理密码",
+  "adminPasswordConfirm": "确定",
+  "adminPasswordSetTitle": "设置管理密码",
+  "adminPasswordChangeTitle": "修改管理密码",
+  "adminPasswordNewLabel": "新密码",
+  "adminPasswordConfirmLabel": "确认新密码",
+  "adminPasswordMismatch": "两次输入的密码不一致",
+  "adminPasswordTooShort": "密码至少 4 位",
+  "adminPasswordWrong": "密码错误",
   "homeBankTooltip": "题库管理",
   "homeLanguageTooltip": "语言",
   "homeSettingsTooltip": "计时设置",

@@ -138,6 +138,8 @@ void main() {
     expect(machine.state.phase.name, 'tracking');
     expect(controller.todayRestCount, 1);
     expect(controller.todayRestDuration, const Duration(seconds: 30));
+    // 豁免通过一次：今日豁免计数 +1。
+    expect(controller.todayRestExemptions, 1);
 
     // 第二次休息（再进行 10 秒）：次数 +1，时长累加。
     controller.manualRest();
@@ -159,6 +161,7 @@ void main() {
     expect(machine.state.phase.name, 'resting');
     expect(controller.todayRestCount, 1);
     expect(controller.todayRestDuration, Duration.zero);
+    expect(controller.todayRestExemptions, 0);
 
     // 次日这次休息自然结束：只累计新一天内的时长（2 分钟）。
     advance(const Duration(minutes: 2));

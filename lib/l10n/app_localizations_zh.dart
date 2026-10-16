@@ -21,15 +21,14 @@ class SZh extends S {
   }
 
   @override
-  String get homeExemptionsLeft => '可用豁免';
-
-  @override
-  String homeExemptionsCount(int count) {
-    return '$count 次';
+  String homeRoundExemptions(int count) {
+    return '本轮可用豁免 $count 次';
   }
 
   @override
-  String get homeRestStats => '休息统计';
+  String homeRestExemptionsToday(int count) {
+    return '今日共豁免休息 $count 次';
+  }
 
   @override
   String homeRestTriggeredToday(int count) {
@@ -43,6 +42,54 @@ class SZh extends S {
 
   @override
   String get homeManualRest => '手动触发休息';
+
+  @override
+  String get adminPasswordTitle => '管理密码';
+
+  @override
+  String get adminPasswordStatusSet => '已设置';
+
+  @override
+  String get adminPasswordStatusNotSet => '未设置';
+
+  @override
+  String get adminPasswordSetAction => '设置';
+
+  @override
+  String get adminPasswordChangeAction => '修改';
+
+  @override
+  String get adminPasswordClearAction => '清除';
+
+  @override
+  String get adminPasswordEnterTitle => '输入管理密码';
+
+  @override
+  String get adminPasswordFieldLabel => '管理密码';
+
+  @override
+  String get adminPasswordConfirm => '确定';
+
+  @override
+  String get adminPasswordSetTitle => '设置管理密码';
+
+  @override
+  String get adminPasswordChangeTitle => '修改管理密码';
+
+  @override
+  String get adminPasswordNewLabel => '新密码';
+
+  @override
+  String get adminPasswordConfirmLabel => '确认新密码';
+
+  @override
+  String get adminPasswordMismatch => '两次输入的密码不一致';
+
+  @override
+  String get adminPasswordTooShort => '密码至少 4 位';
+
+  @override
+  String get adminPasswordWrong => '密码错误';
 
   @override
   String get homeBankTooltip => '题库管理';

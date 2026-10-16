@@ -37,6 +37,7 @@ Map<String, Object?> appSettingsToRow(
     'required_correct_count': s.requiredCorrectCount,
     'rest_duration_seconds': s.restDuration.inSeconds,
     'daily_exemption_limit': s.dailyExemptionLimit,
+    'admin_password_hash': s.adminPasswordHash,
     'created_at': toTimestamp(createdAt ?? now),
     'updated_at': ts,
     'deleted': 0,
@@ -51,6 +52,7 @@ AppSettings appSettingsFromRow(Map<String, Object?> row) {
     requiredCorrectCount: _asInt(row['required_correct_count']),
     restDuration: Duration(seconds: _asInt(row['rest_duration_seconds'])),
     dailyExemptionLimit: _asInt(row['daily_exemption_limit']),
+    adminPasswordHash: row['admin_password_hash'] as String?,
   );
 }
 

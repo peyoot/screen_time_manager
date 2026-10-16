@@ -25,6 +25,13 @@ class AppSettings {
   /// 取 0 表示完全不允许豁免，达到阈值直接进入强制休息。
   final int dailyExemptionLimit;
 
+  /// 本机管理密码的哈希（null 表示未设置）。
+  ///
+  /// 设置后，进入设置对话框与题库管理页需要先输入管理密码。
+  /// 仅存哈希不存明文（轻量 FNV-1a 加盐哈希，见控制器），
+  /// 用于防止儿童随意修改配置，非密码学安全场景。
+  final String? adminPasswordHash;
+
   /// 创建配置并立即校验全部不变量，非法取值抛出 [ArgumentError]。
   AppSettings({
     required this.quizInterval,
@@ -32,6 +39,7 @@ class AppSettings {
     required this.requiredCorrectCount,
     required this.restDuration,
     this.dailyExemptionLimit = 2,
+    this.adminPasswordHash,
   }) {
     if (quizInterval <= Duration.zero) {
       throw ArgumentError.value(quizInterval, 'quizInterval', '必须大于 0');
@@ -113,6 +121,7 @@ class AppSettings {
       requiredCorrectCount: requiredCorrectCount,
       restDuration: Duration(seconds: restDurationSeconds.toInt()),
       dailyExemptionLimit: (dailyExemptionLimit as int?) ?? 2,
+      adminPasswordHash: json['adminPasswordHash'] as String?,
     );
   }
 
@@ -123,6 +132,7 @@ class AppSettings {
         'requiredCorrectCount': requiredCorrectCount,
         'restDurationSeconds': restDuration.inSeconds,
         'dailyExemptionLimit': dailyExemptionLimit,
+        'adminPasswordHash': adminPasswordHash,
       };
 
   AppSettings copyWith({
@@ -131,6 +141,7 @@ class AppSettings {
     int? requiredCorrectCount,
     Duration? restDuration,
     int? dailyExemptionLimit,
+    Object? adminPasswordHash = _sentinel,
   }) {
     return AppSettings(
       quizInterval: quizInterval ?? this.quizInterval,
@@ -139,6 +150,9 @@ class AppSettings {
           requiredCorrectCount ?? this.requiredCorrectCount,
       restDuration: restDuration ?? this.restDuration,
       dailyExemptionLimit: dailyExemptionLimit ?? this.dailyExemptionLimit,
+      adminPasswordHash: adminPasswordHash == _sentinel
+          ? this.adminPasswordHash
+          : adminPasswordHash as String?,
     );
   }
 
@@ -149,17 +163,22 @@ class AppSettings {
       other.questionsPerQuiz == questionsPerQuiz &&
       other.requiredCorrectCount == requiredCorrectCount &&
       other.restDuration == restDuration &&
-      other.dailyExemptionLimit == dailyExemptionLimit;
+      other.dailyExemptionLimit == dailyExemptionLimit &&
+      other.adminPasswordHash == adminPasswordHash;
 
   @override
   int get hashCode =>
       Object.hash(quizInterval, questionsPerQuiz, requiredCorrectCount,
-          restDuration, dailyExemptionLimit);
+          restDuration, dailyExemptionLimit, adminPasswordHash);
 
   @override
   String toString() => 'AppSettings(quizInterval: $quizInterval, '
       'questionsPerQuiz: $questionsPerQuiz, '
       'requiredCorrectCount: $requiredCorrectCount, '
       'restDuration: $restDuration, '
-      'dailyExemptionLimit: $dailyExemptionLimit)';
+      'dailyExemptionLimit: $dailyExemptionLimit, '
+      'adminPasswordSet: ${adminPasswordHash != null})';
 }
+
+/// 用于 [AppSettings.copyWith] 区分"未传参"与"显式传 null"（清除密码）。
+const Object _sentinel = Object();

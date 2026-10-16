@@ -21,15 +21,14 @@ class SKo extends S {
   }
 
   @override
-  String get homeExemptionsLeft => '남은 면제';
-
-  @override
-  String homeExemptionsCount(int count) {
-    return '$count 회';
+  String homeRoundExemptions(int count) {
+    return '이번 차례 면제 $count 회';
   }
 
   @override
-  String get homeRestStats => '휴식 통계';
+  String homeRestExemptionsToday(int count) {
+    return '오늘 면제한 휴식 $count 회';
+  }
 
   @override
   String homeRestTriggeredToday(int count) {
@@ -43,6 +42,54 @@ class SKo extends S {
 
   @override
   String get homeManualRest => '지금 휴식하기';
+
+  @override
+  String get adminPasswordTitle => '관리자 비밀번호';
+
+  @override
+  String get adminPasswordStatusSet => '설정됨';
+
+  @override
+  String get adminPasswordStatusNotSet => '설정 안 됨';
+
+  @override
+  String get adminPasswordSetAction => '설정';
+
+  @override
+  String get adminPasswordChangeAction => '변경';
+
+  @override
+  String get adminPasswordClearAction => '삭제';
+
+  @override
+  String get adminPasswordEnterTitle => '관리자 비밀번호 입력';
+
+  @override
+  String get adminPasswordFieldLabel => '관리자 비밀번호';
+
+  @override
+  String get adminPasswordConfirm => '확인';
+
+  @override
+  String get adminPasswordSetTitle => '관리자 비밀번호 설정';
+
+  @override
+  String get adminPasswordChangeTitle => '관리자 비밀번호 변경';
+
+  @override
+  String get adminPasswordNewLabel => '새 비밀번호';
+
+  @override
+  String get adminPasswordConfirmLabel => '새 비밀번호 확인';
+
+  @override
+  String get adminPasswordMismatch => '비밀번호가 일치하지 않습니다';
+
+  @override
+  String get adminPasswordTooShort => '비밀번호는 4자 이상이어야 합니다';
+
+  @override
+  String get adminPasswordWrong => '비밀번호가 올바르지 않습니다';
 
   @override
   String get homeBankTooltip => '문제 은행 관리';

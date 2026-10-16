@@ -84,6 +84,10 @@ class ScreenTimeController extends ChangeNotifier {
   /// 当日已完成休息的实际时长累计；进行中的部分由 [todayRestDuration] 实时补上。
   Duration _todayRestElapsed = Duration.zero;
 
+  /// 当日通过答题成功豁免休息的累计次数（跨自然日归零）。
+  /// 注意不能用状态机的 exemptionsUsedToday：自然完成完整休息后它会重置。
+  int _todayRestExemptions = 0;
+
   Timer? _timer;
 
   /// 当前轮次抽到的输入式题目（仅在 quiz 阶段非空）。
@@ -144,6 +148,49 @@ class ScreenTimeController extends ChangeNotifier {
   /// 当日触发休息（进入休息页）的次数，跨自然日自动归零。
   int get todayRestCount => _todayRestCount;
 
+  /// 当日通过答题成功豁免休息的累计次数，跨自然日自动归零。
+  int get todayRestExemptions => _todayRestExemptions;
+
+  /// 本机管理密码是否已设置（设置后进入设置与题库需先验证）。
+  bool get hasAdminPassword {
+    final hash = machine.settings.adminPasswordHash;
+    return hash != null && hash.isNotEmpty;
+  }
+
+  /// 校验输入的管理密码是否正确；未设置密码时恒为 false。
+  bool verifyAdminPassword(String input) {
+    return hasAdminPassword &&
+        _hashAdminPassword(input) == machine.settings.adminPasswordHash;
+  }
+
+  /// 设置/修改（[newPassword] 非空）或清除（null）本机管理密码。
+  ///
+  /// 只存加盐哈希不存明文；写回 DB 由 [appSettingsRepo] 负责（可空）。
+  void updateAdminPassword(String? newPassword) {
+    final hash =
+        newPassword == null ? null : _hashAdminPassword(newPassword);
+    machine.updateSettings(
+      machine.settings.copyWith(adminPasswordHash: hash),
+    );
+    appSettingsRepo?.upsert(machine.settings).catchError((_) {});
+    notifyListeners();
+  }
+
+  /// 轻量加盐哈希（FNV-1a 64 位）。
+  ///
+  /// 威胁模型是防止儿童在设备上随手改配置/翻答案，而非抵御离线破解，
+  /// 因此不引入额外加密依赖；哈希只保证不明文落库。
+  static String _hashAdminPassword(String password) {
+    const salt = 'stm-admin-v1:';
+    var hash = 0xcbf29ce484222325;
+    const prime = 0x100000001b3;
+    const mask = 0xFFFFFFFFFFFFFFFF;
+    for (final unit in utf8.encode(salt + password)) {
+      hash = ((hash ^ unit) * prime) & mask;
+    }
+    return hash.toRadixString(16).padLeft(16, '0');
+  }
+
   /// 当日累计"未用本机"时长：已完成休息的实际时长 + 当前休息已进行的时长。
   Duration get todayRestDuration {
     var total = _todayRestElapsed;
@@ -167,6 +214,7 @@ class ScreenTimeController extends ChangeNotifier {
     _restStatsDay = day;
     _todayRestCount = 0;
     _todayRestElapsed = Duration.zero;
+    _todayRestExemptions = 0;
     if (machine.state.phase == AppPhase.resting) {
       final start = _restStart;
       if (start != null) {
@@ -395,6 +443,7 @@ class ScreenTimeController extends ChangeNotifier {
       restQuizQuestion = null;
       restQuizFailed = false;
       _restEndedEarly = true;
+      _todayRestExemptions++;
       machine.endRestEarly(); // 消耗额度并触发阶段变化，页面自动切回计时。
       return true;
     }

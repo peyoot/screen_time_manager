@@ -54,9 +54,9 @@ void main() {
     expect(find.text('Screen Time Manager'), findsOneWidget);
     expect(find.text('Screen time today'), findsOneWidget);
     expect(find.text('Take a break now'), findsOneWidget);
-    expect(find.text('Exemptions left'), findsOneWidget);
-    // 默认每日 2 次豁免，初始剩余 2 次。
-    expect(find.text('2'), findsOneWidget);
+    // 默认每日 2 次豁免，初始剩余 2 次；当日尚未豁免休息。
+    expect(find.text('Exemptions available: 2'), findsOneWidget);
+    expect(find.text('Rest exemptions today: 0'), findsOneWidget);
   });
 
   testWidgets('从主计时页可跳转到题库分组管理页', (tester) async {
@@ -158,8 +158,9 @@ void main() {
     expect(controller.phase, AppPhase.tracking);
     expect(find.text('休息中'), findsNothing);
     expect(find.text('今日累计亮屏'), findsOneWidget);
-    // 消耗一次后剩余 1 次（默认每日 2 次）。
-    expect(find.text('1 次'), findsOneWidget);
+    // 消耗一次后剩余 1 次（默认每日 2 次），今日共豁免 1 次。
+    expect(find.text('本轮可用豁免 1 次'), findsOneWidget);
+    expect(find.text('今日共豁免休息 1 次'), findsOneWidget);
   });
 
   testWidgets('每日豁免次数用完后休息页不再显示申请入口', (tester) async {

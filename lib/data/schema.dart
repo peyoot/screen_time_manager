@@ -7,7 +7,7 @@ library;
 import 'package:sqflite/sqflite.dart';
 
 /// 当前 schema 版本号。
-const int kSchemaVersion = 1;
+const int kSchemaVersion = 2;
 
 /// V1 建表语句：按外键依赖顺序排列。
 const List<String> kSchemaV1Statements = [
@@ -127,6 +127,21 @@ Future<void> applySchemaV1(Database db) async {
   }
   for (final idx in kSchemaV1Indexes) {
     batch.execute(idx);
+  }
+  await batch.commit();
+}
+
+/// V2 迁移：app_settings 增加 `admin_password_hash`（本机管理密码哈希，
+/// null 表示未设置）。V1 DDL 保持原样，升级与新建都经此语句补齐。
+const List<String> kSchemaV2Statements = [
+  'ALTER TABLE app_settings ADD COLUMN admin_password_hash TEXT',
+];
+
+/// 在指定数据库上执行 V2 迁移。
+Future<void> applySchemaV2(Database db) async {
+  final batch = db.batch();
+  for (final stmt in kSchemaV2Statements) {
+    batch.execute(stmt);
   }
   await batch.commit();
 }

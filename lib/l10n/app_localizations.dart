@@ -119,23 +119,17 @@ abstract class S {
   /// **'距下次强制休息时间还剩 {time}'**
   String homeNextQuizIn(String time);
 
-  /// No description provided for @homeExemptionsLeft.
+  /// No description provided for @homeRoundExemptions.
   ///
   /// In zh, this message translates to:
-  /// **'可用豁免'**
-  String get homeExemptionsLeft;
+  /// **'本轮可用豁免 {count} 次'**
+  String homeRoundExemptions(int count);
 
-  /// No description provided for @homeExemptionsCount.
+  /// No description provided for @homeRestExemptionsToday.
   ///
   /// In zh, this message translates to:
-  /// **'{count} 次'**
-  String homeExemptionsCount(int count);
-
-  /// No description provided for @homeRestStats.
-  ///
-  /// In zh, this message translates to:
-  /// **'休息统计'**
-  String get homeRestStats;
+  /// **'今日共豁免休息 {count} 次'**
+  String homeRestExemptionsToday(int count);
 
   /// No description provided for @homeRestTriggeredToday.
   ///
@@ -154,6 +148,102 @@ abstract class S {
   /// In zh, this message translates to:
   /// **'手动触发休息'**
   String get homeManualRest;
+
+  /// No description provided for @adminPasswordTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理密码'**
+  String get adminPasswordTitle;
+
+  /// No description provided for @adminPasswordStatusSet.
+  ///
+  /// In zh, this message translates to:
+  /// **'已设置'**
+  String get adminPasswordStatusSet;
+
+  /// No description provided for @adminPasswordStatusNotSet.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设置'**
+  String get adminPasswordStatusNotSet;
+
+  /// No description provided for @adminPasswordSetAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置'**
+  String get adminPasswordSetAction;
+
+  /// No description provided for @adminPasswordChangeAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'修改'**
+  String get adminPasswordChangeAction;
+
+  /// No description provided for @adminPasswordClearAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除'**
+  String get adminPasswordClearAction;
+
+  /// No description provided for @adminPasswordEnterTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入管理密码'**
+  String get adminPasswordEnterTitle;
+
+  /// No description provided for @adminPasswordFieldLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理密码'**
+  String get adminPasswordFieldLabel;
+
+  /// No description provided for @adminPasswordConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定'**
+  String get adminPasswordConfirm;
+
+  /// No description provided for @adminPasswordSetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置管理密码'**
+  String get adminPasswordSetTitle;
+
+  /// No description provided for @adminPasswordChangeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'修改管理密码'**
+  String get adminPasswordChangeTitle;
+
+  /// No description provided for @adminPasswordNewLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'新密码'**
+  String get adminPasswordNewLabel;
+
+  /// No description provided for @adminPasswordConfirmLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认新密码'**
+  String get adminPasswordConfirmLabel;
+
+  /// No description provided for @adminPasswordMismatch.
+  ///
+  /// In zh, this message translates to:
+  /// **'两次输入的密码不一致'**
+  String get adminPasswordMismatch;
+
+  /// No description provided for @adminPasswordTooShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'密码至少 4 位'**
+  String get adminPasswordTooShort;
+
+  /// No description provided for @adminPasswordWrong.
+  ///
+  /// In zh, this message translates to:
+  /// **'密码错误'**
+  String get adminPasswordWrong;
 
   /// No description provided for @homeBankTooltip.
   ///

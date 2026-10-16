@@ -6,12 +6,14 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsLeft": "Exemptions left",
-  "homeExemptionsCount": "{count}",
-  "@homeExemptionsCount": {
+  "homeRoundExemptions": "Exemptions available: {count}",
+  "@homeRoundExemptions": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestStats": "Rest stats",
+  "homeRestExemptionsToday": "Rest exemptions today: {count}",
+  "@homeRestExemptionsToday": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeRestTriggeredToday": "Breaks today: {count}",
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
@@ -21,6 +23,22 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "Take a break now",
+  "adminPasswordTitle": "Admin password",
+  "adminPasswordStatusSet": "set",
+  "adminPasswordStatusNotSet": "not set",
+  "adminPasswordSetAction": "Set",
+  "adminPasswordChangeAction": "Change",
+  "adminPasswordClearAction": "Clear",
+  "adminPasswordEnterTitle": "Enter admin password",
+  "adminPasswordFieldLabel": "Admin password",
+  "adminPasswordConfirm": "OK",
+  "adminPasswordSetTitle": "Set admin password",
+  "adminPasswordChangeTitle": "Change admin password",
+  "adminPasswordNewLabel": "New password",
+  "adminPasswordConfirmLabel": "Confirm new password",
+  "adminPasswordMismatch": "Passwords do not match",
+  "adminPasswordTooShort": "Password must be at least 4 characters",
+  "adminPasswordWrong": "Incorrect password",
   "homeBankTooltip": "Question bank",
   "homeLanguageTooltip": "Language",
   "homeSettingsTooltip": "Timing settings",

@@ -6,12 +6,14 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsLeft": "残り免除",
-  "homeExemptionsCount": "{count} 回",
-  "@homeExemptionsCount": {
+  "homeRoundExemptions": "今回の免除 残り {count} 回",
+  "@homeRoundExemptions": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestStats": "休憩統計",
+  "homeRestExemptionsToday": "今日の免除合計 {count} 回",
+  "@homeRestExemptionsToday": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeRestTriggeredToday": "今日の休憩発動 {count} 回",
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
@@ -21,6 +23,22 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "今すぐ休憩",
+  "adminPasswordTitle": "管理パスワード",
+  "adminPasswordStatusSet": "設定済み",
+  "adminPasswordStatusNotSet": "未設定",
+  "adminPasswordSetAction": "設定",
+  "adminPasswordChangeAction": "変更",
+  "adminPasswordClearAction": "削除",
+  "adminPasswordEnterTitle": "管理パスワードを入力",
+  "adminPasswordFieldLabel": "管理パスワード",
+  "adminPasswordConfirm": "OK",
+  "adminPasswordSetTitle": "管理パスワードを設定",
+  "adminPasswordChangeTitle": "管理パスワードを変更",
+  "adminPasswordNewLabel": "新しいパスワード",
+  "adminPasswordConfirmLabel": "新しいパスワード（確認）",
+  "adminPasswordMismatch": "パスワードが一致しません",
+  "adminPasswordTooShort": "パスワードは4文字以上にしてください",
+  "adminPasswordWrong": "パスワードが正しくありません",
   "homeBankTooltip": "問題バンク管理",
   "homeLanguageTooltip": "言語",
   "homeSettingsTooltip": "タイミング設定",

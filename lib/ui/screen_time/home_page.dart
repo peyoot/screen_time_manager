@@ -8,6 +8,7 @@ import '../../state_machine/app_phase.dart';
 import '../../state_machine/screen_time_state.dart';
 import '../question_bank/group_list_page.dart';
 import '../permissions/permission_guide_page.dart';
+import 'admin_password_dialogs.dart';
 import 'reminder_page.dart';
 import 'rest_page.dart';
 import 'screen_time_controller.dart';
@@ -64,19 +65,26 @@ class _TimingView extends StatelessWidget {
           IconButton(
             tooltip: l10n.homeBankTooltip,
             icon: const Icon(Icons.quiz_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => GroupListPage(service: controller.bankService),
-              ),
-            ),
+            // 已设置管理密码时，题库（含答案）需先验证才能进入。
+            onPressed: () => openWithAdminGate(context, controller, () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      GroupListPage(service: controller.bankService),
+                ),
+              );
+            }),
           ),
           IconButton(
             tooltip: l10n.homeSettingsTooltip,
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => _TimingSettingsDialog(controller: controller),
-            ),
+            // 已设置管理密码时，进入设置需先验证。
+            onPressed: () => openWithAdminGate(context, controller, () {
+              showDialog<void>(
+                context: context,
+                builder: (_) => _TimingSettingsDialog(controller: controller),
+              );
+            }),
           ),
           IconButton(
             tooltip: l10n.homeLanguageTooltip,
@@ -102,6 +110,7 @@ class _TimingView extends StatelessWidget {
                   const SizedBox(height: 24),
                   _StatRow(
                     remainingExemptions: controller.remainingExemptions,
+                    restExemptions: controller.todayRestExemptions,
                     restCount: controller.todayRestCount,
                     restDuration: controller.todayRestDuration,
                   ),
@@ -202,14 +211,16 @@ class _TimeCard extends StatelessWidget {
   }
 }
 
-/// 豁免次数与当日休息统计行。
+/// 豁免与当日休息统计行：左右两张双行卡片。
 class _StatRow extends StatelessWidget {
   final int remainingExemptions;
+  final int restExemptions;
   final int restCount;
   final Duration restDuration;
 
   const _StatRow({
     required this.remainingExemptions,
+    required this.restExemptions,
     required this.restCount,
     required this.restDuration,
   });
@@ -220,74 +231,35 @@ class _StatRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _StatItem(
+          child: _TwoLineStatCard(
             icon: Icons.check_circle_outline,
-            label: l10n.homeExemptionsLeft,
-            value: l10n.homeExemptionsCount(remainingExemptions),
+            line1: l10n.homeRoundExemptions(remainingExemptions),
+            line2: l10n.homeRestExemptionsToday(restExemptions),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _RestStatCard(count: restCount, duration: restDuration),
+          child: _TwoLineStatCard(
+            icon: Icons.bedtime_outlined,
+            line1: l10n.homeRestTriggeredToday(restCount),
+            line2: l10n.homeRestAccumulated(_formatDuration(restDuration)),
+          ),
         ),
       ],
     );
   }
 }
 
-/// 当日休息统计卡片：触发次数 + 累计未用本机时长。
-class _RestStatCard extends StatelessWidget {
-  final int count;
-  final Duration duration;
-
-  const _RestStatCard({required this.count, required this.duration});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = S.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.bedtime_outlined, color: theme.colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(l10n.homeRestStats, style: theme.textTheme.bodySmall),
-            const SizedBox(height: 2),
-            FittedBox(
-              alignment: Alignment.centerLeft,
-              fit: BoxFit.scaleDown,
-              child: Text(
-                l10n.homeRestTriggeredToday(count),
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-            FittedBox(
-              alignment: Alignment.centerLeft,
-              fit: BoxFit.scaleDown,
-              child: Text(
-                l10n.homeRestAccumulated(_formatDuration(duration)),
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
+/// 双行统计卡片：图标 + 两行数据（窄屏自动缩放防溢出）。
+class _TwoLineStatCard extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String value;
+  final String line1;
+  final String line2;
 
-  const _StatItem({
+  const _TwoLineStatCard({
     required this.icon,
-    required this.label,
-    required this.value,
+    required this.line1,
+    required this.line2,
   });
 
   @override
@@ -301,8 +273,16 @@ class _StatItem extends StatelessWidget {
           children: [
             Icon(icon, color: theme.colorScheme.primary),
             const SizedBox(height: 8),
-            Text(label, style: theme.textTheme.bodySmall),
-            Text(value, style: theme.textTheme.titleLarge),
+            FittedBox(
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.scaleDown,
+              child: Text(line1, style: theme.textTheme.bodyMedium),
+            ),
+            FittedBox(
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.scaleDown,
+              child: Text(line2, style: theme.textTheme.bodyMedium),
+            ),
           ],
         ),
       ),
@@ -370,46 +350,90 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
     Navigator.of(context).pop();
   }
 
+  /// 设置/修改管理密码：弹出双字段对话框，返回后刷新状态显示。
+  Future<void> _editAdminPassword() async {
+    await showSetAdminPasswordDialog(context, widget.controller);
+    setState(() {});
+  }
+
+  /// 清除管理密码（当前已在通过门禁的设置对话框内，无需二次验证）。
+  void _clearAdminPassword() {
+    widget.controller.updateAdminPassword(null);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = S.of(context);
+    final hasPassword = widget.controller.hasAdminPassword;
     return AlertDialog(
       title: Text(l10n.settingsTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _quizController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.settingsQuizMinutes,
-              suffixText: l10n.settingsMinutesUnit,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _quizController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: l10n.settingsQuizMinutes,
+                suffixText: l10n.settingsMinutesUnit,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _restController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: l10n.settingsRestMinutes,
-              suffixText: l10n.settingsMinutesUnit,
+            const SizedBox(height: 12),
+            TextField(
+              controller: _restController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: l10n.settingsRestMinutes,
+                suffixText: l10n.settingsMinutesUnit,
+              ),
             ),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _error!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 13,
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ),
+            const Divider(height: 24),
+            // 管理密码区块：显示状态并提供设置/修改/清除入口。
+            Row(
+              children: [
+                const Icon(Icons.lock_outline, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${l10n.adminPasswordTitle} · '
+                    '${hasPassword ? l10n.adminPasswordStatusSet : l10n.adminPasswordStatusNotSet}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                if (hasPassword) ...[
+                  TextButton(
+                    onPressed: _editAdminPassword,
+                    child: Text(l10n.adminPasswordChangeAction),
+                  ),
+                  TextButton(
+                    onPressed: _clearAdminPassword,
+                    child: Text(l10n.adminPasswordClearAction),
+                  ),
+                ] else
+                  TextButton(
+                    onPressed: _editAdminPassword,
+                    child: Text(l10n.adminPasswordSetAction),
+                  ),
+              ],
             ),
-        ],
+          ],
+        ),
       ),
       actions: [
         TextButton(

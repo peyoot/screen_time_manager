@@ -21,15 +21,14 @@ class SEn extends S {
   }
 
   @override
-  String get homeExemptionsLeft => 'Exemptions left';
-
-  @override
-  String homeExemptionsCount(int count) {
-    return '$count';
+  String homeRoundExemptions(int count) {
+    return 'Exemptions available: $count';
   }
 
   @override
-  String get homeRestStats => 'Rest stats';
+  String homeRestExemptionsToday(int count) {
+    return 'Rest exemptions today: $count';
+  }
 
   @override
   String homeRestTriggeredToday(int count) {
@@ -43,6 +42,54 @@ class SEn extends S {
 
   @override
   String get homeManualRest => 'Take a break now';
+
+  @override
+  String get adminPasswordTitle => 'Admin password';
+
+  @override
+  String get adminPasswordStatusSet => 'set';
+
+  @override
+  String get adminPasswordStatusNotSet => 'not set';
+
+  @override
+  String get adminPasswordSetAction => 'Set';
+
+  @override
+  String get adminPasswordChangeAction => 'Change';
+
+  @override
+  String get adminPasswordClearAction => 'Clear';
+
+  @override
+  String get adminPasswordEnterTitle => 'Enter admin password';
+
+  @override
+  String get adminPasswordFieldLabel => 'Admin password';
+
+  @override
+  String get adminPasswordConfirm => 'OK';
+
+  @override
+  String get adminPasswordSetTitle => 'Set admin password';
+
+  @override
+  String get adminPasswordChangeTitle => 'Change admin password';
+
+  @override
+  String get adminPasswordNewLabel => 'New password';
+
+  @override
+  String get adminPasswordConfirmLabel => 'Confirm new password';
+
+  @override
+  String get adminPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get adminPasswordTooShort => 'Password must be at least 4 characters';
+
+  @override
+  String get adminPasswordWrong => 'Incorrect password';
 
   @override
   String get homeBankTooltip => 'Question bank';

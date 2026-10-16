@@ -21,15 +21,14 @@ class SJa extends S {
   }
 
   @override
-  String get homeExemptionsLeft => '残り免除';
-
-  @override
-  String homeExemptionsCount(int count) {
-    return '$count 回';
+  String homeRoundExemptions(int count) {
+    return '今回の免除 残り $count 回';
   }
 
   @override
-  String get homeRestStats => '休憩統計';
+  String homeRestExemptionsToday(int count) {
+    return '今日の免除合計 $count 回';
+  }
 
   @override
   String homeRestTriggeredToday(int count) {
@@ -43,6 +42,54 @@ class SJa extends S {
 
   @override
   String get homeManualRest => '今すぐ休憩';
+
+  @override
+  String get adminPasswordTitle => '管理パスワード';
+
+  @override
+  String get adminPasswordStatusSet => '設定済み';
+
+  @override
+  String get adminPasswordStatusNotSet => '未設定';
+
+  @override
+  String get adminPasswordSetAction => '設定';
+
+  @override
+  String get adminPasswordChangeAction => '変更';
+
+  @override
+  String get adminPasswordClearAction => '削除';
+
+  @override
+  String get adminPasswordEnterTitle => '管理パスワードを入力';
+
+  @override
+  String get adminPasswordFieldLabel => '管理パスワード';
+
+  @override
+  String get adminPasswordConfirm => 'OK';
+
+  @override
+  String get adminPasswordSetTitle => '管理パスワードを設定';
+
+  @override
+  String get adminPasswordChangeTitle => '管理パスワードを変更';
+
+  @override
+  String get adminPasswordNewLabel => '新しいパスワード';
+
+  @override
+  String get adminPasswordConfirmLabel => '新しいパスワード（確認）';
+
+  @override
+  String get adminPasswordMismatch => 'パスワードが一致しません';
+
+  @override
+  String get adminPasswordTooShort => 'パスワードは4文字以上にしてください';
+
+  @override
+  String get adminPasswordWrong => 'パスワードが正しくありません';
 
   @override
   String get homeBankTooltip => '問題バンク管理';

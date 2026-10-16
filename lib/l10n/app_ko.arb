@@ -6,12 +6,14 @@
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },
-  "homeExemptionsLeft": "남은 면제",
-  "homeExemptionsCount": "{count} 회",
-  "@homeExemptionsCount": {
+  "homeRoundExemptions": "이번 차례 면제 {count} 회",
+  "@homeRoundExemptions": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestStats": "휴식 통계",
+  "homeRestExemptionsToday": "오늘 면제한 휴식 {count} 회",
+  "@homeRestExemptionsToday": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "homeRestTriggeredToday": "오늘 휴식 {count}회",
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
@@ -21,6 +23,22 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "지금 휴식하기",
+  "adminPasswordTitle": "관리자 비밀번호",
+  "adminPasswordStatusSet": "설정됨",
+  "adminPasswordStatusNotSet": "설정 안 됨",
+  "adminPasswordSetAction": "설정",
+  "adminPasswordChangeAction": "변경",
+  "adminPasswordClearAction": "삭제",
+  "adminPasswordEnterTitle": "관리자 비밀번호 입력",
+  "adminPasswordFieldLabel": "관리자 비밀번호",
+  "adminPasswordConfirm": "확인",
+  "adminPasswordSetTitle": "관리자 비밀번호 설정",
+  "adminPasswordChangeTitle": "관리자 비밀번호 변경",
+  "adminPasswordNewLabel": "새 비밀번호",
+  "adminPasswordConfirmLabel": "새 비밀번호 확인",
+  "adminPasswordMismatch": "비밀번호가 일치하지 않습니다",
+  "adminPasswordTooShort": "비밀번호는 4자 이상이어야 합니다",
+  "adminPasswordWrong": "비밀번호가 올바르지 않습니다",
   "homeBankTooltip": "문제 은행 관리",
   "homeLanguageTooltip": "언어",
   "homeSettingsTooltip": "타이밍 설정",
