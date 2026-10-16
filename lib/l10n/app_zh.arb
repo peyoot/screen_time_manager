@@ -11,10 +11,14 @@
   "@homeExemptionsCount": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeReminderRound": "提醒轮次",
-  "homeRoundNth": "第 {n} 轮",
-  "@homeRoundNth": {
-    "placeholders": {"n": {"type": "int"}}
+  "homeRestStats": "休息统计",
+  "homeRestTriggeredToday": "今日触发休息 {count} 次",
+  "@homeRestTriggeredToday": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "homeRestAccumulated": "累计未用本机 {time}",
+  "@homeRestAccumulated": {
+    "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "手动触发休息",
   "homeBankTooltip": "题库管理",

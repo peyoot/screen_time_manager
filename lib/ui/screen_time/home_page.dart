@@ -101,8 +101,9 @@ class _TimingView extends StatelessWidget {
                   _TimeCard(state: state),
                   const SizedBox(height: 24),
                   _StatRow(
-                    state: state,
                     remainingExemptions: controller.remainingExemptions,
+                    restCount: controller.todayRestCount,
+                    restDuration: controller.todayRestDuration,
                   ),
                   const Spacer(),
                   FilledButton.icon(
@@ -201,14 +202,16 @@ class _TimeCard extends StatelessWidget {
   }
 }
 
-/// 豁免次数与当前轮次统计行。
+/// 豁免次数与当日休息统计行。
 class _StatRow extends StatelessWidget {
-  final ScreenTimeState state;
   final int remainingExemptions;
+  final int restCount;
+  final Duration restDuration;
 
   const _StatRow({
-    required this.state,
     required this.remainingExemptions,
+    required this.restCount,
+    required this.restDuration,
   });
 
   @override
@@ -225,13 +228,53 @@ class _StatRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _StatItem(
-            icon: Icons.notifications_active_outlined,
-            label: l10n.homeReminderRound,
-            value: l10n.homeRoundNth(state.quizRound),
-          ),
+          child: _RestStatCard(count: restCount, duration: restDuration),
         ),
       ],
+    );
+  }
+}
+
+/// 当日休息统计卡片：触发次数 + 累计未用本机时长。
+class _RestStatCard extends StatelessWidget {
+  final int count;
+  final Duration duration;
+
+  const _RestStatCard({required this.count, required this.duration});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = S.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.bedtime_outlined, color: theme.colorScheme.primary),
+            const SizedBox(height: 8),
+            Text(l10n.homeRestStats, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 2),
+            FittedBox(
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.scaleDown,
+              child: Text(
+                l10n.homeRestTriggeredToday(count),
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            FittedBox(
+              alignment: Alignment.centerLeft,
+              fit: BoxFit.scaleDown,
+              child: Text(
+                l10n.homeRestAccumulated(_formatDuration(duration)),
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

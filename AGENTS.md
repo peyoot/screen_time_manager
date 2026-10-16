@@ -195,7 +195,7 @@
 - **国际化**：支持中/英/日/韩，跟随系统语言，主页可切换；扩展只需在 `lib/l10n/` 新建 `app_xx.arb` 并 `flutter gen-l10n`。
 - **本地数据层（SQLite）**：已实现建表 + CRUD + 接线（`lib/data/`）；`app_settings` 启动加载、`question_group`/`question` cache-aside 持久化、`screen_session`/`rest_session`/`snooze_record` 在控制器阶段切换时落库。`sync_queue` 仅建表 + 入队。
 - **默认题库**：纯英文，不做多语种翻译（用户自行导入所需题库）——`Missing Piece`（谚语填空）、`Curious Mind`（科普问答）；中文系统环境额外加载"文化常识"古诗文飞花令分组。
-- **测试**：147 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线）。
+- **测试**：149 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线 / 当日休息统计）。
 - **Android 第 1 步已完成**：包名/applicationId 已改为 `com.screen_time_manager`；`lib/platform_channel/` 通道层就绪（screen_events / monitor / intervention，条件导入保证 Web 不引入 `dart:io`）；`ScreenTimeController` 支持注入亮灭屏事件流与干预桥，未注入时退化为 Timer 驱动；Kotlin 侧通道（含 `ScreenEventBus`、权限状态查询与设置页跳转）已注册；`flutter build apk --debug` 与 `flutter build web` 均通过。
 - **Android 第 2 步已完成**：`ScreenMonitorApp` 预创建并缓存 FlutterEngine（ID `screen_monitor_engine`），MainActivity 复用之；`ScreenMonitorService` 前台服务（specialUse + 常驻通知）内动态注册亮灭屏/解锁广播，事件经 EventChannel 驱动状态机，后台/灭屏期间 Dart 持续 tick；POST_NOTIFICATIONS 首启申请；合并后 Manifest 已核验。
 - **休息期自动熄屏已实现**：`InterventionBridge.lockScreen` + Kotlin `DeviceAdminReceiver`（仅 force-lock 策略）+ `DevicePolicyManager.lockNow()`（反射调用 @hide `createAddAdminActiveIntent` 打开授权页，回退安全设置页）；rest_page.dart 进入休息 10 秒内无答题豁免操作则熄屏，点豁免/提交答案即取消计时器。**注意**：`lockScreen()` 必须先临时 `RestGuard.disarm()` 再 `lockNow()` 最后 re-arm，否则熄屏导致的 onStop 会被 RestGuard 误判为用户强行切走而重复拉回。

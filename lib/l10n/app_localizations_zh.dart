@@ -29,11 +29,16 @@ class SZh extends S {
   }
 
   @override
-  String get homeReminderRound => '提醒轮次';
+  String get homeRestStats => '休息统计';
 
   @override
-  String homeRoundNth(int n) {
-    return '第 $n 轮';
+  String homeRestTriggeredToday(int count) {
+    return '今日触发休息 $count 次';
+  }
+
+  @override
+  String homeRestAccumulated(String time) {
+    return '累计未用本机 $time';
   }
 
   @override

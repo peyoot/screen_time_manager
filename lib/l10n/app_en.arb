@@ -11,10 +11,14 @@
   "@homeExemptionsCount": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeReminderRound": "Reminder round",
-  "homeRoundNth": "Round {n}",
-  "@homeRoundNth": {
-    "placeholders": {"n": {"type": "int"}}
+  "homeRestStats": "Rest stats",
+  "homeRestTriggeredToday": "Breaks today: {count}",
+  "@homeRestTriggeredToday": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "homeRestAccumulated": "Screen-free: {time}",
+  "@homeRestAccumulated": {
+    "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "Take a break now",
   "homeBankTooltip": "Question bank",

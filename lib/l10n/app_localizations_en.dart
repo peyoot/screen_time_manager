@@ -29,11 +29,16 @@ class SEn extends S {
   }
 
   @override
-  String get homeReminderRound => 'Reminder round';
+  String get homeRestStats => 'Rest stats';
 
   @override
-  String homeRoundNth(int n) {
-    return 'Round $n';
+  String homeRestTriggeredToday(int count) {
+    return 'Breaks today: $count';
+  }
+
+  @override
+  String homeRestAccumulated(String time) {
+    return 'Screen-free: $time';
   }
 
   @override

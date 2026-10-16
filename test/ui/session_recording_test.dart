@@ -121,4 +121,49 @@ void main() {
     expect(snoozes.first.passed, false);
     expect(snoozes.first.wrongCount, 1);
   });
+
+  test('当日休息统计：触发次数与累计时长随休息进度更新', () async {
+    expect(controller.todayRestCount, 0);
+    expect(controller.todayRestDuration, Duration.zero);
+
+    // 第一次休息（豁免提前结束，实际 30 秒）。
+    controller.manualRest();
+    expect(controller.todayRestCount, 1);
+    expect(controller.todayRestDuration, Duration.zero);
+    advance(const Duration(seconds: 30));
+    // 休息进行中：累计时长实时计入。
+    expect(controller.todayRestDuration, const Duration(seconds: 30));
+    controller.requestRestExemption();
+    controller.submitRestAnswer(controller.restQuizQuestion!.answer);
+    expect(machine.state.phase.name, 'tracking');
+    expect(controller.todayRestCount, 1);
+    expect(controller.todayRestDuration, const Duration(seconds: 30));
+
+    // 第二次休息（再进行 10 秒）：次数 +1，时长累加。
+    controller.manualRest();
+    expect(controller.todayRestCount, 2);
+    advance(const Duration(seconds: 10));
+    expect(controller.todayRestDuration, const Duration(seconds: 40));
+  });
+
+  test('当日休息统计：跨自然日归零并重新计数', () async {
+    controller.manualRest();
+    expect(controller.todayRestCount, 1);
+    advance(const Duration(minutes: 2)); // 自然结束第一次休息
+    expect(machine.state.phase.name, 'tracking');
+
+    // 直接跳到次日早晨并手动触发休息：
+    // 进入 resting 前控制器应检测跨天并归零，本次记为新一天第 1 次。
+    now = DateTime(2026, 10, 10, 9, 0);
+    controller.manualRest();
+    expect(machine.state.phase.name, 'resting');
+    expect(controller.todayRestCount, 1);
+    expect(controller.todayRestDuration, Duration.zero);
+
+    // 次日这次休息自然结束：只累计新一天内的时长（2 分钟）。
+    advance(const Duration(minutes: 2));
+    expect(machine.state.phase.name, 'tracking');
+    expect(controller.todayRestCount, 1);
+    expect(controller.todayRestDuration, const Duration(minutes: 2));
+  });
 }

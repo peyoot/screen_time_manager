@@ -131,17 +131,23 @@ abstract class S {
   /// **'{count} 次'**
   String homeExemptionsCount(int count);
 
-  /// No description provided for @homeReminderRound.
+  /// No description provided for @homeRestStats.
   ///
   /// In zh, this message translates to:
-  /// **'提醒轮次'**
-  String get homeReminderRound;
+  /// **'休息统计'**
+  String get homeRestStats;
 
-  /// No description provided for @homeRoundNth.
+  /// No description provided for @homeRestTriggeredToday.
   ///
   /// In zh, this message translates to:
-  /// **'第 {n} 轮'**
-  String homeRoundNth(int n);
+  /// **'今日触发休息 {count} 次'**
+  String homeRestTriggeredToday(int count);
+
+  /// No description provided for @homeRestAccumulated.
+  ///
+  /// In zh, this message translates to:
+  /// **'累计未用本机 {time}'**
+  String homeRestAccumulated(String time);
 
   /// No description provided for @homeManualRest.
   ///

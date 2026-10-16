@@ -29,11 +29,16 @@ class SJa extends S {
   }
 
   @override
-  String get homeReminderRound => 'リマインダー';
+  String get homeRestStats => '休憩統計';
 
   @override
-  String homeRoundNth(int n) {
-    return '第 $n 回';
+  String homeRestTriggeredToday(int count) {
+    return '今日の休憩発動 $count 回';
+  }
+
+  @override
+  String homeRestAccumulated(String time) {
+    return '非使用時間の合計 $time';
   }
 
   @override

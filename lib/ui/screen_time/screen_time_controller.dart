@@ -74,6 +74,16 @@ class ScreenTimeController extends ChangeNotifier {
   bool _restEndedEarly = false;
   AppPhase _lastPhase = AppPhase.tracking;
 
+  // -- 当日休息统计（纯内存，不依赖 DB；跨自然日自动归零）--
+  /// 统计所属自然日（零点），用于检测跨天重置。
+  late DateTime _restStatsDay;
+
+  /// 当日进入休息页的次数（含当前进行中的一次）。
+  int _todayRestCount = 0;
+
+  /// 当日已完成休息的实际时长累计；进行中的部分由 [todayRestDuration] 实时补上。
+  Duration _todayRestElapsed = Duration.zero;
+
   Timer? _timer;
 
   /// 当前轮次抽到的输入式题目（仅在 quiz 阶段非空）。
@@ -111,6 +121,7 @@ class ScreenTimeController extends ChangeNotifier {
     DateTime Function()? clock,
     bool autoStart = true,
   }) : _clock = clock ?? DateTime.now {
+    _restStatsDay = _dayOf(_clock());
     machine.addListener(_onMachinePhaseChange);
     // 屏幕会话起点：真实平台由原生层上报亮灭屏时再切分。
     _screenSessionStart = _clock();
@@ -121,11 +132,49 @@ class ScreenTimeController extends ChangeNotifier {
     _screenEventsSub =
         screenOnEvents?.listen((isOn) => reportScreenOn(isOn));
     if (autoStart) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) => machine.tick());
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        _rolloverRestStatsIfNeeded();
+        machine.tick();
+      });
     }
   }
 
   AppPhase get phase => machine.state.phase;
+
+  /// 当日触发休息（进入休息页）的次数，跨自然日自动归零。
+  int get todayRestCount => _todayRestCount;
+
+  /// 当日累计"未用本机"时长：已完成休息的实际时长 + 当前休息已进行的时长。
+  Duration get todayRestDuration {
+    var total = _todayRestElapsed;
+    if (phase == AppPhase.resting) {
+      final start = _restStart;
+      if (start != null) total += _clock().difference(start);
+    }
+    return total < Duration.zero ? Duration.zero : total;
+  }
+
+  /// 取日期零点。
+  static DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
+
+  /// 跨自然日时归零当日休息统计；若跨天瞬间仍有进行中的休息（有起点），
+  /// 把它带入新一天（次数记 1，起点钳到新一天零点）。
+  /// 注意：阶段切换进入 resting 时 [machine] 已先行迁移、但 [_restStart]
+  /// 尚未设置（为 null），那种情况只归零，计数由调用方随后 +1。
+  void _rolloverRestStatsIfNeeded() {
+    final day = _dayOf(_clock());
+    if (day == _restStatsDay) return;
+    _restStatsDay = day;
+    _todayRestCount = 0;
+    _todayRestElapsed = Duration.zero;
+    if (machine.state.phase == AppPhase.resting) {
+      final start = _restStart;
+      if (start != null) {
+        _todayRestCount = 1;
+        if (start.isBefore(day)) _restStart = day;
+      }
+    }
+  }
 
   /// 状态机阶段变化时的回调：进入 quiz 时抽题，离开时重置答题 UI 状态。
   /// 同时记录休息会话（rest_session）的起止。
@@ -137,8 +186,10 @@ class ScreenTimeController extends ChangeNotifier {
       _flushRestSession(naturalCompletion: !_restEndedEarly);
       _restEndedEarly = false;
     }
-    // 进入 resting 阶段：记录起点与计划时长。
+    // 进入 resting 阶段：记录起点与计划时长，当日触发次数 +1。
     if (phase == AppPhase.resting && previousPhase != AppPhase.resting) {
+      _rolloverRestStatsIfNeeded();
+      _todayRestCount++;
       _restStart = _clock();
       _restPlanned = machine.settings.restDuration;
     }
@@ -189,18 +240,27 @@ class ScreenTimeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 把已结束的休息会话写入 DB（仅 [restSessionRepo] 存在时）。
+  /// 把已结束的休息会话写入 DB（仅 [restSessionRepo] 存在时），
+  /// 同时把实际时长累计到当日休息统计。
   void _flushRestSession({required bool naturalCompletion}) {
-    final start = _restStart;
     final planned = _restPlanned;
-    final repo = restSessionRepo;
-    if (start == null || planned == null || repo == null) {
+    final startBeforeRollover = _restStart;
+    if (startBeforeRollover == null || planned == null) {
       _restStart = null;
       _restPlanned = null;
       return;
     }
+    // 跨天处理可能把起点钳到今日零点，actual 与 DB 记录都只计新一天部分。
+    _rolloverRestStatsIfNeeded();
+    final start = _restStart ?? startBeforeRollover;
     final end = _clock();
     final actual = end.difference(start);
+    _todayRestElapsed += actual;
+    _restStart = null;
+    _restPlanned = null;
+
+    final repo = restSessionRepo;
+    if (repo == null) return;
     final session = RestSession(
       id: _uuid.v4(),
       startedAt: start,
@@ -209,8 +269,6 @@ class ScreenTimeController extends ChangeNotifier {
       actualDuration: actual,
       completed: naturalCompletion,
     );
-    _restStart = null;
-    _restPlanned = null;
     repo.insert(session).catchError((_) {});
   }
 

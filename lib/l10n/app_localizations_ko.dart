@@ -29,11 +29,16 @@ class SKo extends S {
   }
 
   @override
-  String get homeReminderRound => '알림 횟수';
+  String get homeRestStats => '휴식 통계';
 
   @override
-  String homeRoundNth(int n) {
-    return '$n번째';
+  String homeRestTriggeredToday(int count) {
+    return '오늘 휴식 $count회';
+  }
+
+  @override
+  String homeRestAccumulated(String time) {
+    return '미사용 시간 합계 $time';
   }
 
   @override
