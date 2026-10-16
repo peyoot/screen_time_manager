@@ -4,31 +4,37 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
 
 /**
- * 物理按键紧急退出 / 改密控制器。
+ * 物理按键紧急退出 / 改密控制器（多事件源 + debounce）。
+ *
+ * 为什么多事件源：OEM ROM（ZuxOS、MIUI、ColorOS 等）普遍在系统层拦截音量键——
+ * PhoneWindowManager.interceptKeyBeforeQueueing 里就消费掉，早于无障碍服务
+ * 和 Activity 的事件管线。单独依赖无障碍或 dispatchKeyEvent 在部分设备上会
+ * 完全收不到音量键。三层通路并行、内部 debounce 去重，才是可靠做法：
+ *
+ *   Activity.dispatchKeyEvent  ← 主路径：应用前台/屏幕固定期间，系统调音量之前
+ *   ContentObserver 音量变化  ← 兜底  ：完全独立，不依赖任何窗口/无障碍
+ *   无障碍服务 onKeyEvent     ← 第三层：少数 ROM 上可能仍可达
  *
  * 交互流程：
- * 1. 快速交替按 **音量"+" → 音量"-" → 音量"+"**（相邻两击间隔 ≤ [SEQUENCE_GAP_MS]）
- *    进入密码检测态，10 秒内有效。选此序列是因为其它组合均有系统级冲突：
- *    电源+音量键被截图/录屏/SOS 等 OEM 手势占用；双音量键长按与系统无障碍
- *    快捷键（TalkBack）冲突；交替音量序列无任何系统手势使用，全 ROM 通用。
- *    触发序列的第三击被吞掉，与第一击正负相抵——触发本身不改变音量。
- * 2. 默认密码为 **连按 5 次音量"-"**（可改，持久化在 SharedPreferences）：
- *    - 休息阶段（[resting] == true）：解除屏幕固定并退回桌面，紧急退出；
- *    - 应用主界面（非休息且 Activity 在前台）：进入改密态，10 秒内连按 5 个
- *      音量键（音量"+"/"-"任意序列）作为新密码；
- * 3. 其它无效输入与超时一律静默忽略，回到空闲态。
+ * 1. 快速交替按 音量"+"→音量"-"→音量"+"（相邻间隔 ≤ [SEQUENCE_GAP_MS]）进入
+ *    10 秒密码检测态；第三击被吞掉，净音量变化为 0。
+ * 2. 默认密码 音量"-"×5（可改，存 SharedPreferences）：
+ *    - resting 阶段 → disarm + stopLockTask + HOME，紧急退出；
+ *    - 应用主界面 → 进入改密态，10 秒内录 5 个音量键序列为新密码；
+ *    - 错误/超时 → 静默忽略。
  *
- * 密码录入窗口内音量键被无障碍服务整体吞掉（音量不变、面板自动消隐）；
- * 空闲时音量键全部放行，正常调音量不受影响。
- *
- * 按键来源：[EmergencyKeyAccessibilityService]。屏幕固定 / Kiosk 期间无障碍
- * 服务依然收得到事件，且能在系统调音量之前吞掉事件（Activity 层做不到这点）。
+ * 密码窗口内 [capturingVolumeKeys] == true：无障碍服务吞掉音量键；Activity
+ * dispatchKeyEvent 返回 true 抑制系统处理；ContentObserver 在 arm 时把音量
+ * 预调到中间档，防止在 0 / max 档按同方向不产生变化事件。
  */
 object EmergencyKeyController {
+
+    private const val TAG = "EmergencyKeyController"
 
     /** 密码 / 新密码的按键个数。 */
     private const val PASSWORD_LENGTH = 5
@@ -39,6 +45,9 @@ object EmergencyKeyController {
     /** 密码输入与新密码录入的有效时长。 */
     private const val INPUT_WINDOW_MS = 10_000L
 
+    /** 两个事件源同时上报的去重窗口（同方向视为同一次按键）。 */
+    private const val DEBOUNCE_MS = 60L
+
     private const val PREFS_NAME = "emergency_keys"
     private const val PREF_PASSWORD = "password_keycodes"
 
@@ -46,71 +55,93 @@ object EmergencyKeyController {
 
     private var state: State = State.IDLE
 
-    // 触发序列检测（仅 IDLE 态使用）：最近两次音量键及时间。
+    // 触发序列检测（仅 IDLE 态使用）。
     private var prevKey = 0
     private var prevAt = 0L
     private var lastKey = 0
     private var lastAt = 0L
 
-    /** 密码输入/改密过程中已记录的音量键序列。 */
     private val entries = ArrayList<Int>()
 
     private val timeoutRunnable = Runnable { resetToIdle() }
 
-    /**
-     * 当前是否处于休息阶段。由 intervention 通道的 request/dismiss 维护，
-     * 决定密码验证通过后是"紧急退出"还是"允许改密"。
-     */
+    /** 上一次处理过的音量方向与时间戳，用于多源 debounce。 */
+    private var lastProcessedDir: Boolean? = null
+    private var lastProcessedAt = 0L
+
+    /** 当前是否处于休息阶段，由 intervention 通道同步。 */
     @Volatile
     var resting: Boolean = false
 
-    /** 是否处于密码录入窗口（无障碍服务据此吞掉音量键，含长按重复与抬起）。 */
+    /** 是否处于密码录入窗口（无障碍/Activity 据此吞掉音量键）。 */
     val capturingVolumeKeys: Boolean
         get() = state != State.IDLE
 
     private enum class State {
-        /** 空闲：仅监听音量键交替触发序列。 */
-        IDLE,
+        IDLE,           // 监听触发序列
+        ARMED,          // 等待 5 键密码
+        RECORDING_NEW_PASSWORD, // 录新密码
+    }
 
-        /** 触发序列已识别：等待输入 5 键密码。 */
-        ARMED,
+    // -----------------------------------------------------------------
+    // 事件入口（三个通路）
+    // -----------------------------------------------------------------
 
-        /** 主界面密码正确：等待录入 5 个新按键作为新密码。 */
-        RECORDING_NEW_PASSWORD,
+    /**
+     * 通路 1 / 3：直接按键 DOWN（来自 Activity.dispatchKeyEvent 或无障碍服务）。
+     * 返回 true 表示吞掉事件（抑制调音量和 HUD）；
+     * 空闲态下仅触发序列第三击返回 true（净音量变化为 0）。
+     */
+    fun onKeyDown(keyCode: Int): Boolean {
+        val isVolUp = keyCode == KeyEvent.KEYCODE_VOLUME_UP
+        val isVolDown = keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+        if (!isVolUp && !isVolDown) return false
+        return handleDirection(isVolUp, source = "keyEvent")
     }
 
     /**
-     * 接收一个按键 DOWN 事件（长按重复事件由调用方过滤 repeatCount > 0）。
-     *
-     * @return true 表示吞掉该事件（系统不再调音量）；空闲态除触发序列
-     * 第三击外一律放行。
+     * 通路 2：ContentObserver 观察到音量变化（方向由 diff 判定）。
+     * 完全独立，不依赖窗口或无障碍。
      */
-    fun onKeyDown(keyCode: Int): Boolean = when (state) {
-        State.IDLE -> handleIdle(keyCode)
-        State.ARMED -> {
-            handlePasswordEntry(keyCode)
-            isVolumeKey(keyCode)
-        }
-        State.RECORDING_NEW_PASSWORD -> {
-            handleNewPasswordEntry(keyCode)
-            isVolumeKey(keyCode)
-        }
+    fun onVolumeChanged(isUp: Boolean) {
+        handleDirection(isUp, source = "contentObserver")
     }
 
-    private fun isVolumeKey(keyCode: Int): Boolean =
-        keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+    /** 统一处理一个音量方向事件（内含 debounce）。 */
+    private fun handleDirection(isUp: Boolean, source: String): Boolean {
+        val now = System.currentTimeMillis()
+        // debounce：60ms 内同方向视为同一次按键（Activity 和 Observer 可能同时上报）。
+        if (isUp == lastProcessedDir && now - lastProcessedAt < DEBOUNCE_MS) {
+            Log.d(TAG, "debounce skip (src=$source, up=$isUp)")
+            return false
+        }
+        lastProcessedDir = isUp
+        lastProcessedAt = now
+        val keyCode = if (isUp) KeyEvent.KEYCODE_VOLUME_UP else KeyEvent.KEYCODE_VOLUME_DOWN
+        Log.d(TAG, "direction up=$isUp src=$source state=$state")
+
+        return when (state) {
+            State.IDLE -> handleIdle(keyCode)
+            State.ARMED -> {
+                handlePasswordEntry(keyCode)
+                true // 密码窗口内吞掉所有音量键
+            }
+            State.RECORDING_NEW_PASSWORD -> {
+                handleNewPasswordEntry(keyCode)
+                true
+            }
+        }
+    }
 
     // -----------------------------------------------------------------
     // 各状态处理
     // -----------------------------------------------------------------
 
     /**
-     * 空闲态：检测"音量+ → 音量- → 音量+"交替序列（相邻间隔 ≤ [SEQUENCE_GAP_MS]）。
-     * 非音量键忽略且不打断序列；普通连按同侧音量键（如连续调大/调小）不构成
-     * 交替模式，不会误触发。
+     * 空闲态：检测 音量+→音量-→音量+ 交替序列（相邻 ≤ [SEQUENCE_GAP_MS]）。
+     * 非音量键忽略且不打断序列；同侧连按是正常调音量，不构成交替模式。
      */
     private fun handleIdle(keyCode: Int): Boolean {
-        if (!isVolumeKey(keyCode)) return false
         val now = System.currentTimeMillis()
         val matched = prevKey == KeyEvent.KEYCODE_VOLUME_UP &&
             lastKey == KeyEvent.KEYCODE_VOLUME_DOWN &&
@@ -118,11 +149,11 @@ object EmergencyKeyController {
             lastAt - prevAt <= SEQUENCE_GAP_MS &&
             now - lastAt <= SEQUENCE_GAP_MS
         if (matched) {
+            Log.d(TAG, "trigger sequence matched")
             prevKey = 0
             lastKey = 0
             armPasswordEntry()
-            // 吞掉第三击：与第一击相抵，触发序列净音量变化为 0。
-            return true
+            return true // 吞掉第三击 → 净音量变化为 0
         }
         prevKey = lastKey
         prevAt = lastAt
@@ -132,29 +163,26 @@ object EmergencyKeyController {
     }
 
     private fun handlePasswordEntry(keyCode: Int) {
-        // 密码为 5 个音量键序列（默认全是音量"-"）；电源键等其它输入忽略，
-        // 不重置倒计时，超时后静默失败。
-        if (!isVolumeKey(keyCode)) return
         entries.add(keyCode)
         if (entries.size >= PASSWORD_LENGTH) {
             handler.removeCallbacks(timeoutRunnable)
             if (matchesPassword(entries)) {
+                Log.d(TAG, "password correct")
                 onPasswordCorrect()
             } else {
-                // 密码错误：不提示、不重试，静默回到空闲态。
+                Log.d(TAG, "password wrong")
                 resetToIdle()
             }
         }
     }
 
     private fun handleNewPasswordEntry(keyCode: Int) {
-        // 新密码由音量"+"/"-"任意序列组成（电源键不录入，避免触发系统手势）。
-        if (!isVolumeKey(keyCode)) return
         entries.add(keyCode)
         if (entries.size >= PASSWORD_LENGTH) {
             handler.removeCallbacks(timeoutRunnable)
             savePassword(entries.toIntArray())
             toast("New password saved")
+            Log.d(TAG, "new password saved")
             resetToIdle()
         }
     }
@@ -170,12 +198,6 @@ object EmergencyKeyController {
         restartTimeout()
     }
 
-    /**
-     * 密码验证通过后的分流。
-     *
-     * 休息期：解除 [RestGuard] + 退出屏幕固定 + 回桌面，完成紧急退出。
-     * 主界面：进入改密态。非主界面（应用在后台等）一律忽略。
-     */
     private fun onPasswordCorrect() {
         if (resting) {
             exitRestImmediately()
@@ -183,7 +205,6 @@ object EmergencyKeyController {
             return
         }
         if (!ActivityTracker.isResumed) {
-            // 不在应用主界面：不允许改密，静默忽略。
             resetToIdle()
             return
         }
@@ -195,13 +216,11 @@ object EmergencyKeyController {
 
     /** 紧急退出休息：解除固定并退回桌面。 */
     private fun exitRestImmediately() {
-        // 先解除武装，避免 stopLockTask / 退后台触发 RestGuard 立刻拉回。
         RestGuard.disarm()
         runCatching { ActivityTracker.currentActivity?.stopLockTask() }
         ScreenMonitorChannels.dismissInterventionNotification()
 
         val app = ScreenMonitorApp.instance
-        // stopLockTask 生效需要一个节拍，延迟发送 HOME 更稳妥。
         handler.postDelayed({
             val home = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
@@ -210,6 +229,7 @@ object EmergencyKeyController {
             runCatching { app.startActivity(home) }
         }, 300L)
         toast("Exiting rest")
+        Log.d(TAG, "emergency exit")
     }
 
     private fun restartTimeout() {
@@ -217,12 +237,12 @@ object EmergencyKeyController {
         handler.postDelayed(timeoutRunnable, INPUT_WINDOW_MS)
     }
 
-    /** 超时 / 完成：静默回到空闲态（不打扰用户）。 */
     private fun resetToIdle() {
         handler.removeCallbacks(timeoutRunnable)
         entries.clear()
         prevKey = 0
         lastKey = 0
+        lastProcessedDir = null
         state = State.IDLE
     }
 
@@ -251,7 +271,6 @@ object EmergencyKeyController {
             .apply()
     }
 
-    /** 输入序列与已存密码比较（长度由状态机保证为 5）。 */
     private fun matchesPassword(input: List<Int>): Boolean =
         input.toIntArray().contentEquals(loadPassword())
 

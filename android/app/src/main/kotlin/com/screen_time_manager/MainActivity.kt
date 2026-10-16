@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
+import android.view.KeyEvent
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 
@@ -20,24 +22,21 @@ import io.flutter.embedding.android.FlutterActivity
  * [ActivityTracker] 静态持有当前 Activity 的弱引用，供 intervention 通道
  * 的 lockScreen（DevicePolicyManager 需要 Activity）和 startLockTask/
  * stopLockTask（必须在 Activity 实例上调用）使用。
+ *
+ * 音量键紧急退出通路：[dispatchKeyEvent] 作为主路径——应用前台 / 屏幕固定
+ * 期间，系统会把音量键先分发给当前窗口，再做调音量；在此处喂给
+ * [EmergencyKeyController]，密码窗口内返回 true 即可抑制系统处理（音量不变、
+ * HUD 不弹）。OEM ROM 若在 PhoneWindowManager 层提前拦截，则由
+ * [ScreenMonitorService] 里的 ContentObserver 兜底。
  */
 class MainActivity : FlutterActivity() {
 
-    /**
-     * 休息期间轮询屏幕固定状态：公开 SDK 没有 LockTask 退出回调
-     * （onLockTaskModeExiting 是 @hide），用 [getLockTaskModeState] 轮询。
-     * 一旦发现用户退出固定（仍停留在本页的情况），立即重新固定。
-     */
     private val mainHandler = Handler(Looper.getMainLooper())
     private val lockTaskChecker = object : Runnable {
         override fun run() {
             if (RestGuard.armed) {
                 val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-                // 已处于固定模式时不再重复调用 startLockTask，避免系统反复弹
-                // "应用已固定"toast。
-                if (!am.isInLockTaskMode) {
-                    runCatching { startLockTask() }
-                }
+                if (!am.isInLockTaskMode) runCatching { startLockTask() }
             }
             mainHandler.postDelayed(this, CHECK_INTERVAL_MS)
         }
@@ -69,7 +68,24 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
-    /** Android 13+ 首次启动时申请通知权限，保证前台服务常驻通知可见。 */
+    /**
+     * 音量键紧急退出主通路：系统先分发给当前窗口，再调音量。
+     * 返回 true 表示吞掉，系统就不会调音量、也不会弹 HUD。
+     * 长按重复事件（ACTION_DOWN + repeatCount > 0）不重复计数。
+     */
+    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if (event != null &&
+            event.action == KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0 &&
+            (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
+                event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
+        ) {
+            Log.d("MainActivity", "dispatchKeyEvent volume=${event.keyCode}")
+            if (EmergencyKeyController.onKeyDown(event.keyCode)) return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
     private companion object {
         const val CHECK_INTERVAL_MS = 5000L
     }
@@ -80,8 +96,6 @@ class MainActivity : FlutterActivity() {
             this,
             Manifest.permission.POST_NOTIFICATIONS,
         ) == PackageManager.PERMISSION_GRANTED
-        if (!granted) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
-        }
+        if (!granted) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
     }
 }
