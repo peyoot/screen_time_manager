@@ -6,15 +6,12 @@
 /// 以虚拟时钟确定性地验证。
 library;
 
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 
 import '../models/app_settings.dart';
 import '../models/daily_usage.dart';
 import '../models/question_bank.dart';
 import 'app_phase.dart';
-import 'quiz_session.dart';
 import 'screen_time_state.dart';
 
 /// 亮屏计时 → 豁免答题 → 全屏休息 的核心状态机。
@@ -22,7 +19,6 @@ class ScreenTimeMachine extends ChangeNotifier {
   AppSettings _settings;
   QuestionBank? _bank;
   final DateTime Function() _clock;
-  final Random? _random;
   DateTime _lastTickAt;
 
   ScreenTimeState _state;
@@ -48,16 +44,14 @@ class ScreenTimeMachine extends ChangeNotifier {
   /// 创建状态机。
   ///
   /// - [settings]：触发阈值与答题规则；
-  /// - [questionBank]：可选的初始题库；
+  /// - [questionBank]：可选的初始题库（当前到点直接进休息，不再抽题）；
   /// - [clock]：可注入时钟，测试中传入虚拟时钟即可避免真实等待；
-  /// - [initiallyScreenOn]：创建时屏幕是否点亮；
-  /// - [random]：抽题随机数发生器，注入后测试结果可复现。
+  /// - [initiallyScreenOn]：创建时屏幕是否点亮。
   factory ScreenTimeMachine({
     required AppSettings settings,
     QuestionBank? questionBank,
     DateTime Function()? clock,
     bool initiallyScreenOn = false,
-    Random? random,
   }) {
     final time = clock ?? DateTime.now;
     final now = time();
@@ -65,7 +59,6 @@ class ScreenTimeMachine extends ChangeNotifier {
       settings,
       questionBank,
       time,
-      random,
       now,
       ScreenTimeState.initial(
         now: now,
@@ -79,7 +72,6 @@ class ScreenTimeMachine extends ChangeNotifier {
     this._settings,
     this._bank,
     this._clock,
-    this._random,
     this._lastTickAt,
     this._state,
   );
@@ -246,7 +238,7 @@ class ScreenTimeMachine extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  /// 累计亮屏时长，达到阈值则触发答题（或因无题库直接休息）。
+  /// 累计亮屏时长，达到阈值则直接强制休息（无提醒页中间态）。
   void _accumulate(Duration delta, DateTime now) {
     final nextUsage = _state.dailyUsage.addScreenTime(delta);
     final nextProgress = _state.sinceLastGrant + delta;
@@ -255,32 +247,13 @@ class ScreenTimeMachine extends ChangeNotifier {
       sinceLastGrant: nextProgress,
     );
     if (nextProgress >= _settings.quizInterval) {
-      _enterQuizOrRest(now);
+      _enterRest(now);
     }
   }
 
-  /// 进入一轮豁免答题；今日额度用完、题库缺失或题量不足时直接强制休息。
+  /// 到点自动进入全屏强制休息（保留此方法供 quiz 答错/放弃后复用）。
   void _enterQuizOrRest(DateTime now) {
-    final bank = _bank;
-    if (canExempt &&
-        bank != null &&
-        bank.questions.length >= _settings.questionsPerQuiz) {
-      final drawn = bank.drawRandom(
-        _settings.questionsPerQuiz,
-        random: _random,
-      );
-      final session = QuizSession(
-        questions: drawn,
-        requiredCorrectCount: _settings.requiredCorrectCount,
-      );
-      _state = _state.copyWith(
-        phase: AppPhase.quiz,
-        quiz: session,
-        quizRound: _state.quizRound + 1,
-      );
-    } else {
-      _enterRest(now);
-    }
+    _enterRest(now);
   }
 
   /// 进入全屏强制休息，结束时刻为 [now] + 配置的休息时长。

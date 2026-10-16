@@ -4,8 +4,6 @@
 /// 平台通道与真实亮屏监听后续接入；当前由控制器内部定时器驱动。
 library;
 
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MissingPluginException;
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -77,7 +75,6 @@ Future<void> main() async {
       requiredCorrectCount: 1,
     ),
     questionBank: machineBank,
-    random: Random(2026),
   );
 
   // 平台监控接线：Android 返回真实通道（亮灭屏事件流 + 干预桥），

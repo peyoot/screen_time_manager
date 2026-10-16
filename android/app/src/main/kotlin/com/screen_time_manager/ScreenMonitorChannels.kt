@@ -247,17 +247,26 @@ object ScreenMonitorChannels {
     /**
      * 调用 DevicePolicyManager.lockNow() 熄屏。
      *
+     * 休息期 10 秒无操作自动熄屏时调用：先临时解除 [RestGuard] 武装，
+     * 避免锁屏后 Activity 进入 onStop 被误判为"用户强行切走"；
+     * 锁屏完成后重新武装（若仍在休息阶段，Dart 侧会重新 startScreenPinning）。
+     *
      * @return true 表示成功熄屏；false 表示未授权 Device Admin 或调用失败。
      */
     private fun lockScreen(): Boolean {
         if (!isDeviceAdminEnabled()) return false
         val app = ScreenMonitorApp.instance
         val dpm = app.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        // 临时解除武装，防止 lockNow 导致 onStop 被 RestGuard 误判为强行切走
+        val wasArmed = RestGuard.armed
+        if (wasArmed) RestGuard.disarm()
         return try {
             dpm.lockNow()
             true
         } catch (_: SecurityException) {
             false
+        } finally {
+            if (wasArmed) RestGuard.arm()
         }
     }
 

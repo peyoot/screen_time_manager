@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:screen_time_manager/main.dart';
@@ -34,7 +32,6 @@ ScreenTimeController buildController() {
       restDuration: const Duration(minutes: 3),
     ),
     questionBank: machineBank,
-    random: Random(2026),
   );
   return ScreenTimeController(
     machine: machine,

@@ -7,8 +7,6 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/question.dart';
-import 'package:screen_time_manager/models/question_bank.dart';
 import 'package:screen_time_manager/platform_channel/platform_channels.dart';
 import 'package:screen_time_manager/question_bank/bank_question.dart';
 import 'package:screen_time_manager/question_bank/question_bank_service.dart';
@@ -149,7 +147,7 @@ void main() {
       expect(bridge.stopPinCount, 1);
     });
 
-    test('累计亮屏达阈值触发 quiz 干预，答对达标后 dismiss', () {
+    test('累计亮屏达阈值直接进休息：resting 干预并固定屏幕，豁免后解除', () {
       var now = DateTime(2026, 10, 11, 9, 0);
       final machine = ScreenTimeMachine(
         settings: AppSettings(
@@ -157,18 +155,6 @@ void main() {
           questionsPerQuiz: 1,
           requiredCorrectCount: 1,
           restDuration: const Duration(minutes: 3),
-        ),
-        questionBank: QuestionBank(
-          id: 'mcq',
-          name: 'mcq',
-          questions: const [
-            Question(
-              id: 'mq1',
-              prompt: 'pick the right one',
-              options: ['wrong', 'right'],
-              correctIndex: 1,
-            ),
-          ],
         ),
         clock: () => now,
         initiallyScreenOn: true,
@@ -183,22 +169,20 @@ void main() {
       );
       addTearDown(controller.dispose);
 
-      // 推进 2 秒（阈值 1 秒），触发答题。
+      // 推进 2 秒（阈值 1 秒）：无提醒/答题中间态，直接进休息并固定屏幕。
       now = now.add(const Duration(seconds: 2));
       machine.tick();
-      expect(machine.state.phase, AppPhase.quiz);
-      expect(bridge.requests, [InterventionPhase.quiz]);
+      expect(machine.state.phase, AppPhase.resting);
+      expect(bridge.requests, [InterventionPhase.resting]);
       expect(bridge.dismissCount, 0);
-      // 答题页不锁定屏幕：用户仍可自由切到其他应用。
-      expect(bridge.startPinCount, 0);
+      expect(bridge.startPinCount, 1);
+      expect(bridge.stopPinCount, 0);
 
-      // 答对唯一一题：豁免通过，回到计时并撤销干预。
-      final current = machine.state.quiz!.currentQuestion!;
-      machine.answerCurrentQuestion(current.correctIndex);
+      // 休息页答题豁免通过 → 回到计时、撤销干预并解除固定。
+      machine.endRestEarly();
       expect(machine.state.phase, AppPhase.tracking);
       expect(bridge.dismissCount, 1);
-      // quiz → tracking 从未固定过，不应调用解除。
-      expect(bridge.stopPinCount, 0);
+      expect(bridge.stopPinCount, 1);
     });
 
     test('未注入干预桥时阶段变化不抛错（桌面/Web/测试退化路径）', () {

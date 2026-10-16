@@ -4,8 +4,6 @@ import 'package:screen_time_manager/data/repositories/rest_session_repository.da
 import 'package:screen_time_manager/data/repositories/screen_session_repository.dart';
 import 'package:screen_time_manager/data/repositories/snooze_record_repository.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/question.dart';
-import 'package:screen_time_manager/models/question_bank.dart';
 import 'package:screen_time_manager/question_bank/bank_question.dart';
 import 'package:screen_time_manager/question_bank/question_bank_service.dart';
 import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
@@ -39,20 +37,6 @@ void main() {
     );
     await bankService.flush();
 
-    final machineBank = QuestionBank(
-      id: 'machine',
-      name: '状态机题库',
-      questions: List.generate(
-        4,
-        (i) => Question(
-          id: 'mq$i',
-          prompt: '占位 $i',
-          options: const ['错', '对'],
-          correctIndex: 1,
-        ),
-      ),
-    );
-
     machine = ScreenTimeMachine(
       settings: AppSettings.defaults.copyWith(
         questionsPerQuiz: 2,
@@ -60,7 +44,6 @@ void main() {
         quizInterval: const Duration(minutes: 15),
         restDuration: const Duration(minutes: 1),
       ),
-      questionBank: machineBank,
       clock: () => now,
       initiallyScreenOn: true,
     );
@@ -83,19 +66,21 @@ void main() {
     machine.tick();
   }
 
-  test('答题通过 → 写入 passed=true 的 snooze_record', () async {
-    advance(const Duration(minutes: 16));
-    expect(machine.state.phase.name, 'quiz');
-    controller.continueUsage();
+  test('到点进休息后答题豁免通过 → 写入 passed=true 的 snooze_record', () async {
+    advance(const Duration(minutes: 16)); // 阈值 15 分钟 → 直接进休息
+    expect(machine.state.phase.name, 'resting');
+    controller.requestRestExemption();
+    expect(controller.restQuizQuestion, isNotNull);
     // 抽题非确定，按实际抽中的题目答案作答。
-    controller.submitAnswer(controller.quizQuestions[0].answer);
-    controller.submitAnswer(controller.quizQuestions[1].answer);
+    final correct =
+        controller.submitRestAnswer(controller.restQuizQuestion!.answer);
+    expect(correct, isTrue);
     expect(machine.state.phase.name, 'tracking');
     await Future<void>.delayed(Duration.zero);
     final snoozes = await snoozeRepo.listRecent();
     expect(snoozes.length, 1);
     expect(snoozes.first.passed, true);
-    expect(snoozes.first.correctCount, 2);
+    expect(snoozes.first.correctCount, 1);
     expect(machine.remainingExemptions, 1); // 默认 2，用掉 1
   });
 

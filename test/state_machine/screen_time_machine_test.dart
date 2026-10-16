@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
 import 'package:screen_time_manager/models/question.dart';
@@ -8,7 +6,7 @@ import 'package:screen_time_manager/state_machine/app_phase.dart';
 import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
 
 void main() {
-  // 所有题目正确答案固定为下标 1，便于测试中精确控制对错。
+  // 状态机当前到点直接进休息，不再抽题；题库仅作为构造参数保留。
   QuestionBank buildBank(int n, {String prefix = 'q'}) {
     return QuestionBank(
       id: 'bank',
@@ -41,13 +39,11 @@ void main() {
     AppSettings? settings,
     QuestionBank? bank,
     bool initiallyScreenOn = true,
-    int seed = 42,
   }) {
     final machine = ScreenTimeMachine(
       settings: settings ?? testSettings,
       questionBank: bank ?? buildBank(10),
       clock: () => clock,
-      random: Random(seed),
       initiallyScreenOn: initiallyScreenOn,
     );
     machine.addListener(() => phaseLog.add(machine.state.phase));
@@ -106,82 +102,39 @@ void main() {
     });
   });
 
-  group('触发豁免答题', () {
-    test('累计达到阈值进入答题阶段并按配置抽题', () {
-      final settings = AppSettings(
-        quizInterval: const Duration(minutes: 30),
-        questionsPerQuiz: 3,
-        requiredCorrectCount: 2,
-        restDuration: const Duration(minutes: 3),
-      );
-      final m = buildMachine(settings: settings);
-
+  group('触发强制休息', () {
+    test('累计达到阈值直接进入休息阶段（无答题中间态）', () {
+      final m = buildMachine();
       advance(m, const Duration(minutes: 29, seconds: 59));
       expect(m.state.phase, AppPhase.tracking);
 
       advance(m, const Duration(seconds: 2));
-      expect(m.state.phase, AppPhase.quiz);
-      expect(m.state.quizRound, 1);
-      expect(m.state.quiz!.questions.length, 3);
-      expect(m.state.restEndsAt, isNull);
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.state.quiz, isNull);
+      expect(m.state.restEndsAt, clock.add(const Duration(minutes: 3)));
     });
 
     test('阈值刚好达到时触发', () {
       final m = buildMachine();
       advance(m, const Duration(minutes: 30));
-      expect(m.state.phase, AppPhase.quiz);
-      expect(m.state.quiz!.questions.length, 1);
+      expect(m.state.phase, AppPhase.resting);
     });
 
-    test('答题阶段 tick 不计任何时长', () {
+    test('休息阶段 tick 不累计亮屏时长', () {
       final m = buildMachine();
       advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
       final before = m.state.usedToday;
-      advance(m, const Duration(hours: 1));
-      expect(m.state.phase, AppPhase.quiz);
+
+      // 休息 3 分钟内推进 2 分钟：仍在休息，用量不变。
+      advance(m, const Duration(minutes: 2));
+      expect(m.state.phase, AppPhase.resting);
       expect(m.state.usedToday, before);
     });
   });
 
-  group('答题结果流转', () {
-    test('答对达标：豁免通过并重新累计阈值', () {
-      final m = buildMachine();
-      advance(m, const Duration(minutes: 30));
-      expect(m.state.phase, AppPhase.quiz);
-
-      m.answerCurrentQuestion(1); // 正确
-      expect(m.state.phase, AppPhase.tracking);
-      expect(m.state.quiz, isNull);
-      expect(m.state.sinceLastGrant, Duration.zero);
-      expect(m.state.usedToday, const Duration(minutes: 30));
-
-      // 再累计一个间隔才会触发第二轮。
-      advance(m, const Duration(minutes: 29));
-      expect(m.state.phase, AppPhase.tracking);
-      advance(m, const Duration(minutes: 1));
-      expect(m.state.phase, AppPhase.quiz);
-      expect(m.state.quizRound, 2);
-    });
-
-    test('答错题数在容忍范围内仍可通过（3 题需答对 2 题）', () {
-      final settings = AppSettings(
-        quizInterval: const Duration(minutes: 5),
-        questionsPerQuiz: 3,
-        requiredCorrectCount: 2,
-        restDuration: const Duration(minutes: 3),
-      );
-      final m = buildMachine(settings: settings);
-      advance(m, const Duration(minutes: 5));
-      expect(m.state.phase, AppPhase.quiz);
-
-      m.answerCurrentQuestion(1); // 对
-      m.answerCurrentQuestion(0); // 错
-      m.answerCurrentQuestion(1); // 对
-      expect(m.state.phase, AppPhase.tracking);
-      expect(m.state.quiz, isNull);
-    });
-
-    test('答对数不足进入全屏休息，休息结束回到计时', () {
+  group('休息结束与豁免流转', () {
+    test('到点进休息，休息自然结束回到计时并重新累计阈值', () {
       final settings = AppSettings(
         quizInterval: const Duration(minutes: 5),
         questionsPerQuiz: 2,
@@ -190,9 +143,6 @@ void main() {
       );
       final m = buildMachine(settings: settings);
       advance(m, const Duration(minutes: 5));
-
-      m.answerCurrentQuestion(1); // 对
-      m.answerCurrentQuestion(0); // 错 → 休息
       expect(m.state.phase, AppPhase.resting);
       expect(m.state.quiz, isNull);
       expect(
@@ -211,9 +161,9 @@ void main() {
       expect(m.state.restEndsAt, isNull);
       expect(m.state.sinceLastGrant, Duration.zero);
 
-      // 休息结束后的余量已计入新一轮时长（本 tick 无余量）。
+      // 新一轮累计到阈值再次直接进入休息。
       advance(m, const Duration(minutes: 5));
-      expect(m.state.phase, AppPhase.quiz);
+      expect(m.state.phase, AppPhase.resting);
     });
 
     test('休息结束 tick 的超出余量会计入新一轮时长', () {
@@ -225,20 +175,18 @@ void main() {
       );
       final m = buildMachine(settings: settings);
       advance(m, const Duration(minutes: 5));
-      m.answerCurrentQuestion(0); // 答错 → 休息 3 分钟
+      expect(m.state.phase, AppPhase.resting);
 
       // 一次性跳过 8 分钟：3 分钟休息 + 5 分钟新一轮亮屏，
-      // 应在同一个 tick 内再次触发答题。
+      // 应在同一个 tick 内再次触发休息。
       advance(m, const Duration(minutes: 8));
-      expect(m.state.phase, AppPhase.quiz);
-      expect(m.state.quizRound, 2);
+      expect(m.state.phase, AppPhase.resting);
       expect(m.state.usedToday, const Duration(minutes: 10));
     });
 
-    test('放弃答题直接进入休息', () {
+    test('手动触发休息（restNow）并自然结束', () {
       final m = buildMachine();
-      advance(m, const Duration(minutes: 30));
-      m.giveUpQuiz();
+      m.restNow();
       expect(m.state.phase, AppPhase.resting);
       expect(
         m.state.restEndsAt,
@@ -249,8 +197,20 @@ void main() {
       expect(m.state.phase, AppPhase.tracking);
     });
 
-    test('非答题阶段作答/放弃抛出 StateError', () {
+    test('非计时阶段手动触发休息抛出 StateError', () {
       final m = buildMachine();
+      m.restNow();
+      expect(m.restNow, throwsStateError);
+    });
+
+    test('quiz 阶段不可达：作答/放弃均抛出 StateError', () {
+      final m = buildMachine();
+      expect(() => m.answerCurrentQuestion(1), throwsStateError);
+      expect(m.giveUpQuiz, throwsStateError);
+
+      // 到点进休息后同样不是答题阶段。
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
       expect(() => m.answerCurrentQuestion(1), throwsStateError);
       expect(m.giveUpQuiz, throwsStateError);
     });
@@ -286,22 +246,17 @@ void main() {
       expect(m.state.quiz, isNull);
     });
 
-    test('题库题量不足时进入休息，补够题量后下一轮正常答题', () {
-      final settings = AppSettings(
-        quizInterval: const Duration(minutes: 10),
-        questionsPerQuiz: 5,
-        requiredCorrectCount: 5,
-        restDuration: const Duration(minutes: 1),
-      );
-      final m = buildMachine(settings: settings, bank: buildBank(2));
-      advance(m, const Duration(minutes: 10));
+    test('到点休息与题库无关：更换题库后下一轮仍直接进休息', () {
+      final m = buildMachine(bank: buildBank(2));
+      advance(m, const Duration(minutes: 30));
       expect(m.state.phase, AppPhase.resting);
 
-      advance(m, const Duration(minutes: 1)); // 休息结束
+      advance(m, const Duration(minutes: 3)); // 休息结束
+      expect(m.state.phase, AppPhase.tracking);
+
       m.setQuestionBank(buildBank(5, prefix: 'big'));
-      advance(m, const Duration(minutes: 10));
-      expect(m.state.phase, AppPhase.quiz);
-      expect(m.state.quiz!.questions.length, 5);
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
     });
   });
 
@@ -318,22 +273,22 @@ void main() {
       expect(m.state.phase, AppPhase.tracking);
 
       advance(m, const Duration(minutes: 30));
-      expect(m.state.phase, AppPhase.quiz);
+      expect(m.state.phase, AppPhase.resting);
     });
   });
 
   group('配置更新', () {
-    test('缩短阈值且既有进度已达标时立即触发答题', () {
+    test('缩短阈值且既有进度已达标时立即触发休息', () {
       final m = buildMachine();
       advance(m, const Duration(minutes: 10));
       expect(m.state.phase, AppPhase.tracking);
       m.updateSettings(
         AppSettings.defaults.copyWith(quizInterval: const Duration(minutes: 10)),
       );
-      expect(m.state.phase, AppPhase.quiz);
+      expect(m.state.phase, AppPhase.resting);
     });
 
-    test('提高阈值后既有进度不再触发答题', () {
+    test('提高阈值后既有进度不再触发休息', () {
       final m = buildMachine();
       advance(m, const Duration(minutes: 10));
       m.updateSettings(
@@ -345,17 +300,18 @@ void main() {
   });
 
   group('每日豁免次数限制', () {
-    /// 连续答对通过 [rounds] 轮阈值答题（默认配置每轮 30 分钟、1 题）。
+    /// 连续 [rounds] 轮：到阈值进休息 → 休息页答题豁免通过（endRestEarly），
+    /// 每轮消耗一次今日豁免额度（默认配置每轮 30 分钟阈值）。
     void passRounds(ScreenTimeMachine m, int rounds) {
       for (var i = 0; i < rounds; i++) {
         advance(m, const Duration(minutes: 30));
-        expect(m.state.phase, AppPhase.quiz, reason: '第 ${i + 1} 轮应进入答题');
-        m.answerCurrentQuestion(1); // 正确答案下标固定为 1。
+        expect(m.state.phase, AppPhase.resting, reason: '第 ${i + 1} 轮应进入休息');
+        m.endRestEarly();
         expect(m.state.phase, AppPhase.tracking);
       }
     }
 
-    test('默认每日 2 次：答对两轮各消耗一次，剩余 0', () {
+    test('默认每日 2 次：豁免两轮各消耗一次，剩余 0', () {
       final m = buildMachine();
       expect(m.remainingExemptions, 2);
       expect(m.canExempt, isTrue);
@@ -366,7 +322,7 @@ void main() {
       expect(m.canExempt, isFalse);
     });
 
-    test('次数用完后再次达到阈值直接进入强制休息，不再答题', () {
+    test('次数用完后再次达到阈值直接进入强制休息', () {
       final m = buildMachine();
       passRounds(m, 2);
 
@@ -406,10 +362,10 @@ void main() {
       expect(m.remainingExemptions, 2);
       expect(m.state.exemptionsUsedToday, 0);
 
-      // 重置后可再次答题豁免。
+      // 重置后可再次豁免。
       advance(m, const Duration(minutes: 30));
-      expect(m.state.phase, AppPhase.quiz);
-      m.answerCurrentQuestion(1);
+      expect(m.state.phase, AppPhase.resting);
+      m.endRestEarly();
       expect(m.state.phase, AppPhase.tracking);
       expect(m.remainingExemptions, 1);
     });
@@ -425,7 +381,7 @@ void main() {
       expect(m.remainingExemptions, 1); // 不重置
     });
 
-    test('答题提前结束休息不触发重置', () {
+    test('豁免提前结束休息不触发次数重置', () {
       final m = buildMachine();
       passRounds(m, 1); // 剩余 1
       m.restNow();
@@ -434,7 +390,7 @@ void main() {
       expect(m.remainingExemptions, 0);
     });
 
-    test('跨自然日后豁免次数归零，可再次答题豁免', () {
+    test('跨自然日后豁免次数归零，可再次豁免', () {
       final m = buildMachine();
       passRounds(m, 2);
       advance(m, const Duration(minutes: 30)); // 第三次直接休息
@@ -447,8 +403,8 @@ void main() {
       expect(m.remainingExemptions, 2);
 
       advance(m, const Duration(minutes: 30));
-      expect(m.state.phase, AppPhase.quiz);
-      m.answerCurrentQuestion(1);
+      expect(m.state.phase, AppPhase.resting);
+      m.endRestEarly();
       expect(m.state.phase, AppPhase.tracking);
       expect(m.state.exemptionsUsedToday, 1);
     });

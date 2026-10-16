@@ -33,7 +33,9 @@ class MainActivity : FlutterActivity() {
         override fun run() {
             if (RestGuard.armed) {
                 val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-                if (am.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
+                // 已处于固定模式时不再重复调用 startLockTask，避免系统反复弹
+                // "应用已固定"toast。
+                if (!am.isInLockTaskMode) {
                     runCatching { startLockTask() }
                 }
             }

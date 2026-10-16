@@ -189,17 +189,17 @@
 
 ## Current Status
 - 项目已初始化，完成首次 Git 提交。
-- **共享层**：已实现数据模型、核心状态机（亮屏计时→豁免答题→全屏休息，含每日豁免额度上限与自然完成重置）、题库模块（分组 CRUD + 加权抽题 + 编辑）、核心 UI 页面（主页计时、提醒、答题、休息秒表）。
+- **共享层**：已实现数据模型、核心状态机（亮屏计时→**到点直接全屏休息**（无提醒/答题中间态）→休息页内答题豁免，含每日豁免额度上限与自然完成重置）、题库模块（分组 CRUD + 加权抽题 + 编辑）、核心 UI 页面（主页计时、休息秒表）。状态机的 quiz 阶段已不可达（`answerCurrentQuestion`/`giveUpQuiz` 保留但调用即抛 StateError），豁免答题走控制器 `requestRestExemption`/`submitRestAnswer`（题库服务输入式题目）。
 - **国际化**：支持中/英/日/韩，跟随系统语言，主页可切换；扩展只需在 `lib/l10n/` 新建 `app_xx.arb` 并 `flutter gen-l10n`。
 - **本地数据层（SQLite）**：已实现建表 + CRUD + 接线（`lib/data/`）；`app_settings` 启动加载、`question_group`/`question` cache-aside 持久化、`screen_session`/`rest_session`/`snooze_record` 在控制器阶段切换时落库。`sync_queue` 仅建表 + 入队。
 - **默认题库**：纯英文，不做多语种翻译（用户自行导入所需题库）——`Missing Piece`（谚语填空）、`Curious Mind`（科普问答）；中文系统环境额外加载"文化常识"古诗文飞花令分组。
-- **测试**：148 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线）。
+- **测试**：147 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线）。
 - **Android 第 1 步已完成**：包名/applicationId 已改为 `com.screen_time_manager`；`lib/platform_channel/` 通道层就绪（screen_events / monitor / intervention，条件导入保证 Web 不引入 `dart:io`）；`ScreenTimeController` 支持注入亮灭屏事件流与干预桥，未注入时退化为 Timer 驱动；Kotlin 侧通道（含 `ScreenEventBus`、权限状态查询与设置页跳转）已注册；`flutter build apk --debug` 与 `flutter build web` 均通过。
 - **Android 第 2 步已完成**：`ScreenMonitorApp` 预创建并缓存 FlutterEngine（ID `screen_monitor_engine`），MainActivity 复用之；`ScreenMonitorService` 前台服务（specialUse + 常驻通知）内动态注册亮灭屏/解锁广播，事件经 EventChannel 驱动状态机，后台/灭屏期间 Dart 持续 tick；POST_NOTIFICATIONS 首启申请；合并后 Manifest 已核验。
-- **休息期自动熄屏已实现**：`InterventionBridge.lockScreen` + Kotlin `DeviceAdminReceiver`（仅 force-lock 策略）+ `DevicePolicyManager.lockNow()`（反射调用 @hide `createAddAdminActiveIntent` 打开授权页，回退安全设置页）；rest_page.dart 进入休息 10 秒内无答题豁免操作则熄屏，点豁免/提交答案即取消计时器。
+- **休息期自动熄屏已实现**：`InterventionBridge.lockScreen` + Kotlin `DeviceAdminReceiver`（仅 force-lock 策略）+ `DevicePolicyManager.lockNow()`（反射调用 @hide `createAddAdminActiveIntent` 打开授权页，回退安全设置页）；rest_page.dart 进入休息 10 秒内无答题豁免操作则熄屏，点豁免/提交答案即取消计时器。**注意**：`lockScreen()` 必须先临时 `RestGuard.disarm()` 再 `lockNow()` 最后 re-arm，否则熄屏导致的 onStop 会被 RestGuard 误判为用户强行切走而重复拉回。
 - **休息期独占（仅 resting 锁定，quiz/tracking 不锁定）**：进入 resting 调 `startScreenPinning`，回到 tracking（自然结束或豁免通过）才 `stopScreenPinning`，quiz 阶段不固定。两层强度：
   - **Device Owner 模式（真正不可退出）**：一次性 ADB `adb shell dpm set-device-owner com.screen_time_manager/.ScreenMonitorDeviceAdmin`（设备无账号时），App 启动时 `setLockTaskPackages` 白名单，之后 startLockTask 静默进入 Kiosk LOCKED 模式，无确认弹窗、无退出手势。
-  - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 500ms 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），发现退出立即重新 startLockTask；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity（overlay/full-screen intent，后者第 3 步补齐）。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
+  - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 500ms 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），**仅在 `!isInLockTaskMode` 时才重新 startLockTask**（否则系统每次调用都弹"应用已固定"toast）；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity（overlay/full-screen intent，后者第 3 步补齐）。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
   - Web/桌面侧 `_NoopInterventionBridge` 静默 no-op；接线测试覆盖"resting 固定/结束解除/quiz 不固定"。
 - **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
   1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。
