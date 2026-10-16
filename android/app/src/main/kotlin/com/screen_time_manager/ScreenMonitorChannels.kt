@@ -51,8 +51,8 @@ object ScreenEventBus {
  *   [ScreenMonitorService] 动态注册后经 [ScreenEventBus] 推送。
  * - `monitor`：启停 [ScreenMonitorService]（前台服务 + 屏幕广播）；
  *   另提供权限状态查询与系统设置页跳转。
- * - `intervention`：请求 / 撤销到点干预（拉 Activity 到前台 + 高优全屏通知；
- *   悬浮层兜底待后续版本）；休息期自动熄屏（DevicePolicyManager.lockNow）
+ * - `intervention`：请求 / 撤销到点干预（拉 Activity 到前台 + 高优全屏通知 +
+ *   悬浮层兜底）；休息期自动熄屏（DevicePolicyManager.lockNow）
  *   与屏幕固定（startLockTask / stopLockTask）。
  */
 object ScreenMonitorChannels {
@@ -170,6 +170,15 @@ object ScreenMonitorChannels {
             // 已有界面时 SINGLE_TOP 只触发 onNewIntent，不会重建 Activity。
             runCatching { app.startActivity(intent) }
         }
+        // 悬浮层兜底（第 3 步）：若拉起失败（权限/ROM 限制）导致短延迟后
+        // Activity 仍未到前台，且用户已授权悬浮窗，则全屏遮罩覆盖当前应用。
+        // 已授权 canDrawOverlays 时 startActivity 本身就是官方豁免项；
+        // 未授权则连遮罩也加不上，仅剩通知路径。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            Settings.canDrawOverlays(app)
+        ) {
+            InterventionOverlay.requestShow(app, phase)
+        }
         showInterventionNotification(app, intent, phase)
     }
 
@@ -223,18 +232,19 @@ object ScreenMonitorChannels {
         manager.notify(ALERT_NOTIFICATION_ID, notification)
     }
 
-    /** 撤销干预：取消到点通知（悬浮层兜底留待后续版本）。 */
+    /** 撤销干预：取消到点通知与悬浮层兜底。 */
     private fun dismissIntervention() {
         // 回到计时阶段：紧急退出控制器恢复"主界面可改密"分流。
         EmergencyKeyController.resting = false
         dismissInterventionNotification()
     }
 
-    /** 仅取消到点通知（紧急退出休息时复用，不重复改 phase）。 */
+    /** 仅取消到点通知与悬浮层兜底（紧急退出休息时复用，不重复改 phase）。 */
     fun dismissInterventionNotification() {
         val manager = ScreenMonitorApp.instance
             .getSystemService(NotificationManager::class.java)
         manager.cancel(ALERT_NOTIFICATION_ID)
+        InterventionOverlay.hide()
     }
 
     // -----------------------------------------------------------------
@@ -285,34 +295,99 @@ object ScreenMonitorChannels {
 
     private fun openPermissionSettings(context: Context, kind: String?) {
         val packageName = context.packageName
-        val intent = when (kind) {
-            "overlay" -> Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName"),
+        // 按优先级逐个尝试目标设置页：部分厂商 ROM 裁剪了系统页面，
+        // 前一个抛 ActivityNotFoundException 时回退到下一个，最后兜底应用详情页。
+        val attempts = when (kind) {
+            "overlay" -> listOf(
+                Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName"),
+                ),
             )
-            "ignoreBatteryOptimizations" -> Intent(
-                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                Uri.parse("package:$packageName"),
+            "ignoreBatteryOptimizations" -> listOf(
+                Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:$packageName"),
+                ),
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
             )
-            "notifications" -> notificationSettingsIntent(packageName)
-            "accessibility" -> Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            "notifications" -> listOf(notificationSettingsIntent(packageName))
+            "accessibility" -> listOf(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             "fullScreenIntent" ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    Intent(
-                        Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
-                        Uri.parse("package:$packageName"),
+                    listOf(
+                        Intent(
+                            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                            Uri.parse("package:$packageName"),
+                        ),
                     )
                 } else {
-                    appDetailsIntent(packageName)
+                    // Android 13 及以下全屏 intent 默认授予，无需专门页面。
+                    listOf(notificationSettingsIntent(packageName))
                 }
-            else -> appDetailsIntent(packageName)
+            "autoStart" -> {
+                // 无公开 API：按厂商组件名尽力跳转自启动管理页，失败回退应用详情。
+                tryOpenOemAutoStartPage(context)
+                return
+            }
+            else -> listOf(appDetailsIntent(packageName))
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
-            context.startActivity(intent)
-        } catch (_: Exception) {
+        for (intent in attempts) {
+            try {
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            } catch (_: Exception) {
+                // 尝试下一级回退
+            }
+        }
+        runCatching {
             context.startActivity(
-                appDetailsIntent(packageName)
+                appDetailsIntent(packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }
+
+    /**
+     * 尝试跳转各 OEM 的自启动管理页（无公开 API，按已知组件名逐一尝试）。
+     * 全部失败时回退应用详情页。注意此处用 startActivity 试错而非
+     * resolveActivity 预判——API 30+ 的包可见性过滤会让后者查不到其他应用。
+     */
+    private fun tryOpenOemAutoStartPage(context: Context) {
+        val candidates = listOf(
+            // MIUI
+            "com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity",
+            // EMUI / HarmonyOS
+            "com.huawei.systemmanager/com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity",
+            "com.huawei.systemmanager/com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+            // ColorOS（OPPO/一加/realme）
+            "com.coloros.safecenter/com.coloros.safecenter.permission.startup.StartupAppListActivity",
+            "com.coloros.safecenter/com.coloros.safecenter.startupapp.StartupAppListActivity",
+            "com.oplus.battery/com.oplus.battery.startup.StartupAppListActivity",
+            // OriginOS / FuntouchOS（vivo/iQOO）
+            "com.iqoo.secure/com.iqoo.secure.ui.phoneoptimize.BgStartUpManager",
+            "com.iqoo.secure/com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity",
+            "com.vivo.permissionmanager/com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+            // Samsung
+            "com.samsung.android.lool/com.samsung.android.sm.ui.ram.AutoRunActivity",
+            // 联想 ZuxOS / Legacy
+            "com.lenovo.security/com.lenovo.security.purviews.AutoStartActivity",
+            "com.leb.secure/com.lenovo.leb.secure.purviews.AutoStartActivity",
+        )
+        for (candidate in candidates) {
+            try {
+                val intent = Intent().apply {
+                    component = ComponentName.unflattenFromString(candidate)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                return
+            } catch (_: Exception) {
+                // 组件不存在或被 ROM 拒绝，尝试下一个
+            }
+        }
+        runCatching {
+            context.startActivity(
+                appDetailsIntent(context.packageName)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         }

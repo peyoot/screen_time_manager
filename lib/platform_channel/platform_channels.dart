@@ -53,6 +53,9 @@ enum MonitorPermission {
 
   /// 无障碍服务授权（紧急退出按键监听依赖它来观测电源键）。
   accessibility,
+
+  /// OEM 自启动管理（无公开 API，仅提供跳转，无状态查询）。
+  autoStart,
 }
 
 /// `monitor` 通道的 Dart 侧封装。

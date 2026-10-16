@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state_machine/app_phase.dart';
 import '../../state_machine/screen_time_state.dart';
 import '../question_bank/group_list_page.dart';
+import '../permissions/permission_guide_page.dart';
 import 'reminder_page.dart';
 import 'rest_page.dart';
 import 'screen_time_controller.dart';
@@ -50,6 +51,16 @@ class _TimingView extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: [
+          IconButton(
+            tooltip: l10n.homePermissionsTooltip,
+            icon: const Icon(Icons.verified_user_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    PermissionGuidePage(monitor: controller.monitor),
+              ),
+            ),
+          ),
           IconButton(
             tooltip: l10n.homeBankTooltip,
             icon: const Icon(Icons.quiz_outlined),

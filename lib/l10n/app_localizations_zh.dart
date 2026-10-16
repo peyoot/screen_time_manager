@@ -49,6 +49,58 @@ class SZh extends S {
   String get homeSettingsTooltip => '计时设置';
 
   @override
+  String get homePermissionsTooltip => '权限引导';
+
+  @override
+  String get permGuideTitle => '权限与保活设置';
+
+  @override
+  String get permUnavailable => '仅 Android 提供权限状态查询';
+
+  @override
+  String get permGranted => '已授权';
+
+  @override
+  String get permDenied => '未授权';
+
+  @override
+  String get permOverlayTitle => '显示在其他应用上层';
+
+  @override
+  String get permOverlayDesc => '到点时自动把休息页拉到前台的关键权限（Android 10+）。';
+
+  @override
+  String get permNotificationsTitle => '通知权限';
+
+  @override
+  String get permNotificationsDesc => '常驻监控通知与到点提醒依赖通知权限（Android 13+ 需运行时授予）。';
+
+  @override
+  String get permFullScreenTitle => '全屏通知';
+
+  @override
+  String get permFullScreenDesc => '锁屏/灭屏时全屏展示休息提醒。Android 14+ 默认关闭，需手动授权。';
+
+  @override
+  String get permBatteryTitle => '电池优化白名单';
+
+  @override
+  String get permBatteryDesc => '加入白名单后后台监控与提醒不会被系统省电策略（Doze）限制。';
+
+  @override
+  String get permAccessibilityTitle => '无障碍服务';
+
+  @override
+  String get permAccessibilityDesc => '紧急退出功能用它监听音量键（第三层兜底通路）。';
+
+  @override
+  String get permAutoStartTitle => '自启动管理（厂商）';
+
+  @override
+  String get permAutoStartDesc =>
+      '部分国产 ROM（MIUI、EMUI、ColorOS、OriginOS 等）需允许自启动，开机后才能自动恢复监控。';
+
+  @override
   String get settingsTitle => '计时设置';
 
   @override

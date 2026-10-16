@@ -167,6 +167,108 @@ abstract class S {
   /// **'计时设置'**
   String get homeSettingsTooltip;
 
+  /// No description provided for @homePermissionsTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'权限引导'**
+  String get homePermissionsTooltip;
+
+  /// No description provided for @permGuideTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'权限与保活设置'**
+  String get permGuideTitle;
+
+  /// No description provided for @permUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅 Android 提供权限状态查询'**
+  String get permUnavailable;
+
+  /// No description provided for @permGranted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已授权'**
+  String get permGranted;
+
+  /// No description provided for @permDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'未授权'**
+  String get permDenied;
+
+  /// No description provided for @permOverlayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示在其他应用上层'**
+  String get permOverlayTitle;
+
+  /// No description provided for @permOverlayDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'到点时自动把休息页拉到前台的关键权限（Android 10+）。'**
+  String get permOverlayDesc;
+
+  /// No description provided for @permNotificationsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知权限'**
+  String get permNotificationsTitle;
+
+  /// No description provided for @permNotificationsDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'常驻监控通知与到点提醒依赖通知权限（Android 13+ 需运行时授予）。'**
+  String get permNotificationsDesc;
+
+  /// No description provided for @permFullScreenTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'全屏通知'**
+  String get permFullScreenTitle;
+
+  /// No description provided for @permFullScreenDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'锁屏/灭屏时全屏展示休息提醒。Android 14+ 默认关闭，需手动授权。'**
+  String get permFullScreenDesc;
+
+  /// No description provided for @permBatteryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'电池优化白名单'**
+  String get permBatteryTitle;
+
+  /// No description provided for @permBatteryDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'加入白名单后后台监控与提醒不会被系统省电策略（Doze）限制。'**
+  String get permBatteryDesc;
+
+  /// No description provided for @permAccessibilityTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'无障碍服务'**
+  String get permAccessibilityTitle;
+
+  /// No description provided for @permAccessibilityDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'紧急退出功能用它监听音量键（第三层兜底通路）。'**
+  String get permAccessibilityDesc;
+
+  /// No description provided for @permAutoStartTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自启动管理（厂商）'**
+  String get permAutoStartTitle;
+
+  /// No description provided for @permAutoStartDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'部分国产 ROM（MIUI、EMUI、ColorOS、OriginOS 等）需允许自启动，开机后才能自动恢复监控。'**
+  String get permAutoStartDesc;
+
   /// No description provided for @settingsTitle.
   ///
   /// In zh, this message translates to:

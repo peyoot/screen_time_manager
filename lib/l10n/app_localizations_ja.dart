@@ -49,6 +49,62 @@ class SJa extends S {
   String get homeSettingsTooltip => 'タイミング設定';
 
   @override
+  String get homePermissionsTooltip => '権限ガイド';
+
+  @override
+  String get permGuideTitle => '権限とバックグラウンド動作';
+
+  @override
+  String get permUnavailable => '権限の状態確認は Android でのみ利用できます';
+
+  @override
+  String get permGranted => '許可済み';
+
+  @override
+  String get permDenied => '未許可';
+
+  @override
+  String get permOverlayTitle => '他のアプリの上に表示';
+
+  @override
+  String get permOverlayDesc =>
+      '時間になったら休憩画面を自動的に前面に表示するための重要な権限です（Android 10+）。';
+
+  @override
+  String get permNotificationsTitle => '通知';
+
+  @override
+  String get permNotificationsDesc =>
+      '常駐の監視通知と休憩リマインダーには通知権限が必要です（Android 13+ は実行時に許可）。';
+
+  @override
+  String get permFullScreenTitle => '全画面インテント';
+
+  @override
+  String get permFullScreenDesc =>
+      'ロック画面で休憩リマインダーを全画面表示します。Android 14+ では既定でオフのため手動許可が必要です。';
+
+  @override
+  String get permBatteryTitle => '電池の最適化を無視';
+
+  @override
+  String get permBatteryDesc =>
+      'ホワイトリストに登録すると、バックグラウンド監視とリマインダーが省電力設定（Doze）で制限されません。';
+
+  @override
+  String get permAccessibilityTitle => 'ユーザー補助サービス';
+
+  @override
+  String get permAccessibilityDesc => '緊急退出が音量キーを監視するために使用します（第 3 のフォールバック経路）。';
+
+  @override
+  String get permAutoStartTitle => '自動起動（OEM）';
+
+  @override
+  String get permAutoStartDesc =>
+      'MIUI・EMUI・ColorOS・OriginOS などの ROM では自動起動を許可しないと、再起動後に監視が再開されません。';
+
+  @override
   String get settingsTitle => 'タイミング設定';
 
   @override

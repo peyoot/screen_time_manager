@@ -49,6 +49,64 @@ class SEn extends S {
   String get homeSettingsTooltip => 'Timing settings';
 
   @override
+  String get homePermissionsTooltip => 'Permissions';
+
+  @override
+  String get permGuideTitle => 'Permissions & Reliability';
+
+  @override
+  String get permUnavailable =>
+      'Permission status is only available on Android';
+
+  @override
+  String get permGranted => 'Granted';
+
+  @override
+  String get permDenied => 'Not granted';
+
+  @override
+  String get permOverlayTitle => 'Display over other apps';
+
+  @override
+  String get permOverlayDesc =>
+      'Key permission for bringing the rest page to the front automatically when time is up (Android 10+).';
+
+  @override
+  String get permNotificationsTitle => 'Notifications';
+
+  @override
+  String get permNotificationsDesc =>
+      'Persistent monitoring notification and rest reminders require notification access (runtime permission on Android 13+).';
+
+  @override
+  String get permFullScreenTitle => 'Full-screen intent';
+
+  @override
+  String get permFullScreenDesc =>
+      'Show the rest reminder full screen on the lock screen. Off by default on Android 14+, needs manual approval.';
+
+  @override
+  String get permBatteryTitle => 'Ignore battery optimizations';
+
+  @override
+  String get permBatteryDesc =>
+      'Whitelist the app from Doze so background monitoring and reminders are not restricted.';
+
+  @override
+  String get permAccessibilityTitle => 'Accessibility service';
+
+  @override
+  String get permAccessibilityDesc =>
+      'Used by the emergency exit to observe volume keys (third fallback path).';
+
+  @override
+  String get permAutoStartTitle => 'Auto-start (OEM)';
+
+  @override
+  String get permAutoStartDesc =>
+      'Some ROMs (MIUI, EMUI, ColorOS, OriginOS, etc.) require allowing auto-start so monitoring resumes after reboot.';
+
+  @override
   String get settingsTitle => 'Timing settings';
 
   @override

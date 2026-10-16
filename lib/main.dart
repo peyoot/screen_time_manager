@@ -90,6 +90,7 @@ Future<void> main() async {
     restSessionRepo: restSessionRepo,
     snoozeRecordRepo: snoozeRecordRepo,
     interventionBridge: platformMonitoring.interventionBridge,
+    monitor: platformMonitoring.monitor,
     screenOnEvents: platformMonitoring.screenOnEvents,
   );
 

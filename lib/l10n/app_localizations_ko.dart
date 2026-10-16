@@ -49,6 +49,62 @@ class SKo extends S {
   String get homeSettingsTooltip => '타이밍 설정';
 
   @override
+  String get homePermissionsTooltip => '권한 안내';
+
+  @override
+  String get permGuideTitle => '권한 및 백그라운드 설정';
+
+  @override
+  String get permUnavailable => '권한 상태 확인은 Android에서만 사용할 수 있습니다';
+
+  @override
+  String get permGranted => '허용됨';
+
+  @override
+  String get permDenied => '허용 안 됨';
+
+  @override
+  String get permOverlayTitle => '다른 앱 위에 표시';
+
+  @override
+  String get permOverlayDesc =>
+      '시간이 되면 휴식 화면을 자동으로 앞으로 가져오는 핵심 권한입니다 (Android 10+).';
+
+  @override
+  String get permNotificationsTitle => '알림';
+
+  @override
+  String get permNotificationsDesc =>
+      '상시 모니터링 알림과 휴식 알림에는 알림 권한이 필요합니다 (Android 13+는 실행 시 허용).';
+
+  @override
+  String get permFullScreenTitle => '전체 화면 인텐트';
+
+  @override
+  String get permFullScreenDesc =>
+      '잠금 화면에서 휴식 알림을 전체 화면으로 표시합니다. Android 14+에서는 기본적으로 꺼져 있어 수동 허용이 필요합니다.';
+
+  @override
+  String get permBatteryTitle => '배터리 최적화 제외';
+
+  @override
+  String get permBatteryDesc =>
+      '화이트리스트에 추가하면 백그라운드 모니터링과 알림이 절전 정책(Doze)의 제한을 받지 않습니다.';
+
+  @override
+  String get permAccessibilityTitle => '접근성 서비스';
+
+  @override
+  String get permAccessibilityDesc => '긴급 종료가 볼륨 키를 감지하는 데 사용됩니다 (세 번째 대체 경로).';
+
+  @override
+  String get permAutoStartTitle => '자동 실행 (OEM)';
+
+  @override
+  String get permAutoStartDesc =>
+      'MIUI, EMUI, ColorOS, OriginOS 등 일부 ROM은 자동 실행을 허용해야 재부팅 후 모니터링이 재개됩니다.';
+
+  @override
   String get settingsTitle => '타이밍 설정';
 
   @override

@@ -125,14 +125,15 @@
 - `monitor` 通道 start/stop 已接到真实服务；`isMonitoring` 以 `ScreenMonitorService.running` 为准。MainActivity 在 Android 13+ 首启时用经典 `requestPermissions` 申请 `POST_NOTIFICATIONS`（注意：当前 Flutter 版 `FlutterActivity` 不继承 ComponentActivity，不能用 `registerForActivityResult`）。
 - Manifest 声明：`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_SPECIAL_USE`（API 34+，服务标签带 `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` 说明）、`POST_NOTIFICATIONS`（API 33+）、`RECEIVE_BOOT_COMPLETED`（第 4 步用）、`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`。
 
-### 第 3 步：到点全屏干预
+### 第 3 步：到点全屏干预（✅ 已完成）
 - Dart 进入 quiz / resting → `intervention` 通道 → 原生发高优先级通知并以 `setFullScreenIntent` 拉起 MainActivity（锁屏状态下也可展示），Flutter 侧按当前 phase 直接呈现提醒 / 答题 / 休息页。
-- 兜底路径：`SYSTEM_ALERT_WINDOW`（`TYPE_APPLICATION_OVERLAY`）悬浮层，覆盖无法拉起 Activity 的场景（权限被拒、部分国产 ROM）。
+- ✅ 兜底路径已实装：[InterventionOverlay.kt](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/InterventionOverlay.kt) 用 `TYPE_APPLICATION_OVERLAY`（API 26+，之下 TYPE_PHONE）+ Application context + WindowManager 添加全屏遮罩（代码构建视图，FLAG_NOT_FOCUSABLE、不加 NOT_TOUCH_MODAL 以阻挡底层应用触摸）。`requestIntervention` 中在 `canDrawOverlays` 时 `requestShow`：延迟 2.5s 检查 `ActivityTracker.isResumed`，Activity 拉起失败才显示；`MainActivity.onResume` 与 `dismissInterventionNotification`（含紧急退出路径）调用 `hide()` 移除。
 - 处理冷启动从通知进入：引擎启动先恢复 DB 中的设置与题库，再按状态机当前 phase 路由；首个版本可接受被杀后重置为 tracking（已完成的 session 记录已落库，不丢数据）。
 
-### 第 4 步：权限引导与开机自启
-- 首启引导（设置页提供入口）：通知权限、悬浮窗权限（`ACTION_MANAGE_OVERLAY_PERMISSION`）、电池优化白名单（`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`）、全屏通知授权（Android 14 对应设置页）、国产 ROM 自启动页跳转。
-- `BOOT_COMPLETED` 接收器开机后自动启动监控服务（前提：用户已启动过 App 并完成授权）。
+### 第 4 步：权限引导与开机自启（✅ 已完成）
+- ✅ 权限引导页 [permission_guide_page.dart](file:///home/robin/mygit/screen_time_manager/lib/ui/permissions/permission_guide_page.dart)：主页 AppBar 入口，逐项展示悬浮窗 / 通知 / 全屏 intent / 电池优化白名单 / 无障碍状态（`getPermissions`，从系统设置返回时经 WidgetsBindingObserver 自动刷新）+ 自启动跳转项。非 Android 平台（`monitor == null` 或 MissingPluginException）显示不可用提示。
+- 原生 `openPermissionSettings` 支持逐级回退（厂商裁剪页面时 ActivityNotFoundException → 次优页面 → 应用详情页）：电池优化先 `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 再回退设置列表页；自启动按 MIUI / EMUI / ColorOS / OriginOS / 三星 / 联想组件名 `startActivity` 试错跳转（不用 resolveActivity，API 30+ 包可见性会过滤掉其他应用）。
+- ✅ 开机自启：[BootReceiver.kt](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/BootReceiver.kt) 收到 BOOT_COMPLETED（含 QUICKBOOT_POWERON）且 `monitor_bootstrap` prefs 中 `user_started=true` 时启动 [ScreenMonitorService](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/ScreenMonitorService.kt)。标记由 `MainActivity.onCreate` 写入——**不能写在 Application.onCreate**：开机广播拉起进程时 Application 先于接收器执行，会无条件通过检查。receiver `exported=false`（BOOT_COMPLETED 是 protected broadcast，系统可送达；个别 ROM 不触发再改 true）。
 
 ### 第 5 步：真机验收与健壮性
 - 验收清单：灭屏不计时长 / 亮屏重新累计；阈值到点在前台、后台、锁屏三种状态下都能拦截；答题豁免与休息倒计时流程完整；通知常驻与文案更新；重启自启。
@@ -201,7 +202,8 @@
 - **休息期独占（仅 resting 锁定，quiz/tracking 不锁定）**：进入 resting 调 `startScreenPinning`，回到 tracking（自然结束或豁免通过）才 `stopScreenPinning`，quiz 阶段不固定。两层强度：
   - **Device Owner 模式（真正不可退出）**：一次性 ADB `adb shell dpm set-device-owner com.screen_time_manager/.ScreenMonitorDeviceAdmin`（设备无账号时），App 启动时 `setLockTaskPackages` 白名单，之后 startLockTask 静默进入 Kiosk LOCKED 模式，无确认弹窗、无退出手势。
   - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 5s 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），**仅在 `!isInLockTaskMode` 时才重新 startLockTask**（否则系统每次调用都弹"应用已固定"toast）；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
-  - **到点自动切前台**：`intervention.request` 已实装——直接把 `MainActivity` 以 `NEW_TASK | SINGLE_TOP` 拉到前台（Android 10+ 后台启动 Activity 需 `SYSTEM_ALERT_WINDOW` 授权，属官方豁免项），并补发高优 + `setFullScreenIntent` 通知兜底（锁屏/灭屏可全屏展示）。`startScreenPinning` 改为**无论 Activity 是否在前台都先 `RestGuard.arm()`**，Activity 恢复后由轮询自动补固定。悬浮层兜底仍待后续版本。
+  - **到点自动切前台**：`intervention.request` 已实装——直接把 `MainActivity` 以 `NEW_TASK | SINGLE_TOP` 拉到前台（Android 10+ 后台启动 Activity 需 `SYSTEM_ALERT_WINDOW` 授权，属官方豁免项），并补发高优 + `setFullScreenIntent` 通知兜底（锁屏/灭屏可全屏展示）。`startScreenPinning` 改为**无论 Activity 是否在前台都先 `RestGuard.arm()`**，Activity 恢复后由轮询自动补固定。
+  - **悬浮层兜底（第 3 步收尾）**：[InterventionOverlay.kt](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/InterventionOverlay.kt) 在 `canDrawOverlays` 时于 request 后延迟 2.5s 检查 `ActivityTracker.isResumed`，拉起失败才用 `TYPE_APPLICATION_OVERLAY` 全屏遮罩盖住当前应用（深色背景 + 阶段文案 + "Open app" 按钮，纯 android.widget 代码构建视图，可用 Application context 添加）；`MainActivity.onResume` / `dismissInterventionNotification` / 紧急退出均调用 `hide()`。
   - **物理按键紧急退出 / 改密**：三层音量键通路并行 + 控制器内 60ms debounce 去重（OEM ROM 常提前拦截音量键，单通路不可靠）：
     1. [MainActivity.dispatchKeyEvent](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/MainActivity.kt) ← 主路径：应用前台/屏幕固定期间系统先分发给窗口再调音量；密码窗口内返回 true 抑制音量和 HUD。
     2. [ScreenMonitorService](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/ScreenMonitorService.kt) 里的 ContentObserver（Settings.System.CONTENT_URI + diff 判定方向）← 兜底：完全独立于窗口和无障碍，任何通路改音量都会触发 onChange；密码窗口边界档 0/max 主动拉回中间档，保证变化事件持续产生。
@@ -211,7 +213,7 @@
 - **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
   1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。
   2. ✅ 前台服务 + 亮灭屏广播 + FlutterEngine 缓存保活。
-  3. ⏳ 到点全屏干预（✅ 已实装 request：拉 Activity 到前台 + 全屏 intent 通知；悬浮窗兜底待补）。
-  4. 权限引导与开机自启。
-  5. 真机验收与被杀恢复。
+  3. ✅ 到点全屏干预（request 拉前台 + 全屏 intent 通知 + 悬浮层兜底）。
+  4. ✅ 权限引导（主页 AppBar → 权限引导页，6 项含 OEM 自启动跳转）与开机自启（BootReceiver + user_started 标记）。
+  5. 真机验收与被杀恢复（下一步）。
 - **后置**：本地统计聚合页、iOS / HarmonyOS 平台层、Supabase 同步引擎与家长控制（均不阻塞本地闭环）。

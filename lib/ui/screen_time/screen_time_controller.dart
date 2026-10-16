@@ -53,6 +53,10 @@ class ScreenTimeController extends ChangeNotifier {
   /// 为 null（桌面/Web/测试）时不产生任何平台调用。
   final InterventionBridge? interventionBridge;
 
+  /// 可选的监控/权限通道：权限引导页查询状态与跳转设置页使用。
+  /// 为 null（桌面/Web/测试）时权限页显示不可用提示。
+  final MonitorChannel? monitor;
+
   /// 平台亮灭屏事件订阅（Android 前台服务经 EventChannel 推送）。
   StreamSubscription<bool>? _screenEventsSub;
 
@@ -102,6 +106,7 @@ class ScreenTimeController extends ChangeNotifier {
     this.restSessionRepo,
     this.snoozeRecordRepo,
     this.interventionBridge,
+    this.monitor,
     Stream<bool>? screenOnEvents,
     DateTime Function()? clock,
     bool autoStart = true,

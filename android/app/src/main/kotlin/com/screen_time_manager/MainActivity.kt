@@ -46,12 +46,17 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 标记"用户手动打开过应用"：BootReceiver 依此决定开机后是否自启监控。
+        BootReceiver.markUserStarted(this)
         ActivityTracker.onActivityResumed(this)
         ensureNotificationPermission()
     }
 
     override fun onResume() {
         super.onResume()
+        // 悬浮层兜底遮罩必须让位：它悬浮在应用窗口之上，
+        // 不移除会一直盖住刚拉回前台的休息页。
+        InterventionOverlay.hide()
         ActivityTracker.onActivityResumed(this)
         mainHandler.post(lockTaskChecker)
     }
