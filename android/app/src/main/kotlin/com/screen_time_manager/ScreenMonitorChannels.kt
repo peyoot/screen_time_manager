@@ -1,6 +1,9 @@
 package com.screen_time_manager
 
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -9,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.app.NotificationCompat
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -47,12 +51,20 @@ object ScreenEventBus {
  *   [ScreenMonitorService] 动态注册后经 [ScreenEventBus] 推送。
  * - `monitor`：启停 [ScreenMonitorService]（前台服务 + 屏幕广播）；
  *   另提供权限状态查询与系统设置页跳转。
- * - `intervention`：请求 / 撤销到点干预（高优通知 + full-screen intent /
- *   悬浮窗待第 3 步实现）；休息期自动熄屏（DevicePolicyManager.lockNow）
+ * - `intervention`：请求 / 撤销到点干预（拉 Activity 到前台 + 高优全屏通知；
+ *   悬浮层兜底待后续版本）；休息期自动熄屏（DevicePolicyManager.lockNow）
  *   与屏幕固定（startLockTask / stopLockTask）。
  */
 object ScreenMonitorChannels {
     private const val NAMESPACE = "com.screen_time_manager/platform"
+
+    /** 到点干预通知渠道（高优先级 + 全屏 intent）。 */
+    private const val ALERT_CHANNEL_ID = "screen_monitor_alert"
+    private const val ALERT_NOTIFICATION_ID = 1002
+
+    /** 启动 MainActivity 时透传当前阶段，供冷启动路由使用。 */
+    private const val EXTRA_INTERVENTION_PHASE = "intervention_phase"
+    private const val INTERVENTION_PHASE_RESTING = "resting"
 
     /** 监控是否运行（以前台服务存活为准）。 */
     val monitoring: Boolean
@@ -108,9 +120,15 @@ object ScreenMonitorChannels {
         MethodChannel(engine.dartExecutor.binaryMessenger, "$NAMESPACE/intervention")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    // TODO(第3步): request → 高优通知 + setFullScreenIntent / 悬浮窗；
-                    // dismiss → 取消通知与悬浮层。
-                    "request", "dismiss" -> result.success(null)
+                    // 到点干预：把 MainActivity 拉到前台 + 高优全屏通知兜底。
+                    "request" -> {
+                        requestIntervention(call.argument<String>("phase"))
+                        result.success(null)
+                    }
+                    "dismiss" -> {
+                        dismissIntervention()
+                        result.success(null)
+                    }
 
                     // 休息期自动熄屏（10 秒内未答题豁免时触发）。
                     "lockScreen" -> result.success(lockScreen())
@@ -127,6 +145,87 @@ object ScreenMonitorChannels {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    // -----------------------------------------------------------------
+    // 到点干预：把界面拉到用户面前
+    // -----------------------------------------------------------------
+
+    /**
+     * 到点干预：尽力把 [MainActivity] 拉到前台，并补一条全屏 intent 通知兜底。
+     *
+     * Android 10+ 限制后台启动 Activity，但持有 `SYSTEM_ALERT_WINDOW` 的应用
+     * 属于官方豁免范围，因此悬浮窗权限是"自动切到休息页"的关键前提；
+     * 未授权时退化为高优先级通知（锁屏/灭屏下可全屏展示，亮屏使用中为横幅）。
+     */
+    private fun requestIntervention(phase: String?) {
+        val app = ScreenMonitorApp.instance
+        val intent = Intent(app, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(EXTRA_INTERVENTION_PHASE, phase)
+        }
+        if (canStartActivityFromBackground(app)) {
+            // 已有界面时 SINGLE_TOP 只触发 onNewIntent，不会重建 Activity。
+            runCatching { app.startActivity(intent) }
+        }
+        showInterventionNotification(app, intent, phase)
+    }
+
+    /** 后台启动 Activity 是否被系统允许（悬浮窗权限是官方豁免项）。 */
+    private fun canStartActivityFromBackground(context: Context): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(context)
+
+    /** 发送高优先级 + 全屏 intent 通知，锁屏/灭屏时可直接全屏展示。 */
+    private fun showInterventionNotification(
+        context: Context,
+        contentIntent: Intent,
+        phase: String?,
+    ) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    ALERT_CHANNEL_ID,
+                    "Rest reminders",
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply { description = "Full-screen rest reminder" },
+            )
+        }
+
+        val pending = PendingIntent.getActivity(
+            context,
+            0,
+            contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    PendingIntent.FLAG_IMMUTABLE
+                } else {
+                    0
+                },
+        )
+        val isRest = phase == INTERVENTION_PHASE_RESTING
+
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle(if (isRest) "Time to rest" else "Quick check-in")
+            .setContentText(
+                if (isRest) "Take a short break now" else "Answer to continue",
+            )
+            .setSmallIcon(R.drawable.ic_screen_monitor)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(pending)
+            .setFullScreenIntent(pending, true)
+            .build()
+
+        manager.notify(ALERT_NOTIFICATION_ID, notification)
+    }
+
+    /** 撤销干预：取消到点通知（悬浮层兜底留待后续版本）。 */
+    private fun dismissIntervention() {
+        val manager = ScreenMonitorApp.instance
+            .getSystemService(NotificationManager::class.java)
+        manager.cancel(ALERT_NOTIFICATION_ID)
     }
 
     // -----------------------------------------------------------------
@@ -281,14 +380,16 @@ object ScreenMonitorChannels {
      * 确认后进入固定模式。
      */
     private fun startScreenPinning(): Boolean {
+        // 无论 Activity 当前是否在前台都先武装守卫：若此刻不在前台
+        // （例如到点干预正在把界面拉回来），MainActivity 恢复后其轮询
+        // 会依据 armed 状态自动补上固定。
+        RestGuard.arm()
         val activity = ActivityTracker.currentActivity ?: return false
         return try {
-            // 先武装守卫：用户退出固定/强行切走时会被拉回或熄屏。
-            RestGuard.arm()
             activity.startLockTask()
             true
         } catch (_: IllegalStateException) {
-            RestGuard.disarm()
+            // 暂不能固定（如 Activity 未在前台），保持武装等待轮询重试。
             false
         }
     }

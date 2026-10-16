@@ -2,7 +2,7 @@
   "@@locale": "en",
   "appTitle": "Screen Time Manager",
   "homeTodayScreenTime": "Screen time today",
-  "homeNextQuizIn": "Next quiz in {time}",
+  "homeNextQuizIn": "Time until next mandatory rest: {time}",
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },

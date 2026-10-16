@@ -71,7 +71,7 @@ class MainActivity : FlutterActivity() {
 
     /** Android 13+ 首次启动时申请通知权限，保证前台服务常驻通知可见。 */
     private companion object {
-        const val CHECK_INTERVAL_MS = 500L
+        const val CHECK_INTERVAL_MS = 5000L
     }
 
     private fun ensureNotificationPermission() {

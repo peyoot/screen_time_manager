@@ -17,7 +17,7 @@ class SZh extends S {
 
   @override
   String homeNextQuizIn(String time) {
-    return '距下次答题还需 $time';
+    return '距下次强制休息时间还剩 $time';
   }
 
   @override

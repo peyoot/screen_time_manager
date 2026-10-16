@@ -2,7 +2,7 @@
   "@@locale": "ko",
   "appTitle": "스크린 타임 관리",
   "homeTodayScreenTime": "오늘 누적 화면 사용",
-  "homeNextQuizIn": "다음 퀴즈까지 {time}",
+  "homeNextQuizIn": "다음 강제 휴식까지 {time}",
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },

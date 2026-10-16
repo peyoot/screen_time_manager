@@ -199,12 +199,13 @@
 - **休息期自动熄屏已实现**：`InterventionBridge.lockScreen` + Kotlin `DeviceAdminReceiver`（仅 force-lock 策略）+ `DevicePolicyManager.lockNow()`（反射调用 @hide `createAddAdminActiveIntent` 打开授权页，回退安全设置页）；rest_page.dart 进入休息 10 秒内无答题豁免操作则熄屏，点豁免/提交答案即取消计时器。**注意**：`lockScreen()` 必须先临时 `RestGuard.disarm()` 再 `lockNow()` 最后 re-arm，否则熄屏导致的 onStop 会被 RestGuard 误判为用户强行切走而重复拉回。
 - **休息期独占（仅 resting 锁定，quiz/tracking 不锁定）**：进入 resting 调 `startScreenPinning`，回到 tracking（自然结束或豁免通过）才 `stopScreenPinning`，quiz 阶段不固定。两层强度：
   - **Device Owner 模式（真正不可退出）**：一次性 ADB `adb shell dpm set-device-owner com.screen_time_manager/.ScreenMonitorDeviceAdmin`（设备无账号时），App 启动时 `setLockTaskPackages` 白名单，之后 startLockTask 静默进入 Kiosk LOCKED 模式，无确认弹窗、无退出手势。
-  - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 500ms 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），**仅在 `!isInLockTaskMode` 时才重新 startLockTask**（否则系统每次调用都弹"应用已固定"toast）；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity（overlay/full-screen intent，后者第 3 步补齐）。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
+  - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 5s 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），**仅在 `!isInLockTaskMode` 时才重新 startLockTask**（否则系统每次调用都弹"应用已固定"toast）；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
+  - **到点自动切前台**：`intervention.request` 已实装——直接把 `MainActivity` 以 `NEW_TASK | SINGLE_TOP` 拉到前台（Android 10+ 后台启动 Activity 需 `SYSTEM_ALERT_WINDOW` 授权，属官方豁免项），并补发高优 + `setFullScreenIntent` 通知兜底（锁屏/灭屏可全屏展示）。`startScreenPinning` 改为**无论 Activity 是否在前台都先 `RestGuard.arm()`**，Activity 恢复后由轮询自动补固定。悬浮层兜底仍待后续版本。
   - Web/桌面侧 `_NoopInterventionBridge` 静默 no-op；接线测试覆盖"resting 固定/结束解除/quiz 不固定"。
 - **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
   1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。
   2. ✅ 前台服务 + 亮灭屏广播 + FlutterEngine 缓存保活。
-  3. ⏳ 到点全屏干预（full-screen intent 主路径 + 悬浮窗兜底）。
+  3. ⏳ 到点全屏干预（✅ 已实装 request：拉 Activity 到前台 + 全屏 intent 通知；悬浮窗兜底待补）。
   4. 权限引导与开机自启。
   5. 真机验收与被杀恢复。
 - **后置**：本地统计聚合页、iOS / HarmonyOS 平台层、Supabase 同步引擎与家长控制（均不阻塞本地闭环）。

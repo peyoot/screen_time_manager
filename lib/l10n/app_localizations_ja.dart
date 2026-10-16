@@ -17,7 +17,7 @@ class SJa extends S {
 
   @override
   String homeNextQuizIn(String time) {
-    return '次のクイズまであと $time';
+    return '次の強制休憩まであと $time';
   }
 
   @override

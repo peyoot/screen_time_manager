@@ -17,7 +17,7 @@ class SEn extends S {
 
   @override
   String homeNextQuizIn(String time) {
-    return 'Next quiz in $time';
+    return 'Time until next mandatory rest: $time';
   }
 
   @override

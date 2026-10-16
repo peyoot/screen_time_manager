@@ -2,7 +2,7 @@
   "@@locale": "ja",
   "appTitle": "スクリーンタイム管理",
   "homeTodayScreenTime": "今日の累計画面点灯",
-  "homeNextQuizIn": "次のクイズまであと {time}",
+  "homeNextQuizIn": "次の強制休憩まであと {time}",
   "@homeNextQuizIn": {
     "placeholders": {"time": {"type": "String"}}
   },

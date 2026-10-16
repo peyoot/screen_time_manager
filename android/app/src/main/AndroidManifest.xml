@@ -7,6 +7,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <!-- Android 13+：常驻通知需要运行时申请。 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 悬浮窗权限：Android 10+ 后台启动 Activity 的官方豁免项，
+         是"到点自动切到休息页"的关键前提（亦为悬浮层兜底所需）。 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <!-- Android 14+ 全屏 intent 需用户手动授权；未授权时退化为高优横幅通知。 -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <!-- Device Admin：允许 DeviceAdminReceiver 注册，用于 lockNow() 自动熄屏。 -->
     <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN"/>
     <!-- 第 4 步开机自启使用，先声明。 -->

@@ -17,7 +17,7 @@ class SKo extends S {
 
   @override
   String homeNextQuizIn(String time) {
-    return '다음 퀴즈까지 $time';
+    return '다음 강제 휴식까지 $time';
   }
 
   @override

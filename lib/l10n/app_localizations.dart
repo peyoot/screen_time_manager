@@ -116,7 +116,7 @@ abstract class S {
   /// No description provided for @homeNextQuizIn.
   ///
   /// In zh, this message translates to:
-  /// **'距下次答题还需 {time}'**
+  /// **'距下次强制休息时间还剩 {time}'**
   String homeNextQuizIn(String time);
 
   /// No description provided for @homeExemptionsLeft.
