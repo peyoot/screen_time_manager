@@ -1,9 +1,9 @@
 package com.screen_time_manager
 
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
@@ -214,22 +214,44 @@ object EmergencyKeyController {
         restartTimeout()
     }
 
-    /** 紧急退出休息：解除固定并退回桌面。 */
+    /**
+     * 紧急退出休息：彻底关闭应用。
+     *
+     * 设计目标：紧急退出后应用必须**真正退出/关闭**，而不是仅仅切回桌面。
+     * 只发 HOME 的话，缓存的 FlutterEngine 仍在跑、状态机继续 tick、休息页
+     * 依然活着，后续到点干预还会把界面重新拉回休息页，休息计时与状态都不再可靠。
+     *
+     * 步骤（顺序关键）：
+     * 1. 解除 [RestGuard] 并退出屏幕固定（铁律：先 disarm 再 stopLockTask）；
+     * 2. 停止前台服务，切断亮灭屏广播，避免退出过程中仍有事件喂给状态机；
+     * 3. 取消到点干预通知；
+     * 4. 结束 Activity 并从最近任务中移除；
+     * 5. 延迟一拍后杀掉本进程——同时销毁缓存 FlutterEngine 与 Dart isolate，
+     *    保证没有残留 tick、也不会被后续干预拉回重启。
+     *
+     * 已完成的会话记录在阶段切换时已落库；本条被中断的 rest_session 不记录
+     * （与 AGENTS 的"被杀后重置为 tracking"健壮性约定一致）。
+     */
     private fun exitRestImmediately() {
+        Log.d(TAG, "emergency exit: shutting down app")
+        val app = ScreenMonitorApp.instance
+
         RestGuard.disarm()
         runCatching { ActivityTracker.currentActivity?.stopLockTask() }
+        ScreenMonitorService.stop(app)
         ScreenMonitorChannels.dismissInterventionNotification()
+        resting = false
 
-        val app = ScreenMonitorApp.instance
+        val activity = ActivityTracker.currentActivity
+        runCatching { activity?.finishAndRemoveTask() }
+        runCatching { activity?.finishAffinity() }
+        toast("Exiting")
+
+        // 稍等一拍让 finish / 服务停止生效，再杀进程完成真正的"应用退出"。
         handler.postDelayed({
-            val home = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_HOME)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            runCatching { app.startActivity(home) }
-        }, 300L)
-        toast("Exiting rest")
-        Log.d(TAG, "emergency exit")
+            Log.d(TAG, "emergency exit: killing process")
+            Process.killProcess(Process.myPid())
+        }, 400L)
     }
 
     private fun restartTimeout() {

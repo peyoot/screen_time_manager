@@ -206,7 +206,7 @@
     1. [MainActivity.dispatchKeyEvent](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/MainActivity.kt) ← 主路径：应用前台/屏幕固定期间系统先分发给窗口再调音量；密码窗口内返回 true 抑制音量和 HUD。
     2. [ScreenMonitorService](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/ScreenMonitorService.kt) 里的 ContentObserver（Settings.System.CONTENT_URI + diff 判定方向）← 兜底：完全独立于窗口和无障碍，任何通路改音量都会触发 onChange；密码窗口边界档 0/max 主动拉回中间档，保证变化事件持续产生。
     3. 无障碍服务 onKeyEvent ← 第三层（少数 ROM 上可能可达）。
-    触发：快速交替按 音量"+"→音量"-"→音量"+"（相邻 ≤800ms，第三击被吞掉净音量变化为 0）进入 10 秒密码检测态；默认密码音量"-"×5（存 SharedPreferences）→ resting 阶段 disarm + stopLockTask + HOME 紧急退出；主界面进入改密态录 5 键新密码。触发器选型：OEM 电源+音量键被截图/录屏/SOS 占用（Yoga Pad 实测电源+音量+是录屏），双音量键长按与系统无障碍快捷键冲突，交替序列无系统手势使用。**注意**：无障碍服务仍需用户在系统无障碍设置手动开启（第 4 步做引导），ContentObserver 兜底通路不需要任何特殊权限。
+    触发：快速交替按 音量"+"→音量"-"→音量"+"（相邻 ≤800ms，第三击被吞掉净音量变化为 0）进入 10 秒密码检测态；默认密码音量"-"×5（存 SharedPreferences）→ resting 阶段**彻底关闭应用**：`RestGuard.disarm()` → `stopLockTask()` → `ScreenMonitorService.stop()`（切断亮灭屏广播）→ 取消干预通知 → `finishAndRemoveTask()`/`finishAffinity()` → 延迟 400ms `Process.killProcess(myPid)`（连缓存 FlutterEngine/Dart isolate 一起销毁，杜绝残留 tick 与被后续干预拉回）；主界面进入改密态录 5 键新密码。**注意**：紧急退出必须是"真退出"，只发 HOME intent 会导致休息页仍在后台存活、计时不准。触发器选型：OEM 电源+音量键被截图/录屏/SOS 占用（Yoga Pad 实测电源+音量+是录屏），双音量键长按与系统无障碍快捷键冲突，交替序列无系统手势使用。**注意**：无障碍服务仍需用户在系统无障碍设置手动开启（第 4 步做引导），ContentObserver 兜底通路不需要任何特殊权限。
   - Web/桌面侧 `_NoopInterventionBridge` 静默 no-op；接线测试覆盖"resting 固定/结束解除/quiz 不固定"。
 - **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
   1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。
