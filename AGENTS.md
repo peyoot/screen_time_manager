@@ -181,6 +181,7 @@
   - `TYPE_APPLICATION_OVERLAY` 悬浮窗需要 `SYSTEM_ALERT_WINDOW`（`Settings.canDrawOverlays`）。
   - 休息独占屏幕：普通应用的 `startLockTask()` 只是 Screen Pinning，系统保留长按返回+最近任务退出入口；真正不可退出的 Kiosk（LOCKED）仅 Device Owner 可用（ADB `dpm set-device-owner` 一次性设置）。`Activity.onLockTaskModeExiting()` 是 @hide 不可覆写，检测退出只能轮询 `ActivityManager.lockTaskModeState`。
   - 休息期自动熄屏依赖 Device Admin（仅 force-lock 策略）：`DevicePolicyManager.lockNow()` 需用户一次性授权，无 Device Admin 时静默跳过。
+  - 电源键 `KEYCODE_POWER` 在到达普通应用前被系统拦截，Activity / Flutter 均收不到；观测电源键只能用带 `FLAG_REQUEST_FILTER_KEY_EVENTS` 的 AccessibilityService（需用户在无障碍设置手动授权）。音量键无障碍与 Activity 都能收到。
   - 国产 ROM（MIUI / EMUI / ColorOS / OriginOS 等）需引导"自启动 + 电池不优化"才能稳定后台保活。
 - **重要**: iOS端无法实现全局亮屏监听，必须使用Screen Time API监控指定App。
 - **重要**: HarmonyOS端无法获取系统悬浮窗权限，通知刷新依赖长时任务。
@@ -201,6 +202,7 @@
   - **Device Owner 模式（真正不可退出）**：一次性 ADB `adb shell dpm set-device-owner com.screen_time_manager/.ScreenMonitorDeviceAdmin`（设备无账号时），App 启动时 `setLockTaskPackages` 白名单，之后 startLockTask 静默进入 Kiosk LOCKED 模式，无确认弹窗、无退出手势。
   - **普通模式（威慑兜底）**：`RestGuard` 仅在 resting 武装；`MainActivity` 每 5s 轮询 `ActivityManager.lockTaskModeState`（`onLockTaskModeExiting` 是 @hide 不可覆写），**仅在 `!isInLockTaskMode` 时才重新 startLockTask**（否则系统每次调用都弹"应用已固定"toast）；用户强行切走（onActivityStopped 且仍亮屏）则 lockNow 熄屏 + 尽力拉回 Activity。**解除顺序铁律：先 `RestGuard.disarm()` 再 `stopLockTask()`**，否则退出回调会立刻重新固定。
   - **到点自动切前台**：`intervention.request` 已实装——直接把 `MainActivity` 以 `NEW_TASK | SINGLE_TOP` 拉到前台（Android 10+ 后台启动 Activity 需 `SYSTEM_ALERT_WINDOW` 授权，属官方豁免项），并补发高优 + `setFullScreenIntent` 通知兜底（锁屏/灭屏可全屏展示）。`startScreenPinning` 改为**无论 Activity 是否在前台都先 `RestGuard.arm()`**，Activity 恢复后由轮询自动补固定。悬浮层兜底仍待后续版本。
+  - **物理按键紧急退出 / 改密**：`EmergencyKeyController` + `EmergencyKeyAccessibilityService`（无障碍，`flagRequestFilterKeyEvents`，只观测不吞键）。流程：**电源+音量"+"** 600ms 内同按进入检测态 → 10 秒内输入 5 个音量键（默认音量"-"×5，密码存 SharedPreferences）→ resting 阶段则 `RestGuard.disarm()` + `stopLockTask()` + 延迟发 HOME 紧急退出；主界面（Activity resumed 且非 resting）则进入改密态，10 秒内录 5 个音量键序列为新密码；错误/超时一律静默忽略。**关键约束：电源键对普通应用不可见，只能靠无障碍服务观测**，用户须在系统无障碍设置手动开启（`getPermissions` 返回 `accessibility`，`openPermissionSettings('accessibility')` 跳设置页）；第 4 步做 App 内引导。
   - Web/桌面侧 `_NoopInterventionBridge` 静默 no-op；接线测试覆盖"resting 固定/结束解除/quiz 不固定"。
 - **下一步（Android 本地端优先，详见上文"Android 本地端实现路线"）**：
   1. ✅ 平台通道层（`lib/platform_channel/`）+ 包名修正。

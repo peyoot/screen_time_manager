@@ -50,6 +50,9 @@ enum MonitorPermission {
 
   /// 全屏 intent 授权（Android 14+ 默认不授予普通应用）。
   fullScreenIntent,
+
+  /// 无障碍服务授权（紧急退出按键监听依赖它来观测电源键）。
+  accessibility,
 }
 
 /// `monitor` 通道的 Dart 侧封装。

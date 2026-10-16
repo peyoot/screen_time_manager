@@ -160,6 +160,8 @@ object ScreenMonitorChannels {
      */
     private fun requestIntervention(phase: String?) {
         val app = ScreenMonitorApp.instance
+        // 同步休息阶段给紧急退出控制器（密码通过后决定"退出"还是"改密"）。
+        EmergencyKeyController.resting = phase == INTERVENTION_PHASE_RESTING
         val intent = Intent(app, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(EXTRA_INTERVENTION_PHASE, phase)
@@ -223,6 +225,13 @@ object ScreenMonitorChannels {
 
     /** 撤销干预：取消到点通知（悬浮层兜底留待后续版本）。 */
     private fun dismissIntervention() {
+        // 回到计时阶段：紧急退出控制器恢复"主界面可改密"分流。
+        EmergencyKeyController.resting = false
+        dismissInterventionNotification()
+    }
+
+    /** 仅取消到点通知（紧急退出休息时复用，不重复改 phase）。 */
+    fun dismissInterventionNotification() {
         val manager = ScreenMonitorApp.instance
             .getSystemService(NotificationManager::class.java)
         manager.cancel(ALERT_NOTIFICATION_ID)
@@ -257,7 +266,21 @@ object ScreenMonitorChannels {
                 powerManager.isIgnoringBatteryOptimizations(context.packageName),
             "notifications" to notificationsEnabled,
             "fullScreenIntent" to fullScreenIntentAllowed,
+            "accessibility" to isEmergencyKeyAccessibilityEnabled(context),
         )
+    }
+
+    /** 紧急按键监听的无障碍服务是否已被用户启用。 */
+    private fun isEmergencyKeyAccessibilityEnabled(context: Context): Boolean {
+        val expected = android.content.ComponentName(
+            context,
+            EmergencyKeyAccessibilityService::class.java,
+        ).flattenToString()
+        val enabled = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+        ) ?: return false
+        return enabled.split(':').any { it.equals(expected, ignoreCase = true) }
     }
 
     private fun openPermissionSettings(context: Context, kind: String?) {
@@ -272,6 +295,7 @@ object ScreenMonitorChannels {
                 Uri.parse("package:$packageName"),
             )
             "notifications" -> notificationSettingsIntent(packageName)
+            "accessibility" -> Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             "fullScreenIntent" ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     Intent(

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 系统无障碍设置页中展示的服务用途说明。 -->
+    <string name="accessibility_emergency_keys_description">Detects Power + Volume Up and the volume-key emergency password, so you can force-exit a mandatory rest screen in an emergency. Key events are only used on-device and are never collected.</string>
+</resources>
