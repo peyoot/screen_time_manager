@@ -147,6 +147,13 @@ class SKo extends S {
       '화이트리스트에 추가하면 백그라운드 모니터링과 알림이 절전 정책(Doze)의 제한을 받지 않습니다.';
 
   @override
+  String get permExactAlarmTitle => '정확한 알람';
+
+  @override
+  String get permExactAlarmDesc =>
+      '앱을 밀어서 닫은 후 약 1초 뒤 모니터링을 자동으로 다시 시작하는 데 필요합니다. Android 14+에서는 기본적으로 꺼져 있으며, 허용하지 않으면 부정확한 알람으로 대첩니다(재시작이 몇 초 지연될 수 있음).';
+
+  @override
   String get permAccessibilityTitle => '접근성 서비스';
 
   @override

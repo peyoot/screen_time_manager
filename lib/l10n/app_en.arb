@@ -57,6 +57,8 @@
   "permFullScreenDesc": "Show the rest reminder full screen on the lock screen. Off by default on Android 14+, needs manual approval.",
   "permBatteryTitle": "Ignore battery optimizations",
   "permBatteryDesc": "Whitelist the app from Doze so background monitoring and reminders are not restricted.",
+  "permExactAlarmTitle": "Exact alarms",
+  "permExactAlarmDesc": "Needed to restart monitoring about 1 second after the app is swiped away. Off by default on Android 14+; falls back to inexact alarms (restart may be delayed) if not granted.",
   "permAccessibilityTitle": "Accessibility service",
   "permAccessibilityDesc": "Used by the emergency exit to observe volume keys (third fallback path).",
   "permAutoStartTitle": "Auto-start (OEM)",

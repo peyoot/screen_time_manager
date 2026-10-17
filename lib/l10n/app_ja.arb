@@ -57,6 +57,8 @@
   "permFullScreenDesc": "ロック画面で休憩リマインダーを全画面表示します。Android 14+ では既定でオフのため手動許可が必要です。",
   "permBatteryTitle": "電池の最適化を無視",
   "permBatteryDesc": "ホワイトリストに登録すると、バックグラウンド監視とリマインダーが省電力設定（Doze）で制限されません。",
+  "permExactAlarmTitle": "正確なアラーム",
+  "permExactAlarmDesc": "アプリをスワイプで終了した約 1 秒後に監視を自動再起動するために必要です。Android 14+ では既定でオフ。未許可の場合は不正確なアラームにフォールバックします（再起動が数秒遅れることがあります）。",
   "permAccessibilityTitle": "ユーザー補助サービス",
   "permAccessibilityDesc": "緊急退出が音量キーを監視するために使用します（第 3 のフォールバック経路）。",
   "permAutoStartTitle": "自動起動（OEM）",

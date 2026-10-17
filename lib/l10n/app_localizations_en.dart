@@ -148,6 +148,13 @@ class SEn extends S {
       'Whitelist the app from Doze so background monitoring and reminders are not restricted.';
 
   @override
+  String get permExactAlarmTitle => 'Exact alarms';
+
+  @override
+  String get permExactAlarmDesc =>
+      'Needed to restart monitoring about 1 second after the app is swiped away. Off by default on Android 14+; falls back to inexact alarms (restart may be delayed) if not granted.';
+
+  @override
   String get permAccessibilityTitle => 'Accessibility service';
 
   @override

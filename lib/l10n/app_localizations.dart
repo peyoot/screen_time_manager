@@ -347,6 +347,18 @@ abstract class S {
   /// **'加入白名单后后台监控与提醒不会被系统省电策略（Doze）限制。'**
   String get permBatteryDesc;
 
+  /// No description provided for @permExactAlarmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'精确闹钟'**
+  String get permExactAlarmTitle;
+
+  /// No description provided for @permExactAlarmDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'划掉应用后约 1 秒自动重启监控依赖精确闹钟。Android 14+ 默认关闭，未授权时退化为非精确闹钟（重启可能延迟数秒）。'**
+  String get permExactAlarmDesc;
+
   /// No description provided for @permAccessibilityTitle.
   ///
   /// In zh, this message translates to:

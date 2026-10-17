@@ -1,6 +1,7 @@
 package com.screen_time_manager
 
 import android.app.Activity
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -275,6 +276,15 @@ object ScreenMonitorChannels {
             } else {
                 true
             }
+        // 精确闹钟：Android 12+ 才需要 SCHEDULE_EXACT_ALARM（14+ 默认拒绝）；
+        // 12 以下 setExact 无需权限，直接视为已授予。
+        val exactAlarmAllowed =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager)
+                    .canScheduleExactAlarms()
+            } else {
+                true
+            }
 
         return mapOf(
             "overlay" to Settings.canDrawOverlays(context),
@@ -283,6 +293,7 @@ object ScreenMonitorChannels {
             "notifications" to notificationsEnabled,
             "fullScreenIntent" to fullScreenIntentAllowed,
             "accessibility" to isEmergencyKeyAccessibilityEnabled(context),
+            "exactAlarm" to exactAlarmAllowed,
         )
     }
 
@@ -319,6 +330,18 @@ object ScreenMonitorChannels {
             )
             "notifications" -> listOf(notificationSettingsIntent(packageName))
             "accessibility" -> listOf(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            "exactAlarm" ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    listOf(
+                        Intent(
+                            Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                            Uri.parse("package:$packageName"),
+                        ),
+                    )
+                } else {
+                    // Android 12 以下无需精确闹钟权限，跳应用详情页。
+                    listOf(appDetailsIntent(packageName))
+                }
             "fullScreenIntent" ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     listOf(

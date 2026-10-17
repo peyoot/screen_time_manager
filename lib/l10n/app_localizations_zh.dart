@@ -143,6 +143,13 @@ class SZh extends S {
   String get permBatteryDesc => '加入白名单后后台监控与提醒不会被系统省电策略（Doze）限制。';
 
   @override
+  String get permExactAlarmTitle => '精确闹钟';
+
+  @override
+  String get permExactAlarmDesc =>
+      '划掉应用后约 1 秒自动重启监控依赖精确闹钟。Android 14+ 默认关闭，未授权时退化为非精确闹钟（重启可能延迟数秒）。';
+
+  @override
   String get permAccessibilityTitle => '无障碍服务';
 
   @override

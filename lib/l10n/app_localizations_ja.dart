@@ -147,6 +147,13 @@ class SJa extends S {
       'ホワイトリストに登録すると、バックグラウンド監視とリマインダーが省電力設定（Doze）で制限されません。';
 
   @override
+  String get permExactAlarmTitle => '正確なアラーム';
+
+  @override
+  String get permExactAlarmDesc =>
+      'アプリをスワイプで終了した約 1 秒後に監視を自動再起動するために必要です。Android 14+ では既定でオフ。未許可の場合は不正確なアラームにフォールバックします（再起動が数秒遅れることがあります）。';
+
+  @override
   String get permAccessibilityTitle => 'ユーザー補助サービス';
 
   @override

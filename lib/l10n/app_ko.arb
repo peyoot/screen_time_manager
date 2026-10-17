@@ -57,6 +57,8 @@
   "permFullScreenDesc": "잠금 화면에서 휴식 알림을 전체 화면으로 표시합니다. Android 14+에서는 기본적으로 꺼져 있어 수동 허용이 필요합니다.",
   "permBatteryTitle": "배터리 최적화 제외",
   "permBatteryDesc": "화이트리스트에 추가하면 백그라운드 모니터링과 알림이 절전 정책(Doze)의 제한을 받지 않습니다.",
+  "permExactAlarmTitle": "정확한 알람",
+  "permExactAlarmDesc": "앱을 밀어서 닫은 후 약 1초 뒤 모니터링을 자동으로 다시 시작하는 데 필요합니다. Android 14+에서는 기본적으로 꺼져 있으며, 허용하지 않으면 부정확한 알람으로 대첩니다(재시작이 몇 초 지연될 수 있음).",
   "permAccessibilityTitle": "접근성 서비스",
   "permAccessibilityDesc": "긴급 종료가 볼륨 키를 감지하는 데 사용됩니다 (세 번째 대체 경로).",
   "permAutoStartTitle": "자동 실행 (OEM)",

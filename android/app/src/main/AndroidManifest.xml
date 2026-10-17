@@ -17,11 +17,11 @@
     <!-- 第 4 步开机自启使用，先声明。 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- 划掉应用后经精确闹钟自动重启前台服务（onTaskRemoved 兜底）。
-         Android 12-13 可用 SCHEDULE_EXACT_ALARM；Android 14+ 默认不授予，
-         因此同时声明 USE_EXACT_ALARM（33+ 自动授予；本应用侧载分发，
-         不受商店对闹钟类应用的审核限制）。 -->
+         只声明 SCHEDULE_EXACT_ALARM：USE_EXACT_ALARM 面向日历/闹钟类应用，
+         本应用场景不符，审核可能被拒。Android 12-13 安装即授予；
+         Android 14+ 默认不授予，走"检查权限 → 权限引导页引导开启 →
+         降级非精确闹钟兜底"的路径（见 ScreenMonitorService.scheduleRestart）。 -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <application
         android:label="screen_time_manager"
         android:name=".ScreenMonitorApp"

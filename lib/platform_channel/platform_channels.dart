@@ -54,6 +54,10 @@ enum MonitorPermission {
   /// 无障碍服务授权（紧急退出按键监听依赖它来观测电源键）。
   accessibility,
 
+  /// 精确闹钟授权（SCHEDULE_EXACT_ALARM，Android 12+；14+ 默认拒绝）。
+  /// 划掉应用后自动重启监控依赖它；未授权时退化为非精确闹钟兜底。
+  exactAlarm,
+
   /// OEM 自启动管理（无公开 API，仅提供跳转，无状态查询）。
   autoStart,
 }

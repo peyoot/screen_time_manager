@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:screen_time_manager/l10n/app_localizations.dart';
 import 'package:screen_time_manager/main.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
 import 'package:screen_time_manager/models/question.dart';
 import 'package:screen_time_manager/models/question_bank.dart';
+import 'package:screen_time_manager/platform_channel/platform_channels.dart';
 import 'package:screen_time_manager/question_bank/question_bank_service.dart';
 import 'package:screen_time_manager/state_machine/app_phase.dart';
 import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
+import 'package:screen_time_manager/ui/permissions/permission_guide_page.dart';
 import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
 
 ScreenTimeController buildController() {
@@ -39,6 +43,22 @@ ScreenTimeController buildController() {
     questionsPerQuiz: 2,
     autoStart: false,
   );
+}
+
+/// 假监控通道：返回预置权限状态并记录设置页跳转请求。
+class _FakeMonitorChannel extends MonitorChannel {
+  _FakeMonitorChannel(this._status);
+
+  final Map<MonitorPermission, bool> _status;
+  MonitorPermission? lastOpened;
+
+  @override
+  Future<Map<MonitorPermission, bool>> getPermissions() async => _status;
+
+  @override
+  Future<void> openPermissionSettings(MonitorPermission permission) async {
+    lastOpened = permission;
+  }
 }
 
 void main() {
@@ -246,6 +266,37 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(find.text('Permissions & Reliability'), findsOneWidget);
+  });
+
+  testWidgets('权限引导页展示精确闹钟条目：未授权标红，点击请求跳转对应设置页',
+      (tester) async {
+    final monitor = _FakeMonitorChannel(const {
+      MonitorPermission.overlay: true,
+      MonitorPermission.exactAlarm: false,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          S.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: S.supportedLocales,
+        home: PermissionGuidePage(monitor: monitor),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 新条目渲染（测试环境默认 en locale）：未授权显示 Not granted。
+    expect(find.text('Exact alarms'), findsOneWidget);
+    expect(find.text('Not granted'), findsOneWidget);
+    expect(find.text('Granted'), findsOneWidget);
+
+    // 点击条目 → 请求跳转 exactAlarm 设置页。
+    await tester.tap(find.text('Exact alarms'));
+    await tester.pumpAndSettle();
+    expect(monitor.lastOpened, MonitorPermission.exactAlarm);
   });
 
   testWidgets('计时设置对话框可修改亮屏与休息时长', (tester) async {

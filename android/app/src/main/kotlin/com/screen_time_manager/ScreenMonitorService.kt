@@ -50,8 +50,14 @@ class ScreenMonitorService : Service() {
         /** 划掉应用后的重启闹钟 request code（与通知/其他 PendingIntent 隔离）。 */
         private const val RESTART_REQUEST_CODE = 2001
 
+        /** 非精确兜底闹钟 request code（与精确闹钟互不复用）。 */
+        private const val RESTART_FALLBACK_REQUEST_CODE = 2002
+
         /** 划掉应用后延迟多久尝试重启前台服务。 */
         private const val RESTART_DELAY_MS = 1000L
+
+        /** 非精确兜底闹钟的延迟（精确闹钟被拒/失效时仍有第二次拉起机会）。 */
+        private const val RESTART_FALLBACK_DELAY_MS = 5000L
 
         @Volatile
         var running: Boolean = false
@@ -160,10 +166,18 @@ class ScreenMonitorService : Service() {
 
     /**
      * 用户从最近任务划掉应用：多数国产 ROM（ZUXOS/MIUI/EMUI 等）会直接杀掉
-     * 整个进程。此处通过精确闹钟安排约 1 秒后重启前台服务——进程已死时由
-     * 系统拉起新进程投递给 manifest 静态注册的 [ServiceRestartReceiver]，
-     * 再以前台服务方式恢复监控（Application 会重建缓存 FlutterEngine，
-     * Dart 侧从 day_snapshot 恢复当日进度，数据延续）。
+     * 整个进程。此处安排两个重启闹钟——进程已死时由系统拉起新进程投递给
+     * manifest 静态注册的 [ServiceRestartReceiver]，再以前台服务方式恢复监控
+     * （Application 会重建缓存 FlutterEngine，Dart 侧从 day_snapshot 恢复
+     * 当日进度，数据延续）：
+     * 1. 精确闹钟（~1s）：仅在权限允许时调度。不假设 Android 12+ 自动授予
+     *    SCHEDULE_EXACT_ALARM——Android 14+ 默认拒绝，先经
+     *    [AlarmManager.canScheduleExactAlarms] 检查（权限引导页有引导项）；
+     * 2. 非精确闹钟（~5s，setAndAllowWhileIdle）：无需任何权限，系统空闲时
+     *    也会触发，作为精确闹钟被拒/失效时的第二次拉起机会。
+     *
+     * 两个闹钟都触发时会产生两次重启尝试，由 [ServiceRestartReceiver] 依据
+     * [running] 幂等去重。
      *
      * 边界说明：
      * - 若 ROM 的划卡等价于"强制停止"，系统会取消已注册的闹钟且
@@ -177,29 +191,42 @@ class ScreenMonitorService : Service() {
         scheduleRestart()
     }
 
-    /** 用精确闹钟安排一次 [ServiceRestartReceiver] 重启（详见 [onTaskRemoved]）。 */
+    /** 调度"精确（权限允许时）+ 非精确兜底"双重启闹钟（详见 [onTaskRemoved]）。 */
     private fun scheduleRestart() {
         val alarmManager = getSystemService(AlarmManager::class.java) ?: return
-        val pendingIntent = PendingIntent.getBroadcast(
+
+        // 1) 精确闹钟：先查权限，绝不假设已授予（Android 14+ 默认拒绝）。
+        val canScheduleExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            alarmManager.canScheduleExactAlarms()
+        if (canScheduleExact) {
+            // 检查与调度之间权限可能被撤销，SecurityException 时静默放弃，
+            // 非精确兜底闹钟仍会触发。
+            runCatching {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    SystemClock.elapsedRealtime() + RESTART_DELAY_MS,
+                    restartPendingIntent(RESTART_REQUEST_CODE),
+                )
+            }.onFailure { Log.w(TAG, "exact restart alarm rejected: $it") }
+        }
+
+        // 2) 非精确兜底闹钟：无需权限，延迟稍长；Receiver 内幂等去重。
+        runCatching {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + RESTART_FALLBACK_DELAY_MS,
+                restartPendingIntent(RESTART_FALLBACK_REQUEST_CODE),
+            )
+        }.onFailure { Log.w(TAG, "inexact restart alarm rejected: $it") }
+    }
+
+    private fun restartPendingIntent(requestCode: Int): PendingIntent =
+        PendingIntent.getBroadcast(
             this,
-            RESTART_REQUEST_CODE,
+            requestCode,
             Intent(this, ServiceRestartReceiver::class.java),
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val triggerAt = SystemClock.elapsedRealtime() + RESTART_DELAY_MS
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            !alarmManager.canScheduleExactAlarms()
-        ) {
-            // 无精确闹钟权限（Android 14+ 默认不授予）：退化为非精确闹钟尽力重启。
-            alarmManager.setAndAllowWhileIdle(
-                AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent,
-            )
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent,
-            )
-        }
-    }
 
     private fun registerScreenReceiver() {
         val filter = IntentFilter().apply {

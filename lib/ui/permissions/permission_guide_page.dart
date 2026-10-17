@@ -69,6 +69,12 @@ class _PermissionGuidePageState extends State<PermissionGuidePage>
       permission: MonitorPermission.ignoreBatteryOptimizations,
     ),
     _PermissionEntry(
+      icon: Icons.alarm_outlined,
+      title: _permExactAlarmTitle,
+      description: _permExactAlarmDesc,
+      permission: MonitorPermission.exactAlarm,
+    ),
+    _PermissionEntry(
       icon: Icons.accessibility_new_outlined,
       title: _permAccessibilityTitle,
       description: _permAccessibilityDesc,
@@ -237,6 +243,8 @@ String _permFullScreenTitle(S l10n) => l10n.permFullScreenTitle;
 String _permFullScreenDesc(S l10n) => l10n.permFullScreenDesc;
 String _permBatteryTitle(S l10n) => l10n.permBatteryTitle;
 String _permBatteryDesc(S l10n) => l10n.permBatteryDesc;
+String _permExactAlarmTitle(S l10n) => l10n.permExactAlarmTitle;
+String _permExactAlarmDesc(S l10n) => l10n.permExactAlarmDesc;
 String _permAccessibilityTitle(S l10n) => l10n.permAccessibilityTitle;
 String _permAccessibilityDesc(S l10n) => l10n.permAccessibilityDesc;
 String _permAutoStartTitle(S l10n) => l10n.permAutoStartTitle;
