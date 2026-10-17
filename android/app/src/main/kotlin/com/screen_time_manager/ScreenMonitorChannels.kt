@@ -111,6 +111,12 @@ object ScreenMonitorChannels {
                         openPermissionSettings(context, call.argument<String>("kind"))
                         result.success(null)
                     }
+                    "moveToBack" -> {
+                        // 不 finish：仅把任务切到后台，缓存引擎/Dart isolate 继续运行。
+                        val moved = ActivityTracker.currentActivity
+                            ?.moveTaskToBack(true) ?: false
+                        result.success(moved)
+                    }
                     else -> result.notImplemented()
                 }
             }

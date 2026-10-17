@@ -5,7 +5,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show MissingPluginException;
+import 'package:flutter/services.dart'
+    show MissingPluginException, SystemChrome, SystemUiMode;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
@@ -28,6 +29,10 @@ import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 默认全屏（沉浸模式）：启动即隐藏状态栏与导航栏；
+  // 之后由 [ScreenTimeManagerApp] 的生命周期观察在每次回前台时重新声明。
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   final db = await openAppDatabase();
 
@@ -165,22 +170,53 @@ void _seedDefaultQuestionBank(
 }
 
 /// 应用根组件。
-class ScreenTimeManagerApp extends StatelessWidget {
+///
+/// 持有 [WidgetsBindingObserver]：应用默认全屏（immersiveSticky 隐藏状态栏
+/// 与导航栏），从后台/系统设置返回前台时系统可能已恢复系统栏，
+/// 需在每次 resumed 时重新声明，保证计时页与被干预拉起的休息页都全屏。
+class ScreenTimeManagerApp extends StatefulWidget {
   final ScreenTimeController controller;
 
   const ScreenTimeManagerApp({super.key, required this.controller});
 
   @override
+  State<ScreenTimeManagerApp> createState() => _ScreenTimeManagerAppState();
+}
+
+class _ScreenTimeManagerAppState extends State<ScreenTimeManagerApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // 回到前台（含强制休息时被原生拉到前台）：恢复全屏。
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: controller.localeController,
+      listenable: widget.controller.localeController,
       builder: (context, _) {
         return MaterialApp(
           title: '屏幕时间管理',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
           ),
-          locale: controller.localeController.locale,
+          locale: widget.controller.localeController.locale,
           localizationsDelegates: const [
             S.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -188,7 +224,7 @@ class ScreenTimeManagerApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: supportedLocales,
-          home: HomePage(controller: controller),
+          home: HomePage(controller: widget.controller),
         );
       },
     );

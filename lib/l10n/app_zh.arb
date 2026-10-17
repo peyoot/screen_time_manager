@@ -43,6 +43,7 @@
   "homeLanguageTooltip": "语言",
   "homeSettingsTooltip": "计时设置",
   "homePermissionsTooltip": "权限引导",
+  "homeBackgroundTooltip": "后台运行",
 
   "permGuideTitle": "权限与保活设置",
   "permUnavailable": "仅 Android 提供权限状态查询",

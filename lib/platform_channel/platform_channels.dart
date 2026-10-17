@@ -101,6 +101,12 @@ class MonitorChannel {
       <String, String>{'kind': permission.name},
     );
   }
+
+  /// 把应用切到后台继续运行（不销毁进程，等价于按 Home）。
+  /// Android 走 Activity.moveTaskToBack(true)；返回是否成功。
+  Future<bool> moveToBack() async {
+    return await _channel.invokeMethod<bool>('moveToBack') ?? false;
+  }
 }
 
 // ---------------------------------------------------------------------

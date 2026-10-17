@@ -104,6 +104,9 @@ class SZh extends S {
   String get homePermissionsTooltip => '权限引导';
 
   @override
+  String get homeBackgroundTooltip => '后台运行';
+
+  @override
   String get permGuideTitle => '权限与保活设置';
 
   @override

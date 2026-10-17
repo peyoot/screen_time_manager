@@ -111,7 +111,11 @@ class _PermissionGuidePageState extends State<PermissionGuidePage>
 
   Future<void> _refresh() async {
     final monitor = widget.monitor;
-    if (monitor == null) return;
+    // 非 Android 平台（无通道）：直接显示不可用提示，不渲染无状态的空列表。
+    if (monitor == null) {
+      if (mounted) setState(() => _unavailable = true);
+      return;
+    }
     try {
       final status = await monitor.getPermissions();
       if (mounted) {

@@ -269,6 +269,12 @@ abstract class S {
   /// **'权限引导'**
   String get homePermissionsTooltip;
 
+  /// No description provided for @homeBackgroundTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'后台运行'**
+  String get homeBackgroundTooltip;
+
   /// No description provided for @permGuideTitle.
   ///
   /// In zh, this message translates to:

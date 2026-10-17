@@ -104,6 +104,9 @@ class SEn extends S {
   String get homePermissionsTooltip => 'Permissions';
 
   @override
+  String get homeBackgroundTooltip => 'Run in background';
+
+  @override
   String get permGuideTitle => 'Permissions & Reliability';
 
   @override

@@ -104,6 +104,9 @@ class SJa extends S {
   String get homePermissionsTooltip => '権限ガイド';
 
   @override
+  String get homeBackgroundTooltip => 'バックグラウンドで実行';
+
+  @override
   String get permGuideTitle => '権限とバックグラウンド動作';
 
   @override

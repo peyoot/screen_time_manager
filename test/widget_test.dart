@@ -201,6 +201,53 @@ void main() {
     expect(find.text('今日豁免次数已用完，请等待休息结束'), findsOneWidget);
   });
 
+  testWidgets('后台运行按钮渲染；无平台通道时点击安全 no-op', (tester) async {
+    final controller = buildController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 右上角"后台运行"退出按钮（测试环境 monitor 为 null，点击应静默 no-op）。
+    final button = find.byTooltip('Run in background');
+    expect(button, findsOneWidget);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.text('Screen Time Manager'), findsOneWidget);
+  });
+
+  testWidgets('设置管理密码后：权限入口需先验证，错误不放行、正确才进入',
+      (tester) async {
+    final controller = buildController();
+    addTearDown(controller.dispose);
+    controller.updateAdminPassword('abcd');
+
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 点击权限引导：先弹密码框，权限页尚未进入。
+    await tester.tap(find.byTooltip('Permissions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter admin password'), findsOneWidget);
+    expect(find.text('Permissions & Reliability'), findsNothing);
+
+    // 输错：显示错误，权限页仍不出现。
+    await tester.enterText(find.byType(TextField), '0000');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Incorrect password'), findsOneWidget);
+    expect(find.text('Permissions & Reliability'), findsNothing);
+
+    // 输对：门禁放行，进入权限引导页。
+    await tester.enterText(find.byType(TextField), 'abcd');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Permissions & Reliability'), findsOneWidget);
+  });
+
   testWidgets('计时设置对话框可修改亮屏与休息时长', (tester) async {
     final controller = buildController();
     addTearDown(controller.dispose);

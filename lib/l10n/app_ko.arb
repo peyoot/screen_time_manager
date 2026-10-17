@@ -43,6 +43,7 @@
   "homeLanguageTooltip": "언어",
   "homeSettingsTooltip": "타이밍 설정",
   "homePermissionsTooltip": "권한 안내",
+  "homeBackgroundTooltip": "백그라운드에서 실행",
 
   "permGuideTitle": "권한 및 백그라운드 설정",
   "permUnavailable": "권한 상태 확인은 Android에서만 사용할 수 있습니다",

@@ -13,6 +13,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show MissingPluginException;
 import 'package:uuid/uuid.dart';
 
 import '../../data/repositories/app_settings_repository.dart';
@@ -348,6 +349,18 @@ class ScreenTimeController extends ChangeNotifier {
   void manualRest() {
     if (phase == AppPhase.tracking) {
       machine.restNow();
+    }
+  }
+
+  /// 退出前台到后台继续运行（不销毁进程，监控与计时不受影响）。
+  ///
+  /// Android 走 `Activity.moveTaskToBack(true)`（等同按 Home）；
+  /// 桌面/Web/测试（[monitor] 为 null）静默 no-op。
+  Future<void> moveToBackground() async {
+    try {
+      await monitor?.moveToBack();
+    } on MissingPluginException {
+      // 通道未注册的旧引擎/非 Android 平台：忽略。
     }
   }
 

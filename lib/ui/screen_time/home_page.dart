@@ -55,12 +55,15 @@ class _TimingView extends StatelessWidget {
           IconButton(
             tooltip: l10n.homePermissionsTooltip,
             icon: const Icon(Icons.verified_user_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) =>
-                    PermissionGuidePage(monitor: controller.monitor),
-              ),
-            ),
+            // 权限与保活设置同样需要管理密码，防止儿童自行关闭保活/干预权限。
+            onPressed: () => openWithAdminGate(context, controller, () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      PermissionGuidePage(monitor: controller.monitor),
+                ),
+              );
+            }),
           ),
           IconButton(
             tooltip: l10n.homeBankTooltip,
@@ -90,6 +93,13 @@ class _TimingView extends StatelessWidget {
             tooltip: l10n.homeLanguageTooltip,
             icon: const Icon(Icons.language),
             onPressed: () => _showLanguagePicker(context, controller),
+          ),
+          IconButton(
+            tooltip: l10n.homeBackgroundTooltip,
+            icon: const Icon(Icons.exit_to_app),
+            // 退出前台到后台继续运行（监控/计时不中断）；
+            // 回到前台时根组件会自动恢复沉浸全屏。
+            onPressed: controller.moveToBackground,
           ),
         ],
       ),

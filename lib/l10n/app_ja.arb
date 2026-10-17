@@ -43,6 +43,7 @@
   "homeLanguageTooltip": "言語",
   "homeSettingsTooltip": "タイミング設定",
   "homePermissionsTooltip": "権限ガイド",
+  "homeBackgroundTooltip": "バックグラウンドで実行",
 
   "permGuideTitle": "権限とバックグラウンド動作",
   "permUnavailable": "権限の状態確認は Android でのみ利用できます",

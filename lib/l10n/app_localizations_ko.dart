@@ -104,6 +104,9 @@ class SKo extends S {
   String get homePermissionsTooltip => '권한 안내';
 
   @override
+  String get homeBackgroundTooltip => '백그라운드에서 실행';
+
+  @override
   String get permGuideTitle => '권한 및 백그라운드 설정';
 
   @override
