@@ -1,8 +1,10 @@
 package com.screen_time_manager
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -16,6 +18,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -44,9 +47,23 @@ class ScreenMonitorService : Service() {
         private const val CHANNEL_ID = "screen_monitor"
         private const val NOTIFICATION_ID = 1001
 
+        /** 划掉应用后的重启闹钟 request code（与通知/其他 PendingIntent 隔离）。 */
+        private const val RESTART_REQUEST_CODE = 2001
+
+        /** 划掉应用后延迟多久尝试重启前台服务。 */
+        private const val RESTART_DELAY_MS = 1000L
+
         @Volatile
         var running: Boolean = false
             private set
+
+        /**
+         * 紧急退出路径置 true：抑制 [onTaskRemoved] 的自动重启闹钟，
+         * 避免"彻底退出应用"后 1 秒又被闹钟拉起复活。
+         * 服务每次 onCreate 时复位为 false。
+         */
+        @Volatile
+        var suppressAutoRestart: Boolean = false
 
         /** 兜底音量通路是否启用（服务启动即注册，进程存活期间一直监听）。 */
         @Volatile
@@ -118,6 +135,7 @@ class ScreenMonitorService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        suppressAutoRestart = false
         createNotificationChannel()
         startAsForeground()
         registerScreenReceiver()
@@ -138,6 +156,49 @@ class ScreenMonitorService : Service() {
         unregisterVolumeObserver()
         running = false
         super.onDestroy()
+    }
+
+    /**
+     * 用户从最近任务划掉应用：多数国产 ROM（ZUXOS/MIUI/EMUI 等）会直接杀掉
+     * 整个进程。此处通过精确闹钟安排约 1 秒后重启前台服务——进程已死时由
+     * 系统拉起新进程投递给 manifest 静态注册的 [ServiceRestartReceiver]，
+     * 再以前台服务方式恢复监控（Application 会重建缓存 FlutterEngine，
+     * Dart 侧从 day_snapshot 恢复当日进度，数据延续）。
+     *
+     * 边界说明：
+     * - 若 ROM 的划卡等价于"强制停止"，系统会取消已注册的闹钟且
+     *   START_STICKY 不再生效，应用层无法自愈——只能依赖权限引导页的
+     *   "自启动 + 电池不优化"白名单降低被杀概率；
+     * - 紧急退出会先置 [suppressAutoRestart]，避免退出后被闹钟重新拉起。
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (suppressAutoRestart || !running) return
+        scheduleRestart()
+    }
+
+    /** 用精确闹钟安排一次 [ServiceRestartReceiver] 重启（详见 [onTaskRemoved]）。 */
+    private fun scheduleRestart() {
+        val alarmManager = getSystemService(AlarmManager::class.java) ?: return
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            RESTART_REQUEST_CODE,
+            Intent(this, ServiceRestartReceiver::class.java),
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val triggerAt = SystemClock.elapsedRealtime() + RESTART_DELAY_MS
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !alarmManager.canScheduleExactAlarms()
+        ) {
+            // 无精确闹钟权限（Android 14+ 默认不授予）：退化为非精确闹钟尽力重启。
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent,
+            )
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent,
+            )
+        }
     }
 
     private fun registerScreenReceiver() {

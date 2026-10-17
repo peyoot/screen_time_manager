@@ -4,6 +4,7 @@
 library;
 
 import '../models/app_settings.dart';
+import '../models/day_snapshot.dart';
 import '../models/screen_session.dart';
 import '../models/rest_session.dart';
 import '../models/snooze_record.dart';
@@ -53,6 +54,43 @@ AppSettings appSettingsFromRow(Map<String, Object?> row) {
     restDuration: Duration(seconds: _asInt(row['rest_duration_seconds'])),
     dailyExemptionLimit: _asInt(row['daily_exemption_limit']),
     adminPasswordHash: row['admin_password_hash'] as String?,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DaySnapshot
+// ---------------------------------------------------------------------------
+
+/// 把 [DaySnapshot] 映射为可写入 DB 的字段 Map（day 为主键，不含时间戳以外的列）。
+Map<String, Object?> daySnapshotToRow(
+  DaySnapshot s, {
+  required DateTime now,
+}) {
+  return {
+    'day': s.dayKey,
+    'screen_seconds': s.screenTime.inSeconds,
+    'threshold_seconds': s.thresholdProgress.inSeconds,
+    'exemptions_used_today': s.exemptionsUsedToday,
+    'rest_count': s.restCount,
+    'rest_seconds': s.restElapsed.inSeconds,
+    'rest_exemptions': s.restExemptions,
+    'rest_ends_at': s.restEndsAt == null ? null : toTimestamp(s.restEndsAt!),
+    'updated_at': toTimestamp(now),
+  };
+}
+
+/// 从 DB 行构造 [DaySnapshot]。
+DaySnapshot daySnapshotFromRow(Map<String, Object?> row) {
+  final endsAt = row['rest_ends_at'] as String?;
+  return DaySnapshot(
+    day: DateTime.parse(row['day'] as String),
+    screenTime: Duration(seconds: _asInt(row['screen_seconds'])),
+    thresholdProgress: Duration(seconds: _asInt(row['threshold_seconds'])),
+    exemptionsUsedToday: _asInt(row['exemptions_used_today']),
+    restCount: _asInt(row['rest_count']),
+    restElapsed: Duration(seconds: _asInt(row['rest_seconds'])),
+    restExemptions: _asInt(row['rest_exemptions']),
+    restEndsAt: endsAt == null ? null : fromTimestamp(endsAt),
   );
 }
 

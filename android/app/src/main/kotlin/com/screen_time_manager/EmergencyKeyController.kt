@@ -236,6 +236,10 @@ object EmergencyKeyController {
         Log.d(TAG, "emergency exit: shutting down app")
         val app = ScreenMonitorApp.instance
 
+        // 抑制 onTaskRemoved 的自动重启闹钟：finishAndRemoveTask 会触发
+        // onTaskRemoved，若不抑制，应用会在退出 1 秒后被闹钟重新拉起。
+        ScreenMonitorService.suppressAutoRestart = true
+
         RestGuard.disarm()
         runCatching { ActivityTracker.currentActivity?.stopLockTask() }
         ScreenMonitorService.stop(app)

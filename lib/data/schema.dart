@@ -7,7 +7,7 @@ library;
 import 'package:sqflite/sqflite.dart';
 
 /// 当前 schema 版本号。
-const int kSchemaVersion = 2;
+const int kSchemaVersion = 3;
 
 /// V1 建表语句：按外键依赖顺序排列。
 const List<String> kSchemaV1Statements = [
@@ -141,6 +141,36 @@ const List<String> kSchemaV2Statements = [
 Future<void> applySchemaV2(Database db) async {
   final batch = db.batch();
   for (final stmt in kSchemaV2Statements) {
+    batch.execute(stmt);
+  }
+  await batch.commit();
+}
+
+/// V3 迁移：新增 `day_snapshot` 表——当日运行状态快照（每天一行）。
+///
+/// 进程被杀（划掉应用/系统回收）重启后据此恢复当日进度：
+/// 累计亮屏、阈值进度、已用豁免、当日休息统计与进行中休息的截止时刻。
+/// 控制器运行期按约 5 秒节流 upsert 当天行。
+const List<String> kSchemaV3Statements = [
+  '''
+  CREATE TABLE day_snapshot (
+    day TEXT PRIMARY KEY,
+    screen_seconds INTEGER NOT NULL DEFAULT 0,
+    threshold_seconds INTEGER NOT NULL DEFAULT 0,
+    exemptions_used_today INTEGER NOT NULL DEFAULT 0,
+    rest_count INTEGER NOT NULL DEFAULT 0,
+    rest_seconds INTEGER NOT NULL DEFAULT 0,
+    rest_exemptions INTEGER NOT NULL DEFAULT 0,
+    rest_ends_at TEXT,
+    updated_at TEXT NOT NULL
+  )
+  ''',
+];
+
+/// 在指定数据库上执行 V3 迁移。
+Future<void> applySchemaV3(Database db) async {
+  final batch = db.batch();
+  for (final stmt in kSchemaV3Statements) {
     batch.execute(stmt);
   }
   await batch.commit();

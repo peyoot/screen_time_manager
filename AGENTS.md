@@ -129,7 +129,7 @@
 ### 第 3 步：到点全屏干预（✅ 已完成）
 - Dart 进入 quiz / resting → `intervention` 通道 → 原生发高优先级通知并以 `setFullScreenIntent` 拉起 MainActivity（锁屏状态下也可展示），Flutter 侧按当前 phase 直接呈现提醒 / 答题 / 休息页。
 - ✅ 兜底路径已实装：[InterventionOverlay.kt](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/InterventionOverlay.kt) 用 `TYPE_APPLICATION_OVERLAY`（API 26+，之下 TYPE_PHONE）+ Application context + WindowManager 添加全屏遮罩（代码构建视图，FLAG_NOT_FOCUSABLE、不加 NOT_TOUCH_MODAL 以阻挡底层应用触摸）。`requestIntervention` 中在 `canDrawOverlays` 时 `requestShow`：延迟 2.5s 检查 `ActivityTracker.isResumed`，Activity 拉起失败才显示；`MainActivity.onResume` 与 `dismissInterventionNotification`（含紧急退出路径）调用 `hide()` 移除。
-- 处理冷启动从通知进入：引擎启动先恢复 DB 中的设置与题库，再按状态机当前 phase 路由；首个版本可接受被杀后重置为 tracking（已完成的 session 记录已落库，不丢数据）。
+- 处理冷启动从通知进入：引擎启动先恢复 DB 中的设置与题库，再按状态机当前 phase 路由；被杀后的状态与当日数据经 day_snapshot 快照恢复（见第 5 步），已完成的 session 记录亦已落库。
 
 ### 第 4 步：权限引导与开机自启（✅ 已完成）
 - ✅ 权限引导页 [permission_guide_page.dart](file:///home/robin/mygit/screen_time_manager/lib/ui/permissions/permission_guide_page.dart)：主页 AppBar 入口（已设置管理密码时同样走 `openWithAdminGate` 门禁），逐项展示悬浮窗 / 通知 / 全屏 intent / 电池优化白名单 / 无障碍状态（`getPermissions`，从系统设置返回时经 WidgetsBindingObserver 自动刷新）+ 自启动跳转项。非 Android 平台（`monitor == null` 或 MissingPluginException）显示不可用提示。
@@ -137,8 +137,9 @@
 - ✅ 开机自启：[BootReceiver.kt](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/BootReceiver.kt) 收到 BOOT_COMPLETED（含 QUICKBOOT_POWERON）且 `monitor_bootstrap` prefs 中 `user_started=true` 时启动 [ScreenMonitorService](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/ScreenMonitorService.kt)。标记由 `MainActivity.onCreate` 写入——**不能写在 Application.onCreate**：开机广播拉起进程时 Application 先于接收器执行，会无条件通过检查。receiver `exported=false`（BOOT_COMPLETED 是 protected broadcast，系统可送达；个别 ROM 不触发再改 true）。
 
 ### 第 5 步：真机验收与健壮性
-- 验收清单：灭屏不计时长 / 亮屏重新累计；阈值到点在前台、后台、锁屏三种状态下都能拦截；答题豁免与休息倒计时流程完整；通知常驻与文案更新；重启自启。
-- 进程被杀恢复：后续把阈值进度 / phase 做轻量持久化（状态快照存 DB 或 prefs），重启后对账；第一版先保证已完成会话记录不丢。
+- 验收清单：灭屏不计时长 / 亮屏重新累计；阈值到点在前台、后台、锁屏三种状态下都能拦截；答题豁免与休息倒计时流程完整；通知常驻与文案更新；重启自启；划掉应用后自动重启且当日数据延续。
+- ✅ **划掉自动重启**（ZUXOS 真机验收发现可被划掉关闭后实装）：`ScreenMonitorService.onTaskRemoved` 在用户划卡时经 `AlarmManager.setExactAndAllowWhileIdle`（~1s 后）触发 manifest 静态注册的 [ServiceRestartReceiver.kt](file:///home/robin/mygit/screen_time_manager/android/app/src/main/kotlin/com/screen_time_manager/ServiceRestartReceiver.kt) 重启前台服务（进程已死时由系统拉起新进程，动态注册接收器不可用故必须静态注册）；service 标签 `stopWithTask="false"`（原生行为下服务不随划卡停止）；Manifest 新增 `SCHEDULE_EXACT_ALARM` + `USE_EXACT_ALARM`（33+ 自动授予，无权限时退化为 `setAndAllowWhileIdle` 尽力重启，Receiver 内 catch 拒绝异常）。**边界**：ROM 划卡等价"强制停止"时闹钟被取消且 START_STICKY 失效，应用层无法自愈，只能靠自启动+电池白名单降低概率；紧急退出在 `exitRestImmediately` 中先置 `ScreenMonitorService.suppressAutoRestart = true`（onCreate 复位），防止 finishAndRemoveTask 触发 onTaskRemoved 导致退出后被闹钟复活。
+- ✅ **当日快照延续（进程被杀恢复）**：`day_snapshot` 表（schema V3 阶梯迁移，每天一行）+ `DaySnapshotRepository`（写入门 + flush）。控制器运行期约 5s 节流 upsert 当日快照（亮屏累计/阈值进度/已用豁免/休息统计/进行中休息截止时刻），灭屏、阶段变化、dispose 时强制固化；`main()` 在挂 UI 前 `await controller.restoreFromSnapshot()` → `ScreenTimeMachine.restoreDay` 移植状态（**保留当前 isScreenOn**，initial 默认灭屏会误杀亮屏累计）。重启前处于休息期且截止时刻未过 → 恢复休息并经钩子重新发起全屏干预（被杀逃不掉休息）；已过期则按计时继续。被杀丢失窗口 ≤5 秒。
 - 关注国产 ROM 后台存活率；若 FlutterEngine 保活方案不达标，再评估计时核心下沉 Kotlin（原生记录亮屏累计时长，Dart 仅在交互时启动对账）。
 
 ### 本地端之后（顺序待定）
@@ -198,7 +199,7 @@
 - **默认题库**：纯英文，不做多语种翻译（用户自行导入所需题库）——`Missing Piece`（谚语填空）、`Curious Mind`（科普问答）；中文系统环境额外加载"文化常识"古诗文飞花令分组。
 - **管理密码（本机）**：可在设置对话框内设置/修改/清除（最短 4 位）；设置后进入设置对话框、题库管理页与**权限引导页**均需先输密码验证（`openWithAdminGate` 门禁，`lib/ui/screen_time/admin_password_dialogs.dart`）。只存 FNV-1a 64 位加盐哈希不落明文（`AppSettings.adminPasswordHash` ↔ `app_settings.admin_password_hash`，schema V2 阶梯迁移，V1 库升级走 `applySchemaV2` 增量 ALTER）。`AppSettingsRepository` 带 `_lastWrite` 写入门串行化 upsert 并提供 `flush()`（测试断言 DB 前必等），与 QuestionBankService 约定一致。
 - **默认全屏 + 后台运行**：应用默认沉浸全屏（`SystemUiMode.immersiveSticky` 隐藏状态栏/导航栏），`main()` 启动即声明，`ScreenTimeManagerApp` 的 WidgetsBindingObserver 在每次 `resumed` 时重新声明（从后台/系统设置返回、强制休息被原生拉到前台都自动恢复全屏，休息页无需单独处理）。主页 AppBar 最右"后台运行"按钮（仅计时页有，resting 不提供）经 `monitor` 通道 `moveToBack` → `Activity.moveTaskToBack(true)` 退到后台但不销毁进程，监控/计时不中断；桌面/Web/测试（monitor 为 null）静默 no-op。
-- **测试**：155 个测试全过（状态机 / 题库 / widget / 数据层 / 会话记录 / 平台通道接线 / 当日休息统计 / 管理密码与 V1→V2 迁移 / 权限门禁与后台按钮）。
+- **测试**：167 个测试全过（状态机含 restoreDay / 题库 / widget / 数据层含 day_snapshot 与 V2→V3 迁移 / 会话记录 / 平台通道接线 / 当日休息统计 / 管理密码与 V1→V2 迁移 / 权限门禁与后台按钮 / 当日快照恢复）。
 - **Android 第 1 步已完成**：包名/applicationId 已改为 `com.screen_time_manager`；`lib/platform_channel/` 通道层就绪（screen_events / monitor / intervention，条件导入保证 Web 不引入 `dart:io`）；`ScreenTimeController` 支持注入亮灭屏事件流与干预桥，未注入时退化为 Timer 驱动；Kotlin 侧通道（含 `ScreenEventBus`、权限状态查询与设置页跳转）已注册；`flutter build apk --debug` 与 `flutter build web` 均通过。
 - **Android 第 2 步已完成**：`ScreenMonitorApp` 预创建并缓存 FlutterEngine（ID `screen_monitor_engine`），MainActivity 复用之；`ScreenMonitorService` 前台服务（specialUse + 常驻通知）内动态注册亮灭屏/解锁广播，事件经 EventChannel 驱动状态机，后台/灭屏期间 Dart 持续 tick；POST_NOTIFICATIONS 首启申请；合并后 Manifest 已核验。
 - **休息期自动熄屏已实现**：`InterventionBridge.lockScreen` + Kotlin `DeviceAdminReceiver`（仅 force-lock 策略）+ `DevicePolicyManager.lockNow()`（反射调用 @hide `createAddAdminActiveIntent` 打开授权页，回退安全设置页）；rest_page.dart 进入休息 10 秒内无答题豁免操作则熄屏，点豁免/提交答案即取消计时器。**注意**：`lockScreen()` 必须先临时 `RestGuard.disarm()` 再 `lockNow()` 最后 re-arm，否则熄屏导致的 onStop 会被 RestGuard 误判为用户强行切走而重复拉回。

@@ -192,6 +192,41 @@ class ScreenTimeMachine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 进程被杀重启后恢复当日进度（配合 day_snapshot 快照表使用）。
+  ///
+  /// 仅移植状态快照，不做阶段迁移判断之外的处理；恢复"休息中"时
+  /// 会照常发出通知，由控制器钩子补齐干预与统计副作用。
+  /// - [usedToday]：今日已累计亮屏时长；
+  /// - [thresholdProgress]：当前阈值进度；
+  /// - [exemptionsUsedToday]：今日已用豁免次数（状态机口径）；
+  /// - [restEndsAt]：重启前处于休息期的截止时刻；仅当仍晚于当前时刻
+  ///   才恢复为休息中，已过期则按计时阶段继续（该次休息视为已跳过）。
+  void restoreDay({
+    required Duration usedToday,
+    required Duration thresholdProgress,
+    int exemptionsUsedToday = 0,
+    DateTime? restEndsAt,
+  }) {
+    final now = _clock();
+    var state = ScreenTimeState.initial(
+      now: now,
+      quizInterval: _settings.quizInterval,
+    );
+    state = state.copyWith(
+      // 恢复不改变亮屏状态：initial 默认灭屏，会误杀进行中的亮屏累计。
+      isScreenOn: _state.isScreenOn,
+      dailyUsage: state.dailyUsage.addScreenTime(usedToday),
+      sinceLastGrant: thresholdProgress,
+      exemptionsUsedToday: exemptionsUsedToday,
+    );
+    if (restEndsAt != null && restEndsAt.isAfter(now)) {
+      state = state.copyWith(phase: AppPhase.resting, restEndsAt: restEndsAt);
+    }
+    _state = state;
+    _lastTickAt = now;
+    notifyListeners();
+  }
+
   // ---------------------------------------------------------------------
   // 内部实现
   // ---------------------------------------------------------------------

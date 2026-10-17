@@ -32,11 +32,15 @@ Future<Database> openAppDatabase({String? dbPath}) async {
       // 新建库依次应用全部版本阶梯，V1 DDL 保持历史原样。
       await applySchemaV1(db);
       await applySchemaV2(db);
+      await applySchemaV3(db);
     },
     onUpgrade: (db, oldVersion, newVersion) async {
       // 阶梯式迁移：每个版本只补自己的增量语句。
       if (oldVersion < 2) {
         await applySchemaV2(db);
+      }
+      if (oldVersion < 3) {
+        await applySchemaV3(db);
       }
     },
   );

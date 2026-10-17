@@ -17,9 +17,11 @@ import 'package:flutter/services.dart' show MissingPluginException;
 import 'package:uuid/uuid.dart';
 
 import '../../data/repositories/app_settings_repository.dart';
+import '../../data/repositories/day_snapshot_repository.dart';
 import '../../data/repositories/rest_session_repository.dart';
 import '../../data/repositories/screen_session_repository.dart';
 import '../../data/repositories/snooze_record_repository.dart';
+import '../../models/day_snapshot.dart';
 import '../../models/rest_session.dart';
 import '../../models/screen_session.dart';
 import '../../models/snooze_record.dart';
@@ -46,6 +48,7 @@ class ScreenTimeController extends ChangeNotifier {
 
   // 可选的持久化后端；为 null 时跳过对应写入（测试/无 DB 阶段）。
   final AppSettingsRepository? appSettingsRepo;
+  final DaySnapshotRepository? daySnapshotRepo;
   final ScreenSessionRepository? screenSessionRepo;
   final RestSessionRepository? restSessionRepo;
   final SnoozeRecordRepository? snoozeRecordRepo;
@@ -91,6 +94,12 @@ class ScreenTimeController extends ChangeNotifier {
 
   Timer? _timer;
 
+  /// 当日快照写入节流间隔（约 5 秒一条；被杀最多丢 5 秒累计）。
+  static const _snapshotInterval = Duration(seconds: 5);
+
+  /// 上次当日快照写入时刻。
+  DateTime _lastSnapshotAt = DateTime.fromMillisecondsSinceEpoch(0);
+
   /// 当前轮次抽到的输入式题目（仅在 quiz 阶段非空）。
   List<BankQuestion> quizQuestions = const [];
 
@@ -117,6 +126,7 @@ class ScreenTimeController extends ChangeNotifier {
     required this.bankService,
     this.questionsPerQuiz = 2,
     this.appSettingsRepo,
+    this.daySnapshotRepo,
     this.screenSessionRepo,
     this.restSessionRepo,
     this.snoozeRecordRepo,
@@ -140,8 +150,60 @@ class ScreenTimeController extends ChangeNotifier {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         _rolloverRestStatsIfNeeded();
         machine.tick();
+        _flushDaySnapshot();
       });
     }
+  }
+
+  /// 从 [daySnapshotRepo] 恢复当日进度（进程被杀/划掉重启后调用）。
+  ///
+  /// 快照缺失或属于其他自然日时为 no-op。恢复内容：状态机当日累计
+  /// 亮屏/阈值进度/已用豁免、当日休息统计；若重启前正处于休息期且
+  /// 截止时刻未过，状态机恢复为休息中——钩子会照常发起全屏干预，
+  /// 把用户拉回休息页（随后此处用快照值对齐计数，避免重复统计）。
+  /// 应在挂 UI 前 await，避免首帧显示归零数据。
+  Future<void> restoreFromSnapshot() async {
+    final repo = daySnapshotRepo;
+    if (repo == null) return;
+    final now = _clock();
+    final snapshot = await repo.loadForDay(now);
+    if (snapshot == null || !snapshot.isForDay(now)) return;
+    machine.restoreDay(
+      usedToday: snapshot.screenTime,
+      thresholdProgress: snapshot.thresholdProgress,
+      exemptionsUsedToday: snapshot.exemptionsUsedToday,
+      restEndsAt: snapshot.restEndsAt,
+    );
+    // restoreDay 的通知若触发了"进入休息"钩子，计数已被 +1；
+    // 用快照值对齐（快照的 rest_count/rest_seconds 已含进行中的休息）。
+    _todayRestCount = snapshot.restCount;
+    _todayRestElapsed = snapshot.restElapsed;
+    _todayRestExemptions = snapshot.restExemptions;
+    _flushDaySnapshot(force: true);
+    notifyListeners();
+  }
+
+  /// 把当日运行状态写入快照表（[force] 为 true 时跳过节流）。
+  /// 快照只作健壮性优化，写失败静默，不阻塞主流程。
+  void _flushDaySnapshot({bool force = false}) {
+    final repo = daySnapshotRepo;
+    if (repo == null) return;
+    final now = _clock();
+    if (!force && now.difference(_lastSnapshotAt) < _snapshotInterval) return;
+    _lastSnapshotAt = now;
+    final state = machine.state;
+    repo
+        .upsert(DaySnapshot(
+          day: _dayOf(now),
+          screenTime: state.usedToday,
+          thresholdProgress: state.sinceLastGrant,
+          exemptionsUsedToday: state.exemptionsUsedToday,
+          restCount: _todayRestCount,
+          restElapsed: todayRestDuration,
+          restExemptions: _todayRestExemptions,
+          restEndsAt: state.restEndsAt,
+        ))
+        .catchError((_) {});
   }
 
   AppPhase get phase => machine.state.phase;
@@ -287,6 +349,8 @@ class ScreenTimeController extends ChangeNotifier {
       restQuizFailed = false;
     }
     notifyListeners();
+    // 阶段变化（尤其进入/离开休息）立即固化快照，减小被杀丢失窗口。
+    _flushDaySnapshot(force: true);
   }
 
   /// 把已结束的休息会话写入 DB（仅 [restSessionRepo] 存在时），
@@ -391,6 +455,8 @@ class ScreenTimeController extends ChangeNotifier {
     } else {
       _flushScreenSession();
       machine.setScreenOn(false);
+      // 灭屏后当日亮屏累计定格，立即写一次快照。
+      _flushDaySnapshot(force: true);
     }
   }
 
@@ -547,8 +613,9 @@ class ScreenTimeController extends ChangeNotifier {
     _timer?.cancel();
     _screenEventsSub?.cancel();
     machine.removeListener(_onMachinePhaseChange);
-    // 应用退出时落库当前亮屏会话（若仍进行中）。
+    // 应用退出时落库当前亮屏会话（若仍进行中）并固化当日快照。
     _flushScreenSession();
+    _flushDaySnapshot(force: true);
     super.dispose();
   }
 }

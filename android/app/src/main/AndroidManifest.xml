@@ -16,6 +16,12 @@
     <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN"/>
     <!-- 第 4 步开机自启使用，先声明。 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- 划掉应用后经精确闹钟自动重启前台服务（onTaskRemoved 兜底）。
+         Android 12-13 可用 SCHEDULE_EXACT_ALARM；Android 14+ 默认不授予，
+         因此同时声明 USE_EXACT_ALARM（33+ 自动授予；本应用侧载分发，
+         不受商店对闹钟类应用的审核限制）。 -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <application
         android:label="screen_time_manager"
         android:name=".ScreenMonitorApp"
@@ -43,15 +49,25 @@
             </intent-filter>
         </activity>
         <!-- 屏幕监控前台服务：Android 14+ 归为 specialUse，
-             必须提供子类型说明（上架时需在 Play Console 解释用途）。 -->
+             必须提供子类型说明（上架时需在 Play Console 解释用途）。
+             stopWithTask=false：用户从最近任务划掉应用时不随任务停止
+             （原生行为下服务存活；国产 ROM 强杀进程则由
+             ServiceRestartReceiver 的重启闹钟兜底）。 -->
         <service
             android:name=".ScreenMonitorService"
             android:exported="false"
+            android:stopWithTask="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Continuous screen on/off monitoring for self-managed screen time limits" />
         </service>
+        <!-- 划掉应用后的自动重启：接收 ScreenMonitorService 在
+             onTaskRemoved 中注册的精确闹钟（进程被杀后由系统拉起新进程
+             投递，故必须静态注册）。exported=false 仅应用自身可触发。 -->
+        <receiver
+            android:name=".ServiceRestartReceiver"
+            android:exported="false" />
         <!-- Device Admin 接收器：仅 force-lock 策略，用于休息期自动熄屏。 -->
         <receiver
             android:name=".ScreenMonitorDeviceAdmin"

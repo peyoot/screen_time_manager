@@ -11,6 +11,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
 import 'data/repositories/app_settings_repository.dart';
+import 'data/repositories/day_snapshot_repository.dart';
 import 'data/repositories/question_repository.dart';
 import 'data/repositories/rest_session_repository.dart';
 import 'data/repositories/screen_session_repository.dart';
@@ -37,6 +38,7 @@ Future<void> main() async {
   final db = await openAppDatabase();
 
   final appSettingsRepo = AppSettingsRepository(db);
+  final daySnapshotRepo = DaySnapshotRepository(db);
   final questionRepo = QuestionRepository(db);
   final screenSessionRepo = ScreenSessionRepository(db);
   final restSessionRepo = RestSessionRepository(db);
@@ -91,6 +93,7 @@ Future<void> main() async {
     bankService: bankService,
     questionsPerQuiz: 2,
     appSettingsRepo: appSettingsRepo,
+    daySnapshotRepo: daySnapshotRepo,
     screenSessionRepo: screenSessionRepo,
     restSessionRepo: restSessionRepo,
     snoozeRecordRepo: snoozeRecordRepo,
@@ -98,6 +101,11 @@ Future<void> main() async {
     monitor: platformMonitoring.monitor,
     screenOnEvents: platformMonitoring.screenOnEvents,
   );
+
+  // 恢复当日进度（被杀/划掉重启后计数计时延续）：在挂 UI 前完成，
+  // 避免首帧显示归零数据；若重启前正处于休息期，此处会同时恢复
+  // 休息状态并发起全屏干预。
+  await controller.restoreFromSnapshot();
 
   // Android：请求原生开始监控。第 1 步原生侧仅为通道脚手架；
   // 第 2 步起这里会真正启动前台服务与亮灭屏广播。

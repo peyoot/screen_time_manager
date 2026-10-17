@@ -409,4 +409,62 @@ void main() {
       expect(m.state.exemptionsUsedToday, 1);
     });
   });
+
+  group('当日快照恢复 restoreDay', () {
+    test('恢复累计亮屏、阈值进度与已用豁免', () {
+      final m = buildMachine();
+      m.restoreDay(
+        usedToday: const Duration(minutes: 20),
+        thresholdProgress: const Duration(minutes: 10),
+        exemptionsUsedToday: 1,
+      );
+      expect(m.state.usedToday, const Duration(minutes: 20));
+      expect(m.state.sinceLastGrant, const Duration(minutes: 10));
+      expect(m.state.exemptionsUsedToday, 1);
+      expect(m.remainingExemptions, 1);
+      expect(m.state.remainingToQuiz, const Duration(minutes: 20));
+      expect(m.state.phase, AppPhase.tracking);
+    });
+
+    test('恢复后继续累计并按既有进度到点进休息', () {
+      final m = buildMachine();
+      m.restoreDay(
+        usedToday: const Duration(minutes: 25),
+        thresholdProgress: const Duration(minutes: 29),
+      );
+      advance(m, const Duration(minutes: 1));
+      expect(m.state.phase, AppPhase.resting);
+      // 到点触发后阈值进度清零；触发前这一分钟仍计入当日累计。
+      expect(m.state.usedToday, const Duration(minutes: 26));
+    });
+
+    test('未过期的休息截止时刻恢复为休息中', () {
+      final m = buildMachine();
+      m.restoreDay(
+        usedToday: const Duration(minutes: 30),
+        thresholdProgress: Duration.zero,
+        restEndsAt: clock.add(const Duration(minutes: 2)),
+      );
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.state.restEndsAt, clock.add(const Duration(minutes: 2)));
+      // 休息期不累计亮屏。
+      advance(m, const Duration(minutes: 1));
+      expect(m.state.usedToday, const Duration(minutes: 30));
+      // 休息自然结束后回到计时。
+      advance(m, const Duration(minutes: 2));
+      expect(m.state.phase, AppPhase.tracking);
+    });
+
+    test('已过期的休息截止时刻被忽略，按计时阶段继续', () {
+      final m = buildMachine();
+      m.restoreDay(
+        usedToday: const Duration(minutes: 5),
+        thresholdProgress: const Duration(minutes: 5),
+        restEndsAt: clock.subtract(const Duration(minutes: 1)),
+      );
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.restEndsAt, isNull);
+      expect(m.state.usedToday, const Duration(minutes: 5));
+    });
+  });
 }
