@@ -75,12 +75,27 @@ class ScreenMonitorService : Service() {
         @Volatile
         var volumeObserverEnabled: Boolean = true
 
+        /**
+         * 启动前台服务。**必须吞掉所有异常**：Android 12+ 禁止应用在后台
+         * （无可见 Activity、无豁免白名单）调用 startForegroundService，会抛
+         * ForegroundServiceStartNotAllowedException。调用点有三处——Dart main()
+         * 经 monitor 通道、ServiceRestartReceiver（划卡闹钟）、BootReceiver；
+         * 前台服务启动被拒时若向 Dart 回传 PlatformException，main() 会在
+         * runApp 之前死亡，缓存引擎从此永远没有 UI（点图标只挂载到坏引擎）。
+         * 拒绝只记录日志：精确闹钟触发的 receiver 处于系统临时白名单内仍可
+         * 成功；非精确兜底闹钟无豁免，起不来属预期（下次亮屏/用户点图标
+         * 经前台路径再启动）。
+         */
         fun start(context: Context) {
-            val intent = Intent(context, ScreenMonitorService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            runCatching {
+                val intent = Intent(context, ScreenMonitorService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            }.onFailure {
+                Log.w(TAG, "start foreground service rejected: $it")
             }
         }
 

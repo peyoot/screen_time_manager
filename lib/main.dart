@@ -5,8 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'
-    show MissingPluginException, SystemChrome, SystemUiMode;
+import 'package:flutter/services.dart' show SystemChrome, SystemUiMode;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/database.dart';
@@ -16,6 +15,7 @@ import 'data/repositories/question_repository.dart';
 import 'data/repositories/rest_session_repository.dart';
 import 'data/repositories/screen_session_repository.dart';
 import 'data/repositories/snooze_record_repository.dart';
+import 'models/app_settings.dart';
 import 'models/question.dart';
 import 'models/question_bank.dart';
 import 'platform_channel/platform_monitoring.dart';
@@ -35,28 +35,43 @@ Future<void> main() async {
   // 之后由 [ScreenTimeManagerApp] 的生命周期观察在每次回前台时重新声明。
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  final db = await openAppDatabase();
+  // 数据层初始化：**任何失败都不得阻断 UI**。缓存引擎的 main() 只在进程
+  // 启动时执行一次，这里抛异常 runApp 就永远不会执行——之后用户点图标
+  // 只会挂载到这个"无 UI 的引擎"上，表现为黑屏（ZUXOS 真机已复现）。
+  // DB 打不开时退化为纯内存模式：配置用默认值，题库/会话/快照不落盘。
+  AppSettings settings = AppSettings.defaults;
+  AppSettingsRepository? appSettingsRepo;
+  DaySnapshotRepository? daySnapshotRepo;
+  ScreenSessionRepository? screenSessionRepo;
+  RestSessionRepository? restSessionRepo;
+  SnoozeRecordRepository? snoozeRecordRepo;
+  QuestionBankService bankService = QuestionBankService();
+  try {
+    final db = await openAppDatabase();
 
-  final appSettingsRepo = AppSettingsRepository(db);
-  final daySnapshotRepo = DaySnapshotRepository(db);
-  final questionRepo = QuestionRepository(db);
-  final screenSessionRepo = ScreenSessionRepository(db);
-  final restSessionRepo = RestSessionRepository(db);
-  final snoozeRecordRepo = SnoozeRecordRepository(db);
+    appSettingsRepo = AppSettingsRepository(db);
+    daySnapshotRepo = DaySnapshotRepository(db);
+    final questionRepo = QuestionRepository(db);
+    screenSessionRepo = ScreenSessionRepository(db);
+    restSessionRepo = RestSessionRepository(db);
+    snoozeRecordRepo = SnoozeRecordRepository(db);
 
-  // 加载配置；首次运行时写入默认值。
-  final settings = await appSettingsRepo.loadOrInit();
+    // 加载配置；首次运行时写入默认值。
+    settings = await appSettingsRepo.loadOrInit();
 
-  // 题库服务：注入 repo 后从 DB 载入分组与权重。
-  final bankService = QuestionBankService(repository: questionRepo);
-  await bankService.loadFromDb();
-  // 首次运行题库为空时写入默认题库：所有语种加载英文分组，
-  // 中文环境额外追加"文化常识"古诗文飞花令分组。
-  if (bankService.groups.isEmpty) {
-    final isChinese =
-        WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'zh';
-    _seedDefaultQuestionBank(bankService, includeChinese: isChinese);
-    await bankService.flush();
+    // 题库服务：注入 repo 后从 DB 载入分组与权重。
+    bankService = QuestionBankService(repository: questionRepo);
+    await bankService.loadFromDb();
+    // 首次运行题库为空时写入默认题库：所有语种加载英文分组，
+    // 中文环境额外追加"文化常识"古诗文飞花令分组。
+    if (bankService.groups.isEmpty) {
+      final isChinese =
+          WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'zh';
+      _seedDefaultQuestionBank(bankService, includeChinese: isChinese);
+      await bankService.flush();
+    }
+  } catch (e) {
+    debugPrint('本地数据库初始化失败，退化为纯内存模式: $e');
   }
 
   // 状态机用的选择题题库：仅用于阶段流转的答题会话，
@@ -104,16 +119,24 @@ Future<void> main() async {
 
   // 恢复当日进度（被杀/划掉重启后计数计时延续）：在挂 UI 前完成，
   // 避免首帧显示归零数据；若重启前正处于休息期，此处会同时恢复
-  // 休息状态并发起全屏干预。
-  await controller.restoreFromSnapshot();
+  // 休息状态并发起全屏干预。快照只是健壮性优化，恢复失败（如脏数据
+  // 解析异常）仅丢当日延续，绝不能阻断 UI。
+  try {
+    await controller.restoreFromSnapshot();
+  } catch (e) {
+    debugPrint('当日快照恢复失败，跳过: $e');
+  }
 
-  // Android：请求原生开始监控。第 1 步原生侧仅为通道脚手架；
-  // 第 2 步起这里会真正启动前台服务与亮灭屏广播。
-  // 旧引擎/未注册通道时静默忽略，不阻断启动。
+  // Android：请求原生开始监控（真正启动前台服务与亮灭屏广播）。
+  // 捕获**所有**异常而非仅 MissingPluginException：划卡闹钟/开机广播在
+  // 后台拉起进程时（无可见 Activity），Android 12+ 会拒绝启动前台服务
+  // （ForegroundServiceStartNotAllowedException → PlatformException），
+  // 若放任它杀死 main()，runApp 永不执行、缓存引擎永远无 UI——用户
+  // 随后手动点图标也只能看到黑屏（ZUXOS 真机已复现）。
   try {
     await platformMonitoring.monitor?.startMonitoring();
-  } on MissingPluginException {
-    debugPrint('monitor 通道未注册，跳过原生监控启动');
+  } catch (e) {
+    debugPrint('启动原生监控失败（后台限制/通道未注册），跳过: $e');
   }
 
   runApp(ScreenTimeManagerApp(controller: controller));
