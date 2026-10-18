@@ -44,6 +44,9 @@
   "homeSettingsTooltip": "Timing settings",
   "homePermissionsTooltip": "Permissions",
   "homeBackgroundTooltip": "Run in background",
+  "homeExitToBackground": "Exit to background",
+  "homeExitToBackgroundCountdown": "Exit to background ({seconds}s)",
+  "homeExitAutoHint": "Auto-runs in background in {seconds}s; tap to exit now.",
 
   "permGuideTitle": "Permissions & Reliability",
   "permUnavailable": "Permission status is only available on Android",

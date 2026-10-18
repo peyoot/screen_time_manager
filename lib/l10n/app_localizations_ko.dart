@@ -107,6 +107,19 @@ class SKo extends S {
   String get homeBackgroundTooltip => '백그라운드에서 실행';
 
   @override
+  String get homeExitToBackground => '백그라운드로 전환';
+
+  @override
+  String homeExitToBackgroundCountdown(int seconds) {
+    return '백그라운드로 전환 ($seconds초)';
+  }
+
+  @override
+  String homeExitAutoHint(int seconds) {
+    return '$seconds초 후 자동으로 백그라운드로 전환됩니다. 탭하면 지금 전환합니다.';
+  }
+
+  @override
   String get permGuideTitle => '권한 및 백그라운드 설정';
 
   @override

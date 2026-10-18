@@ -44,6 +44,9 @@
   "homeSettingsTooltip": "タイミング設定",
   "homePermissionsTooltip": "権限ガイド",
   "homeBackgroundTooltip": "バックグラウンドで実行",
+  "homeExitToBackground": "バックグラウンドへ移行",
+  "homeExitToBackgroundCountdown": "バックグラウンドへ移行（{seconds}秒）",
+  "homeExitAutoHint": "{seconds}秒後に自動でバックグラウンドへ移行します。タップで今すぐ移行。",
 
   "permGuideTitle": "権限とバックグラウンド動作",
   "permUnavailable": "権限の状態確認は Android でのみ利用できます",

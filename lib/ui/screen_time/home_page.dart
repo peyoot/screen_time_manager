@@ -1,6 +1,8 @@
 /// 主计时页面：展示亮屏时长、豁免次数并提供手动休息入口。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -39,99 +41,195 @@ class HomePage extends StatelessWidget {
 }
 
 /// 计时阶段的主体视图。
-class _TimingView extends StatelessWidget {
+///
+/// 提供手动休息入口以及一个"退到后台"按钮：
+/// - 点击立即退居后台（不销毁进程，监控/计时继续）；
+/// - 按钮显示 10 秒倒计时，期间无操作则自动退到后台；
+/// - 点击页面任意处（打开设置/题库/权限等）会重置倒计时，避免误退。
+///
+/// 背景：部分国产 ROM（如 ZUXOS）划掉应用后无法自动重启，因此提供
+/// 显式"退到后台"替代划卡，保证进程存活。
+class _TimingView extends StatefulWidget {
   final ScreenTimeController controller;
 
   const _TimingView({required this.controller});
 
   @override
+  State<_TimingView> createState() => _TimingViewState();
+}
+
+class _TimingViewState extends State<_TimingView>
+    with WidgetsBindingObserver {
+  /// 无操作自动退到后台的倒计时秒数。
+  static const int _autoExitSeconds = 10;
+
+  int _remaining = _autoExitSeconds;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 从后台回到前台时重置倒计时。
+    if (state == AppLifecycleState.resumed) {
+      _resetCountdown();
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      // 对话框/其他页面在前台时不自动退后台，保持倒计时满值等待用户返回。
+      if (route != null && !route.isCurrent) {
+        _resetCountdown();
+        return;
+      }
+      setState(() => _remaining--);
+      if (_remaining <= 0) {
+        _timer?.cancel();
+        unawaited(widget.controller.moveToBackground());
+      }
+    });
+  }
+
+  void _resetCountdown() {
+    if (mounted) setState(() => _remaining = _autoExitSeconds);
+  }
+
+  /// 用户点击退出按钮：立即退到后台。
+  void _exitNow() {
+    _timer?.cancel();
+    unawaited(widget.controller.moveToBackground());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final state = controller.machine.state;
+    final state = widget.controller.machine.state;
     final l10n = S.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.homePermissionsTooltip,
-            icon: const Icon(Icons.verified_user_outlined),
-            // 权限与保活设置同样需要管理密码，防止儿童自行关闭保活/干预权限。
-            onPressed: () => openWithAdminGate(context, controller, () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) =>
-                      PermissionGuidePage(monitor: controller.monitor),
-                ),
-              );
-            }),
-          ),
-          IconButton(
-            tooltip: l10n.homeBankTooltip,
-            icon: const Icon(Icons.quiz_outlined),
-            // 已设置管理密码时，题库（含答案）需先验证才能进入。
-            onPressed: () => openWithAdminGate(context, controller, () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) =>
-                      GroupListPage(service: controller.bankService),
-                ),
-              );
-            }),
-          ),
-          IconButton(
-            tooltip: l10n.homeSettingsTooltip,
-            icon: const Icon(Icons.settings_outlined),
-            // 已设置管理密码时，进入设置需先验证。
-            onPressed: () => openWithAdminGate(context, controller, () {
-              showDialog<void>(
-                context: context,
-                builder: (_) => _TimingSettingsDialog(controller: controller),
-              );
-            }),
-          ),
-          IconButton(
-            tooltip: l10n.homeLanguageTooltip,
-            icon: const Icon(Icons.language),
-            onPressed: () => _showLanguagePicker(context, controller),
-          ),
-          IconButton(
-            tooltip: l10n.homeBackgroundTooltip,
-            icon: const Icon(Icons.exit_to_app),
-            // 退出前台到后台继续运行（监控/计时不中断）；
-            // 回到前台时根组件会自动恢复沉浸全屏。
-            onPressed: controller.moveToBackground,
-          ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            // 内容不足一屏时按钮仍贴底；超出时可滚动，避免短视口溢出。
-            constraints: BoxConstraints(
-              minHeight: constraints.maxHeight - 48,
+    return Listener(
+      // 点击页面任意处（设置/题库/手动休息等）重置倒计时，视为"有操作"。
+      onPointerDown: (_) => _resetCountdown(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.appTitle),
+          actions: [
+            IconButton(
+              tooltip: l10n.homePermissionsTooltip,
+              icon: const Icon(Icons.verified_user_outlined),
+              // 权限与保活设置同样需要管理密码，防止儿童自行关闭保活/干预权限。
+              onPressed: () => openWithAdminGate(context, widget.controller, () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        PermissionGuidePage(monitor: widget.controller.monitor),
+                  ),
+                );
+              }),
             ),
-            child: IntrinsicHeight(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 32),
-                  _TimeCard(state: state),
-                  const SizedBox(height: 24),
-                  _StatRow(
-                    remainingExemptions: controller.remainingExemptions,
-                    restExemptions: controller.todayRestExemptions,
-                    restCount: controller.todayRestCount,
-                    restDuration: controller.todayRestDuration,
+            IconButton(
+              tooltip: l10n.homeBankTooltip,
+              icon: const Icon(Icons.quiz_outlined),
+              // 已设置管理密码时，题库（含答案）需先验证才能进入。
+              onPressed: () => openWithAdminGate(context, widget.controller, () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        GroupListPage(service: widget.controller.bankService),
                   ),
-                  const Spacer(),
-                  FilledButton.icon(
-                    onPressed: controller.manualRest,
-                    icon: const Icon(Icons.bedtime_outlined),
-                    label: Text(l10n.homeManualRest),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                );
+              }),
+            ),
+            IconButton(
+              tooltip: l10n.homeSettingsTooltip,
+              icon: const Icon(Icons.settings_outlined),
+              // 已设置管理密码时，进入设置需先验证。
+              onPressed: () => openWithAdminGate(context, widget.controller, () {
+                showDialog<void>(
+                  context: context,
+                  builder: (_) =>
+                      _TimingSettingsDialog(controller: widget.controller),
+                );
+              }),
+            ),
+            IconButton(
+              tooltip: l10n.homeLanguageTooltip,
+              icon: const Icon(Icons.language),
+              onPressed: () => _showLanguagePicker(context, widget.controller),
+            ),
+            IconButton(
+              tooltip: l10n.homeBackgroundTooltip,
+              icon: const Icon(Icons.exit_to_app),
+              // 退出前台到后台继续运行（监控/计时不中断）；
+              // 回到前台时根组件会自动恢复沉浸全屏。
+              onPressed: _exitNow,
+            ),
+          ],
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              // 内容不足一屏时按钮仍贴底；超出时可滚动，避免短视口溢出。
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - 48,
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 32),
+                    _TimeCard(state: state),
+                    const SizedBox(height: 24),
+                    _StatRow(
+                      remainingExemptions: widget.controller.remainingExemptions,
+                      restExemptions: widget.controller.todayRestExemptions,
+                      restCount: widget.controller.todayRestCount,
+                      restDuration: widget.controller.todayRestDuration,
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: widget.controller.manualRest,
+                      icon: const Icon(Icons.bedtime_outlined),
+                      label: Text(l10n.homeManualRest),
+                    ),
+                    const SizedBox(height: 12),
+                    // 显眼的"退到后台"按钮：点击立即退后台，显示倒计时，
+                    // 10 秒无操作自动退后台。
+                    OutlinedButton.icon(
+                      onPressed: _exitNow,
+                      icon: const Icon(Icons.exit_to_app),
+                      label: Text(
+                        l10n.homeExitToBackgroundCountdown(_remaining),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.homeExitAutoHint(_remaining),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
           ),
@@ -141,7 +239,8 @@ class _TimingView extends StatelessWidget {
   }
 
   /// 显示语言选择底部弹窗。
-  void _showLanguagePicker(BuildContext context, ScreenTimeController controller) {
+  void _showLanguagePicker(
+      BuildContext context, ScreenTimeController controller) {
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) {

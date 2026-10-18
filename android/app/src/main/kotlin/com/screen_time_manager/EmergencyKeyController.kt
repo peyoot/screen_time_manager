@@ -42,8 +42,8 @@ object EmergencyKeyController {
     /** 触发序列相邻两击的最大间隔。 */
     private const val SEQUENCE_GAP_MS = 800L
 
-    /** 密码输入与新密码录入的有效时长。 */
-    private const val INPUT_WINDOW_MS = 10_000L
+    /** 密码输入与新密码录入的有效时长（超时回到 IDLE，可重新用交替序列触发）。 */
+    private const val INPUT_WINDOW_MS = 5_000L
 
     /** 两个事件源同时上报的去重窗口（同方向视为同一次按键）。 */
     private const val DEBOUNCE_MS = 60L
@@ -210,7 +210,7 @@ object EmergencyKeyController {
         }
         state = State.RECORDING_NEW_PASSWORD
         entries.clear()
-        toast("Press 5 volume keys as the new password (10s)")
+        toast("Press 5 volume keys as the new password (5s)")
         restartTimeout()
     }
 

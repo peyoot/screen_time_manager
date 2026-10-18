@@ -44,6 +44,9 @@
   "homeSettingsTooltip": "타이밍 설정",
   "homePermissionsTooltip": "권한 안내",
   "homeBackgroundTooltip": "백그라운드에서 실행",
+  "homeExitToBackground": "백그라운드로 전환",
+  "homeExitToBackgroundCountdown": "백그라운드로 전환 ({seconds}초)",
+  "homeExitAutoHint": "{seconds}초 후 자동으로 백그라운드로 전환됩니다. 탭하면 지금 전환합니다.",
 
   "permGuideTitle": "권한 및 백그라운드 설정",
   "permUnavailable": "권한 상태 확인은 Android에서만 사용할 수 있습니다",

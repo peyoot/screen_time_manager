@@ -107,6 +107,19 @@ class SEn extends S {
   String get homeBackgroundTooltip => 'Run in background';
 
   @override
+  String get homeExitToBackground => 'Exit to background';
+
+  @override
+  String homeExitToBackgroundCountdown(int seconds) {
+    return 'Exit to background (${seconds}s)';
+  }
+
+  @override
+  String homeExitAutoHint(int seconds) {
+    return 'Auto-runs in background in ${seconds}s; tap to exit now.';
+  }
+
+  @override
   String get permGuideTitle => 'Permissions & Reliability';
 
   @override

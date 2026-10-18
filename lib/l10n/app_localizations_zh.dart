@@ -107,6 +107,19 @@ class SZh extends S {
   String get homeBackgroundTooltip => '后台运行';
 
   @override
+  String get homeExitToBackground => '退到后台';
+
+  @override
+  String homeExitToBackgroundCountdown(int seconds) {
+    return '退到后台（$seconds秒）';
+  }
+
+  @override
+  String homeExitAutoHint(int seconds) {
+    return '$seconds秒后自动退到后台；点击立即退出。';
+  }
+
+  @override
   String get permGuideTitle => '权限与保活设置';
 
   @override

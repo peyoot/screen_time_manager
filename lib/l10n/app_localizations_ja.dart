@@ -107,6 +107,19 @@ class SJa extends S {
   String get homeBackgroundTooltip => 'バックグラウンドで実行';
 
   @override
+  String get homeExitToBackground => 'バックグラウンドへ移行';
+
+  @override
+  String homeExitToBackgroundCountdown(int seconds) {
+    return 'バックグラウンドへ移行（$seconds秒）';
+  }
+
+  @override
+  String homeExitAutoHint(int seconds) {
+    return '$seconds秒後に自動でバックグラウンドへ移行します。タップで今すぐ移行。';
+  }
+
+  @override
   String get permGuideTitle => '権限とバックグラウンド動作';
 
   @override

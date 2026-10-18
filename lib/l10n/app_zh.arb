@@ -44,6 +44,19 @@
   "homeSettingsTooltip": "计时设置",
   "homePermissionsTooltip": "权限引导",
   "homeBackgroundTooltip": "后台运行",
+  "homeExitToBackground": "退到后台",
+  "homeExitToBackgroundCountdown": "退到后台（{seconds}秒）",
+  "@homeExitToBackgroundCountdown": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "homeExitAutoHint": "{seconds}秒后自动退到后台；点击立即退出。",
+  "@homeExitAutoHint": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
 
   "permGuideTitle": "权限与保活设置",
   "permUnavailable": "仅 Android 提供权限状态查询",

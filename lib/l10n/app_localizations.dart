@@ -275,6 +275,24 @@ abstract class S {
   /// **'后台运行'**
   String get homeBackgroundTooltip;
 
+  /// No description provided for @homeExitToBackground.
+  ///
+  /// In zh, this message translates to:
+  /// **'退到后台'**
+  String get homeExitToBackground;
+
+  /// No description provided for @homeExitToBackgroundCountdown.
+  ///
+  /// In zh, this message translates to:
+  /// **'退到后台（{seconds}秒）'**
+  String homeExitToBackgroundCountdown(int seconds);
+
+  /// No description provided for @homeExitAutoHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'{seconds}秒后自动退到后台；点击立即退出。'**
+  String homeExitAutoHint(int seconds);
+
   /// No description provided for @permGuideTitle.
   ///
   /// In zh, this message translates to:
