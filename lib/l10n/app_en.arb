@@ -18,8 +18,8 @@
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestAccumulated": "Screen-free: {time}",
-  "@homeRestAccumulated": {
+  "homeAwaySaved": "Away from phone {time}",
+  "@homeAwaySaved": {
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "Take a break now",
@@ -70,6 +70,8 @@
   "settingsTitle": "Timing settings",
   "settingsQuizMinutes": "Screen time before break",
   "settingsRestMinutes": "Mandatory break duration",
+  "settingsRestTimerRefresh": "Rest stopwatch refresh interval",
+  "settingsRestTimerRefreshHint": "Larger values save power; digits update less smoothly",
   "settingsMinutesUnit": "min",
   "settingsInvalid": "Please enter positive integers",
   "settingsSave": "Save",

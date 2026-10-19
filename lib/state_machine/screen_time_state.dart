@@ -40,6 +40,14 @@ class ScreenTimeState {
   /// 跨自然日归零，上限由 AppSettings.dailyExemptionLimit 控制。
   final int exemptionsUsedToday;
 
+  /// 当日"远离手机"已完结累计时长：从每次强制休息起点算起，
+  /// 到休息结束（若此时亮屏）或其后下一次亮屏为止的片段之和。
+  final Duration awayClosed;
+
+  /// 进行中的"远离手机"片段起点：休息结束时屏幕熄灭则挂起到该时刻，
+  /// 下次亮屏时把 [pendingAwayStart, 亮屏时刻] 并入 [awayClosed]。
+  final DateTime? pendingAwayStart;
+
   const ScreenTimeState({
     required this.phase,
     required this.isScreenOn,
@@ -50,6 +58,8 @@ class ScreenTimeState {
     this.quiz,
     this.restEndsAt,
     this.exemptionsUsedToday = 0,
+    this.awayClosed = Duration.zero,
+    this.pendingAwayStart,
   });
 
   /// 创建初始状态：计时阶段、零用量、无答题会话。
@@ -91,8 +101,10 @@ class ScreenTimeState {
     Duration? quizInterval,
     int? quizRound,
     int? exemptionsUsedToday,
+    Duration? awayClosed,
     Object? quiz = _sentinel,
     Object? restEndsAt = _sentinel,
+    Object? pendingAwayStart = _sentinel,
   }) {
     return ScreenTimeState(
       phase: phase ?? this.phase,
@@ -106,6 +118,10 @@ class ScreenTimeState {
           ? this.restEndsAt
           : restEndsAt as DateTime?,
       exemptionsUsedToday: exemptionsUsedToday ?? this.exemptionsUsedToday,
+      awayClosed: awayClosed ?? this.awayClosed,
+      pendingAwayStart: pendingAwayStart == _sentinel
+          ? this.pendingAwayStart
+          : pendingAwayStart as DateTime?,
     );
   }
 
@@ -120,12 +136,23 @@ class ScreenTimeState {
       other.quizRound == quizRound &&
       other.quiz == quiz &&
       other.restEndsAt == restEndsAt &&
-      other.exemptionsUsedToday == exemptionsUsedToday;
+      other.exemptionsUsedToday == exemptionsUsedToday &&
+      other.awayClosed == awayClosed &&
+      other.pendingAwayStart == pendingAwayStart;
 
   @override
-  int get hashCode =>
-      Object.hash(phase, isScreenOn, dailyUsage, sinceLastGrant, quizInterval,
-          quizRound, quiz, restEndsAt, exemptionsUsedToday);
+  int get hashCode => Object.hash(
+      phase,
+      isScreenOn,
+      dailyUsage,
+      sinceLastGrant,
+      quizInterval,
+      quizRound,
+      quiz,
+      restEndsAt,
+      exemptionsUsedToday,
+      awayClosed,
+      pendingAwayStart);
 
   @override
   String toString() => 'ScreenTimeState(phase: $phase, screenOn: $isScreenOn, '

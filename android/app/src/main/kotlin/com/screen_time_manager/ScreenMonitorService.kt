@@ -123,6 +123,12 @@ class ScreenMonitorService : Service() {
             // 再把事件推给 Dart（EventChannel）。
             val effect = TimeCoreHost.core(context).setScreenState(isOn)
             if (effect != CoreEffect.NONE) TimeCoreHost.applyEffect(effect)
+            // 休息期重新亮屏：进入休息时已优先熄屏，用户主动亮屏表示想继续
+            // 看手机 → 立即把休息页拉到前台（常亮当计时器）并武装屏幕固定。
+            if (isOn && TimeCoreHost.core(context).snapshot().resting) {
+                ScreenMonitorChannels.requestIntervention("resting")
+                ScreenMonitorChannels.startScreenPinning()
+            }
             ScreenEventBus.emitScreenOn(isOn)
         }
     }

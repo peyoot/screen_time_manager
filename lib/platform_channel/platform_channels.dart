@@ -244,6 +244,12 @@ class TimeCoreSnapshot {
   /// 原生是否已有当日数据（升级迁移判定用）。
   final bool hasDayData;
 
+  /// 当日"远离手机"已完结累计时长（休息起点到休息结束/下次亮屏的片段和）。
+  final Duration away;
+
+  /// 进行中的"远离手机"挂起片段起点；无挂起时为 null。
+  final DateTime? pendingAwayStart;
+
   const TimeCoreSnapshot({
     required this.usedToday,
     required this.thresholdProgress,
@@ -256,6 +262,8 @@ class TimeCoreSnapshot {
     required this.hasDayData,
     this.restEndsAt,
     this.restStart,
+    this.away = Duration.zero,
+    this.pendingAwayStart,
   });
 
   /// 从通道返回的 Map 解析；毫秒为 0 的时刻字段映射为 null。
@@ -263,6 +271,7 @@ class TimeCoreSnapshot {
     int intOf(String key) => (map[key] as num?)?.toInt() ?? 0;
     final restEndsAtMs = intOf('restEndsAtMs');
     final restStartMs = intOf('restStartMs');
+    final pendingAwayStartMs = intOf('pendingAwayStartMs');
     return TimeCoreSnapshot(
       usedToday: Duration(seconds: intOf('screenTimeSec')),
       thresholdProgress: Duration(seconds: intOf('thresholdSec')),
@@ -278,6 +287,10 @@ class TimeCoreSnapshot {
       restCompleted: Duration(seconds: intOf('restElapsedSec')),
       restExemptions: intOf('restExemptions'),
       hasDayData: map['hasDayData'] == true,
+      away: Duration(seconds: intOf('awaySec')),
+      pendingAwayStart: pendingAwayStartMs > 0
+          ? DateTime.fromMillisecondsSinceEpoch(pendingAwayStartMs)
+          : null,
     );
   }
 }

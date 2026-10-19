@@ -137,11 +137,11 @@ abstract class S {
   /// **'今日触发休息 {count} 次'**
   String homeRestTriggeredToday(int count);
 
-  /// No description provided for @homeRestAccumulated.
+  /// No description provided for @homeAwaySaved.
   ///
   /// In zh, this message translates to:
-  /// **'累计未用本机 {time}'**
-  String homeRestAccumulated(String time);
+  /// **'帮你远离手机 {time}'**
+  String homeAwaySaved(String time);
 
   /// No description provided for @homeManualRest.
   ///
@@ -418,6 +418,18 @@ abstract class S {
   /// In zh, this message translates to:
   /// **'强制休息时长'**
   String get settingsRestMinutes;
+
+  /// No description provided for @settingsRestTimerRefresh.
+  ///
+  /// In zh, this message translates to:
+  /// **'休息秒表刷新间隔'**
+  String get settingsRestTimerRefresh;
+
+  /// No description provided for @settingsRestTimerRefreshHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'数值越大越省电，计时数字跳动越明显'**
+  String get settingsRestTimerRefreshHint;
 
   /// No description provided for @settingsMinutesUnit.
   ///

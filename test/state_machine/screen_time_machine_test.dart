@@ -467,4 +467,55 @@ void main() {
       expect(m.state.usedToday, const Duration(minutes: 5));
     });
   });
+
+  group('远离手机（away）统计（本地模式）', () {
+    test('休息自然结束时屏幕亮 → 计入 [restStart, now]', () {
+      final m = buildMachine();
+      advance(m, const Duration(minutes: 30)); // 达阈值进休息
+      expect(m.state.phase, AppPhase.resting);
+      advance(m, const Duration(minutes: 3)); // 休息自然结束（屏幕亮）
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.awayClosed, const Duration(minutes: 3));
+      expect(m.state.pendingAwayStart, isNull);
+    });
+
+    test('休息结束时屏幕灭 → 挂起，下次亮屏计入全程', () {
+      final m = buildMachine();
+      advance(m, const Duration(minutes: 30)); // 达阈值进休息
+      m.setScreenOn(false);
+      advance(m, const Duration(minutes: 3)); // 灭屏中休息结束 → 挂起
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.awayClosed, Duration.zero);
+      expect(m.state.pendingAwayStart, isNotNull);
+      // 灭屏 10 分钟后重新亮屏：计入 [restStart, 亮屏] 全程（3+10 分钟）。
+      advance(m, const Duration(minutes: 10));
+      expect(m.state.awayClosed, Duration.zero);
+      m.setScreenOn(true);
+      expect(m.state.awayClosed, const Duration(minutes: 13));
+      expect(m.state.pendingAwayStart, isNull);
+    });
+
+    test('休息期豁免通过（屏幕亮）→ 计入实际休息时长', () {
+      final m = buildMachine();
+      advance(m, const Duration(minutes: 30));
+      advance(m, const Duration(minutes: 1)); // 休息进行 1 分钟
+      m.endRestEarly();
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.awayClosed, const Duration(minutes: 1));
+    });
+
+    test('跨自然日归零并丢弃挂起片段', () {
+      final m = buildMachine();
+      advance(m, const Duration(minutes: 30));
+      m.setScreenOn(false);
+      advance(m, const Duration(minutes: 3)); // 灭屏结束 → 挂起片段
+      expect(m.state.pendingAwayStart, isNotNull);
+      advance(m, const Duration(hours: 16)); // 跨到第二天
+      expect(m.state.awayClosed, Duration.zero);
+      expect(m.state.pendingAwayStart, isNull);
+      // 次日亮屏不再补记昨日挂起片段。
+      m.setScreenOn(true);
+      expect(m.state.awayClosed, Duration.zero);
+    });
+  });
 }

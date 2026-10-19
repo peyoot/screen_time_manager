@@ -10,13 +10,14 @@ import 'screen_time_controller.dart';
 
 /// 全屏休息页。
 ///
-/// 展示毫秒级秒表（精度 50ms），支持正计时/倒计时切换：
+/// 展示毫秒级秒表（刷新间隔可在设置中调整，默认 16ms），
+/// 支持正计时/倒计时切换：
 /// - 正计时：从 0 开始累计，表示已休息时长；
 /// - 倒计时：从目标时长递减，表示剩余休息时间。
 /// 休息结束后状态机自动回到计时阶段，本页随之消失。
 ///
-/// 进入休息 10 秒内若用户未启动答题豁免（抽题/点按钮/提交答案），
-/// 则自动调用 DevicePolicyManager.lockNow() 熄屏。
+/// 进入休息时由控制器/原生优先尝试熄屏（Device Admin）；
+/// 用户重新亮屏后本页常亮充当计时器，除非答题豁免通过，否则持续到点。
 class RestPage extends StatefulWidget {
   final ScreenTimeController controller;
 
@@ -28,11 +29,9 @@ class RestPage extends StatefulWidget {
 
 class _RestPageState extends State<RestPage> {
   Timer? _timer;
-  Timer? _autoLockTimer;
   Duration _elapsed = Duration.zero;
   late final DateTime _restStart;
   bool _countDown = false;
-  bool _exemptionStarted = false;
 
   @override
   void initState() {
@@ -41,20 +40,13 @@ class _RestPageState extends State<RestPage> {
     final duration = widget.controller.machine.settings.restDuration;
     _restStart = endsAt?.subtract(duration) ?? DateTime.now();
     _tick();
-    _timer = Timer.periodic(const Duration(milliseconds: 16), (_) => _tick());
-    _autoLockTimer = Timer(const Duration(seconds: 10), _onAutoLockTimeout);
-  }
-
-  void _onAutoLockTimeout() {
-    if (!mounted || _exemptionStarted) return;
-    final bridge = widget.controller.interventionBridge;
-    unawaited(bridge?.lockScreen());
-  }
-
-  void _markExemptionStarted() {
-    _exemptionStarted = true;
-    _autoLockTimer?.cancel();
-    _autoLockTimer = null;
+    _timer = Timer.periodic(
+      Duration(
+        milliseconds:
+            widget.controller.machine.settings.restTimerRefreshMs,
+      ),
+      (_) => _tick(),
+    );
   }
 
   void _tick() {
@@ -65,7 +57,6 @@ class _RestPageState extends State<RestPage> {
   @override
   void dispose() {
     _timer?.cancel();
-    _autoLockTimer?.cancel();
     super.dispose();
   }
 
@@ -144,7 +135,6 @@ class _RestPageState extends State<RestPage> {
               _RestExemptionSection(
                 key: ValueKey(controller.restQuizQuestion?.id),
                 controller: controller,
-                onExemptionStarted: _markExemptionStarted,
               ),
               const SizedBox(height: 24),
               Text(
@@ -194,12 +184,10 @@ class _StopwatchDisplay extends StatelessWidget {
 
 class _RestExemptionSection extends StatefulWidget {
   final ScreenTimeController controller;
-  final VoidCallback onExemptionStarted;
 
   const _RestExemptionSection({
     super.key,
     required this.controller,
-    required this.onExemptionStarted,
   });
 
   @override
@@ -252,7 +240,6 @@ class _RestExemptionSectionState extends State<_RestExemptionSection> {
           const SizedBox(height: 12),
           FilledButton.tonalIcon(
             onPressed: () {
-              widget.onExemptionStarted();
               widget.controller.requestRestExemption();
             },
             icon: const Icon(Icons.quiz_outlined),
@@ -302,7 +289,6 @@ class _RestExemptionSectionState extends State<_RestExemptionSection> {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () {
-              widget.onExemptionStarted();
               widget.controller.requestRestExemption();
             },
             icon: const Icon(Icons.refresh),
@@ -314,14 +300,12 @@ class _RestExemptionSectionState extends State<_RestExemptionSection> {
             controller: _inputController,
             decoration: InputDecoration(labelText: l10n.quizYourAnswer),
             onSubmitted: (_) {
-              widget.onExemptionStarted();
               _submit();
             },
           ),
           const SizedBox(height: 12),
           FilledButton(
             onPressed: () {
-              widget.onExemptionStarted();
               _submit();
             },
             child: Text(l10n.quizSubmit),

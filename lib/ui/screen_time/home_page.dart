@@ -44,7 +44,7 @@ class HomePage extends StatelessWidget {
 ///
 /// 提供手动休息入口以及一个"退到后台"按钮：
 /// - 点击立即退居后台（不销毁进程，监控/计时继续）；
-/// - 按钮显示 10 秒倒计时，期间无操作则自动退到后台；
+/// - 按钮显示 15 秒倒计时，期间无操作则自动退到后台；
 /// - 点击页面任意处（打开设置/题库/权限等）会重置倒计时，避免误退。
 ///
 /// 背景：部分国产 ROM（如 ZUXOS）划掉应用后无法自动重启，因此提供
@@ -61,7 +61,7 @@ class _TimingView extends StatefulWidget {
 class _TimingViewState extends State<_TimingView>
     with WidgetsBindingObserver {
   /// 无操作自动退到后台的倒计时秒数。
-  static const int _autoExitSeconds = 10;
+  static const int _autoExitSeconds = 15;
 
   int _remaining = _autoExitSeconds;
   Timer? _timer;
@@ -199,7 +199,7 @@ class _TimingViewState extends State<_TimingView>
                       remainingExemptions: widget.controller.remainingExemptions,
                       restExemptions: widget.controller.todayRestExemptions,
                       restCount: widget.controller.todayRestCount,
-                      restDuration: widget.controller.todayRestDuration,
+                      away: widget.controller.todayAwayDuration,
                     ),
                     const Spacer(),
                     FilledButton.icon(
@@ -209,7 +209,7 @@ class _TimingViewState extends State<_TimingView>
                     ),
                     const SizedBox(height: 12),
                     // 显眼的"退到后台"按钮：点击立即退后台，显示倒计时，
-                    // 10 秒无操作自动退后台。
+                    // 15 秒无操作自动退后台。
                     OutlinedButton.icon(
                       onPressed: _exitNow,
                       icon: const Icon(Icons.exit_to_app),
@@ -325,13 +325,13 @@ class _StatRow extends StatelessWidget {
   final int remainingExemptions;
   final int restExemptions;
   final int restCount;
-  final Duration restDuration;
+  final Duration away;
 
   const _StatRow({
     required this.remainingExemptions,
     required this.restExemptions,
     required this.restCount,
-    required this.restDuration,
+    required this.away,
   });
 
   @override
@@ -351,7 +351,7 @@ class _StatRow extends StatelessWidget {
           child: _TwoLineStatCard(
             icon: Icons.bedtime_outlined,
             line1: l10n.homeRestTriggeredToday(restCount),
-            line2: l10n.homeRestAccumulated(_formatDuration(restDuration)),
+            line2: l10n.homeAwaySaved(_formatDuration(away)),
           ),
         ),
       ],
@@ -421,8 +421,14 @@ class _TimingSettingsDialog extends StatefulWidget {
 }
 
 class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
+  /// 休息页秒表刷新间隔的可选值（毫秒）。
+  static const List<int> _refreshOptions = [
+    16, 33, 50, 100, 250, 500, 1000,
+  ];
+
   late final TextEditingController _quizController;
   late final TextEditingController _restController;
+  late int _refreshMs;
   String? _error;
 
   @override
@@ -433,6 +439,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
         TextEditingController(text: '${settings.quizInterval.inMinutes}');
     _restController =
         TextEditingController(text: '${settings.restDuration.inMinutes}');
+    _refreshMs = settings.restTimerRefreshMs;
   }
 
   @override
@@ -455,6 +462,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
     widget.controller.updateTiming(
       quizMinutes: quizMinutes,
       restMinutes: restMinutes,
+      restTimerRefreshMs: _refreshMs,
     );
     Navigator.of(context).pop();
   }
@@ -497,6 +505,26 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
                 labelText: l10n.settingsRestMinutes,
                 suffixText: l10n.settingsMinutesUnit,
               ),
+            ),
+            const SizedBox(height: 12),
+            // 休息秒表刷新间隔：低端机调大可降低 CPU 占用与功耗。
+            DropdownButtonFormField<int>(
+              initialValue: _refreshMs,
+              decoration: InputDecoration(
+                labelText: l10n.settingsRestTimerRefresh,
+                helperText: l10n.settingsRestTimerRefreshHint,
+                helperMaxLines: 2,
+              ),
+              items: [
+                for (final ms in _refreshOptions)
+                  DropdownMenuItem<int>(
+                    value: ms,
+                    child: Text('$ms ms'),
+                  ),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _refreshMs = value);
+              },
             ),
             if (_error != null)
               Padding(

@@ -109,7 +109,7 @@ void main() {
   });
 
   group('到点干预桥', () {
-    test('手动休息触发 resting 干预，答题豁免提前结束后 dismiss', () {
+    test('手动休息触发 resting 干预，答题豁免提前结束后 dismiss', () async {
       final now = DateTime(2026, 10, 11, 9, 0);
       final machine = ScreenTimeMachine(
         settings: AppSettings(
@@ -133,6 +133,9 @@ void main() {
 
       machine.restNow();
       expect(machine.state.phase, AppPhase.resting);
+      // 熄屏优先策略：先尝试 lockScreen（本假实现返回 false），
+      // 异步回退到全屏干预 + 固定屏幕，需先让出事件循环。
+      await Future<void>.delayed(Duration.zero);
       expect(bridge.requests, [InterventionPhase.resting]);
       expect(bridge.dismissCount, 0);
       // 进入休息页：屏幕固定武装，用户无法切到其他应用。
@@ -147,7 +150,7 @@ void main() {
       expect(bridge.stopPinCount, 1);
     });
 
-    test('累计亮屏达阈值直接进休息：resting 干预并固定屏幕，豁免后解除', () {
+    test('累计亮屏达阈值直接进休息：resting 干预并固定屏幕，豁免后解除', () async {
       var now = DateTime(2026, 10, 11, 9, 0);
       final machine = ScreenTimeMachine(
         settings: AppSettings(
@@ -173,6 +176,8 @@ void main() {
       now = now.add(const Duration(seconds: 2));
       machine.tick();
       expect(machine.state.phase, AppPhase.resting);
+      // 熄屏优先策略：先尝试 lockScreen（返回 false），异步回退到干预。
+      await Future<void>.delayed(Duration.zero);
       expect(bridge.requests, [InterventionPhase.resting]);
       expect(bridge.dismissCount, 0);
       expect(bridge.startPinCount, 1);

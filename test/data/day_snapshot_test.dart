@@ -1,4 +1,4 @@
-/// day_snapshot 表：repo 读写 + V2→V3 迁移测试。
+/// day_snapshot 表：repo 读写 + V2→V3 / V3→V4 迁移测试。
 library;
 
 import 'dart:io';
@@ -6,8 +6,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:screen_time_manager/data/database.dart';
+import 'package:screen_time_manager/data/repositories/app_settings_repository.dart';
 import 'package:screen_time_manager/data/repositories/day_snapshot_repository.dart';
 import 'package:screen_time_manager/data/schema.dart';
+import 'package:screen_time_manager/models/app_settings.dart';
 import 'package:screen_time_manager/models/day_snapshot.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -76,7 +78,7 @@ void main() {
 
   test('V2 旧库打开后自动迁移出 day_snapshot 表', () async {
     // 手工构造 V2 结构（V1 建表 + V2 增列）的旧库，再经 openAppDatabase
-    // 以 kSchemaVersion=3 打开触发 onUpgrade。
+    // 以当前 kSchemaVersion 打开触发 onUpgrade。
     final dir = await Directory.systemTemp.createTemp('stm_v2_');
     final oldPath = p.join(dir.path, 'old.db');
     final old = await openDatabase(
@@ -99,5 +101,47 @@ void main() {
     expect(loaded, isNotNull);
     expect(loaded!.screenTime, const Duration(minutes: 20));
     expect(loaded.restEndsAt, isNotNull);
+  });
+
+  test('V3 旧库打开后自动迁移出 rest_timer_refresh_ms 列', () async {
+    // 手工构造 V3 结构的旧库（含一行 app_settings），经 openAppDatabase
+    // 升级到 V4 后新增列应带默认值 16。
+    final dir = await Directory.systemTemp.createTemp('stm_v3_');
+    final oldPath = p.join(dir.path, 'old.db');
+    final old = await openDatabase(
+      oldPath,
+      version: 3,
+      onCreate: (db, _) async {
+        await applySchemaV1(db);
+        await applySchemaV2(db);
+        await applySchemaV3(db);
+        await db.insert('app_settings', {
+          'id': 1,
+          'quiz_interval_seconds': 900,
+          'questions_per_quiz': 1,
+          'required_correct_count': 1,
+          'rest_duration_seconds': 600,
+          'daily_exemption_limit': 2,
+          'created_at': '2026-10-17T00:00:00.000Z',
+          'updated_at': '2026-10-17T00:00:00.000Z',
+          'deleted': 0,
+        });
+      },
+    );
+    await old.close();
+
+    final upgraded = await openAppDatabase(dbPath: oldPath);
+    // 迁移列存在且默认 16。
+    final rows = await upgraded.query('app_settings');
+    expect(rows.single['rest_timer_refresh_ms'], 16);
+    // repo 读取映射为默认值；自定义值可正常往返。
+    final repo = AppSettingsRepository(upgraded);
+    final loaded = await repo.loadOrInit();
+    expect(loaded.restTimerRefreshMs, 16);
+    await repo.upsert(
+      AppSettings.defaults.copyWith(restTimerRefreshMs: 250),
+    );
+    await repo.flush();
+    expect((await repo.loadOrInit()).restTimerRefreshMs, 250);
   });
 }

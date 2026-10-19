@@ -100,10 +100,14 @@ class ScreenTimeMachine extends ChangeNotifier {
   ///
   /// 亮屏时刻会重置计时起点，避免把灭屏期间误计为亮屏时长
   /// （平台层可能在灭屏时不上报 tick）。
+  /// 亮屏时若存在挂起的"远离手机"片段（休息结束时屏幕熄灭），
+  /// 将 [pendingAwayStart, now] 并入已完结累计。
   void setScreenOn(bool isScreenOn) {
     if (_state.isScreenOn == isScreenOn) return;
+    final now = _clock();
     _state = _state.copyWith(isScreenOn: isScreenOn);
-    _lastTickAt = _clock();
+    if (isScreenOn) _closePendingAway(now);
+    _lastTickAt = now;
     notifyListeners();
   }
 
@@ -183,6 +187,7 @@ class ScreenTimeMachine extends ChangeNotifier {
     if (!canExempt) {
       throw StateError('今日豁免次数已用完，无法提前结束休息');
     }
+    _closeAwayEpisodeOnRestEnd(_clock());
     _state = _state.copyWith(
       phase: AppPhase.tracking,
       restEndsAt: null,
@@ -233,6 +238,7 @@ class ScreenTimeMachine extends ChangeNotifier {
   /// 桌面/Web/测试不调用（走本地 [tick]）。字段无变化时不发出通知，
   /// 避免每秒无谓重建 UI。
   /// - [resting] 且 [restEndsAt] 未过则恢复为休息中，否则按计时阶段。
+  /// - [awayClosed] / [pendingAwayStart]：原生维护的"远离手机"统计直接覆盖。
   void applyNativeSnapshot({
     required Duration usedToday,
     required Duration thresholdProgress,
@@ -240,6 +246,8 @@ class ScreenTimeMachine extends ChangeNotifier {
     required bool isScreenOn,
     required bool resting,
     DateTime? restEndsAt,
+    Duration awayClosed = Duration.zero,
+    DateTime? pendingAwayStart,
   }) {
     final now = _clock();
     var state = ScreenTimeState.initial(
@@ -250,6 +258,8 @@ class ScreenTimeMachine extends ChangeNotifier {
       dailyUsage: DailyUsage.today(now).addScreenTime(usedToday),
       sinceLastGrant: thresholdProgress,
       exemptionsUsedToday: exemptionsUsedToday,
+      awayClosed: awayClosed,
+      pendingAwayStart: pendingAwayStart,
     );
     if (resting && restEndsAt != null && restEndsAt.isAfter(now)) {
       state = state.copyWith(phase: AppPhase.resting, restEndsAt: restEndsAt);
@@ -279,6 +289,7 @@ class ScreenTimeMachine extends ChangeNotifier {
       // 豁免额度已用尽（0 次）时，完成一次完整休息视为"惩罚结束"，
       // 豁免次数重新充满；通过答题提前结束休息（endRestEarly）不走这里，
       // 因此不会重置。额度上限为 0 时重置结果仍是 0，行为不变。
+      _closeAwayEpisodeOnRestEnd(now);
       final resetExemptions = !canExempt;
       final overflow = now.difference(endsAt);
       _state = _state.copyWith(
@@ -341,7 +352,47 @@ class ScreenTimeMachine extends ChangeNotifier {
               ? _state.sinceLastGrant
               : Duration.zero,
       exemptionsUsedToday: 0,
+      // "远离手机"统计跨天归零，挂起片段直接丢弃。
+      awayClosed: Duration.zero,
+      pendingAwayStart: null,
     );
     return true;
+  }
+
+  /// "远离手机"片段的防时钟跳变上限（与原生 MAX_AWAY_MS 一致）。
+  static const Duration _maxAway = Duration(hours: 24);
+
+  /// 把 [d] 钳制到 [Duration.zero, _maxAway] 区间。
+  static Duration _clampAway(Duration d) {
+    if (d < Duration.zero) return Duration.zero;
+    if (d > _maxAway) return _maxAway;
+    return d;
+  }
+
+  /// 休息结束（自然完成或豁免通过）时收尾"远离手机"片段：
+  /// 屏幕亮 → 立即计入 [restStart, now]；屏幕灭 → 挂起到下次亮屏
+  /// （片段起点仍是 restStart，延续期间用户一直没碰手机）。
+  void _closeAwayEpisodeOnRestEnd(DateTime now) {
+    final endsAt = _state.restEndsAt;
+    if (endsAt == null) return;
+    final restStart = endsAt.subtract(_settings.restDuration);
+    if (_state.isScreenOn) {
+      _state = _state.copyWith(
+        awayClosed:
+            _state.awayClosed + _clampAway(now.difference(restStart)),
+      );
+    } else {
+      _state = _state.copyWith(pendingAwayStart: restStart);
+    }
+  }
+
+  /// 亮屏时关闭挂起的"远离手机"片段（计入 [pendingAwayStart, now]）。
+  void _closePendingAway(DateTime now) {
+    final pending = _state.pendingAwayStart;
+    if (pending == null) return;
+    _state = _state.copyWith(
+      awayClosed: _state.awayClosed + _clampAway(now.difference(pending)),
+      pendingAwayStart: null,
+    );
   }
 }

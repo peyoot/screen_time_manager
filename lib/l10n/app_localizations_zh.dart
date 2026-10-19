@@ -36,8 +36,8 @@ class SZh extends S {
   }
 
   @override
-  String homeRestAccumulated(String time) {
-    return '累计未用本机 $time';
+  String homeAwaySaved(String time) {
+    return '帮你远离手机 $time';
   }
 
   @override
@@ -183,6 +183,12 @@ class SZh extends S {
 
   @override
   String get settingsRestMinutes => '强制休息时长';
+
+  @override
+  String get settingsRestTimerRefresh => '休息秒表刷新间隔';
+
+  @override
+  String get settingsRestTimerRefreshHint => '数值越大越省电，计时数字跳动越明显';
 
   @override
   String get settingsMinutesUnit => '分钟';

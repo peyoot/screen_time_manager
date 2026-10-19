@@ -36,8 +36,8 @@ class SJa extends S {
   }
 
   @override
-  String homeRestAccumulated(String time) {
-    return '非使用時間の合計 $time';
+  String homeAwaySaved(String time) {
+    return 'スマホから離れた時間 $time';
   }
 
   @override
@@ -187,6 +187,12 @@ class SJa extends S {
 
   @override
   String get settingsRestMinutes => '強制休憩時間';
+
+  @override
+  String get settingsRestTimerRefresh => '休憩ストップウォッチ更新間隔';
+
+  @override
+  String get settingsRestTimerRefreshHint => '値が大きいほど省電力になりますが、数字の動きが粗くなります';
 
   @override
   String get settingsMinutesUnit => '分';

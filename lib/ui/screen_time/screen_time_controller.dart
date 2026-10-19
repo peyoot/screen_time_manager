@@ -286,6 +286,8 @@ class ScreenTimeController extends ChangeNotifier {
       isScreenOn: snap.isScreenOn,
       resting: snap.resting,
       restEndsAt: snap.restEndsAt,
+      awayClosed: snap.away,
+      pendingAwayStart: snap.pendingAwayStart,
     );
     _todayRestCount = snap.restCount;
     _todayRestExemptions = snap.restExemptions;
@@ -377,6 +379,28 @@ class ScreenTimeController extends ChangeNotifier {
     return total < Duration.zero ? Duration.zero : total;
   }
 
+  /// 当日"帮你远离手机"时长：已完结片段累计 + 进行中片段的实时部分。
+  ///
+  /// 片段从每次强制休息起点算起：休息结束时屏幕亮 → 立即完结计入；
+  /// 屏幕灭 → 挂起延续到下次亮屏才完结（用户全程未碰手机）。
+  /// 进行中片段：休息中为 [restStart, now]，挂起中为 [pendingStart, now]。
+  Duration get todayAwayDuration {
+    final state = machine.state;
+    var total = state.awayClosed;
+    final now = _clock();
+    if (phase == AppPhase.resting) {
+      final endsAt = state.restEndsAt;
+      if (endsAt != null) {
+        final restStart = endsAt.subtract(machine.settings.restDuration);
+        total += now.difference(restStart);
+      }
+    } else {
+      final pending = state.pendingAwayStart;
+      if (pending != null) total += now.difference(pending);
+    }
+    return total < Duration.zero ? Duration.zero : total;
+  }
+
   /// 取日期零点。
   static DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
 
@@ -431,8 +455,9 @@ class ScreenTimeController extends ChangeNotifier {
         unawaited(bridge?.request(InterventionPhase.quiz));
       } else if (phase == AppPhase.resting &&
           previousPhase != AppPhase.resting) {
-        unawaited(bridge?.request(InterventionPhase.resting));
-        unawaited(bridge?.startScreenPinning());
+        // 进入休息：优先熄屏（Device Admin），失败才立即全屏干预；
+        // 屏幕固定照常武装，亮屏后由原生轮询补固定。
+        unawaited(_enterRestWithLockFirst(bridge));
       } else if (phase == AppPhase.tracking) {
         if (previousPhase == AppPhase.quiz) {
           // 答题页本身不锁定屏幕，只需撤销干预通知。
@@ -511,6 +536,18 @@ class ScreenTimeController extends ChangeNotifier {
     repo.insert(session).catchError((_) {});
   }
 
+  /// 本地模式进入休息：优先尝试熄屏（Device Admin）；熄屏失败
+  /// （未授权/通道异常）时回退为立即全屏干预把休息页拉到前台。
+  /// 屏幕固定无论成败都先武装，亮屏后由原生轮询补固定。
+  Future<void> _enterRestWithLockFirst(InterventionBridge? bridge) async {
+    if (bridge == null) return;
+    final locked = await bridge.lockScreen().catchError((_) => false);
+    if (!locked) {
+      unawaited(bridge.request(InterventionPhase.resting));
+    }
+    unawaited(bridge.startScreenPinning());
+  }
+
   /// 从启用分组中抽取 [questionsPerQuiz] 道输入式题目。
   void _drawQuizQuestions() {
     try {
@@ -558,15 +595,21 @@ class ScreenTimeController extends ChangeNotifier {
     }
   }
 
-  /// 更新计时配置：亮屏触发时长与强制休息时长（单位：分钟）。
+  /// 更新计时配置：亮屏触发时长与强制休息时长（单位：分钟），
+  /// 以及可选的休息页秒表刷新间隔（毫秒）。
   ///
   /// 非法取值（<= 0）抛出 [ArgumentError]（由 [AppSettings] 构造函数校验）。
   /// 若缩短亮屏时长且既有进度已达到新阈值，状态机会立即触发答题/休息。
-  void updateTiming({required int quizMinutes, required int restMinutes}) {
+  void updateTiming({
+    required int quizMinutes,
+    required int restMinutes,
+    int? restTimerRefreshMs,
+  }) {
     machine.updateSettings(
       machine.settings.copyWith(
         quizInterval: Duration(minutes: quizMinutes),
         restDuration: Duration(minutes: restMinutes),
+        restTimerRefreshMs: restTimerRefreshMs,
       ),
     );
     appSettingsRepo?.upsert(machine.settings).catchError((_) {});
@@ -600,6 +643,12 @@ class ScreenTimeController extends ChangeNotifier {
       _screenExemptions = 0;
       _screenQuizCorrect = 0;
       _screenQuizWrong = 0;
+      // 休息期重新亮屏：把休息页拉到前台并补屏幕固定（熄屏优先策略下，
+      // 进入休息时可能只熄了屏、未发干预）。
+      if (machine.state.phase == AppPhase.resting) {
+        unawaited(interventionBridge?.request(InterventionPhase.resting));
+        unawaited(interventionBridge?.startScreenPinning());
+      }
     } else {
       _flushScreenSession();
       machine.setScreenOn(false);

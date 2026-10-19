@@ -18,8 +18,8 @@
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestAccumulated": "미사용 시간 합계 {time}",
-  "@homeRestAccumulated": {
+  "homeAwaySaved": "휴지폰에서 벗어난 시간 {time}",
+  "@homeAwaySaved": {
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "지금 휴식하기",
@@ -70,6 +70,8 @@
   "settingsTitle": "타이밍 설정",
   "settingsQuizMinutes": "휴식 전 화면 켜짐 시간",
   "settingsRestMinutes": "강제 휴식 시간",
+  "settingsRestTimerRefresh": "휴식 스톱워치 새로고침 간격",
+  "settingsRestTimerRefreshHint": "값이 클수록 전력을 절약하지만 숫자가 뚝뚝 끊겨 보입니다",
   "settingsMinutesUnit": "분",
   "settingsInvalid": "0보다 큰 정수를 입력하세요",
   "settingsSave": "저장",

@@ -36,8 +36,8 @@ class SEn extends S {
   }
 
   @override
-  String homeRestAccumulated(String time) {
-    return 'Screen-free: $time';
+  String homeAwaySaved(String time) {
+    return 'Away from phone $time';
   }
 
   @override
@@ -189,6 +189,13 @@ class SEn extends S {
 
   @override
   String get settingsRestMinutes => 'Mandatory break duration';
+
+  @override
+  String get settingsRestTimerRefresh => 'Rest stopwatch refresh interval';
+
+  @override
+  String get settingsRestTimerRefreshHint =>
+      'Larger values save power; digits update less smoothly';
 
   @override
   String get settingsMinutesUnit => 'min';

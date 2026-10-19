@@ -36,8 +36,8 @@ class SKo extends S {
   }
 
   @override
-  String homeRestAccumulated(String time) {
-    return '미사용 시간 합계 $time';
+  String homeAwaySaved(String time) {
+    return '휴지폰에서 벗어난 시간 $time';
   }
 
   @override
@@ -187,6 +187,12 @@ class SKo extends S {
 
   @override
   String get settingsRestMinutes => '강제 휴식 시간';
+
+  @override
+  String get settingsRestTimerRefresh => '휴식 스톱워치 새로고침 간격';
+
+  @override
+  String get settingsRestTimerRefreshHint => '값이 클수록 전력을 절약하지만 숫자가 뚝뚝 끊겨 보입니다';
 
   @override
   String get settingsMinutesUnit => '분';

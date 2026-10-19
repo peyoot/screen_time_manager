@@ -18,8 +18,8 @@
   "@homeRestTriggeredToday": {
     "placeholders": {"count": {"type": "int"}}
   },
-  "homeRestAccumulated": "累计未用本机 {time}",
-  "@homeRestAccumulated": {
+  "homeAwaySaved": "帮你远离手机 {time}",
+  "@homeAwaySaved": {
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "手动触发休息",
@@ -80,6 +80,8 @@
   "settingsTitle": "计时设置",
   "settingsQuizMinutes": "亮屏触发时长",
   "settingsRestMinutes": "强制休息时长",
+  "settingsRestTimerRefresh": "休息秒表刷新间隔",
+  "settingsRestTimerRefreshHint": "数值越大越省电，计时数字跳动越明显",
   "settingsMinutesUnit": "分钟",
   "settingsInvalid": "请输入大于 0 的整数",
   "settingsSave": "保存",

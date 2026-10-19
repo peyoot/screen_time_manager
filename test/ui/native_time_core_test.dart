@@ -27,6 +27,8 @@ TimeCoreSnapshot _snap({
   Duration restCompleted = Duration.zero,
   int restExemptions = 0,
   bool hasDayData = true,
+  Duration away = Duration.zero,
+  DateTime? pendingAwayStart,
 }) =>
     TimeCoreSnapshot(
       usedToday: used,
@@ -40,6 +42,8 @@ TimeCoreSnapshot _snap({
       restCompleted: restCompleted,
       restExemptions: restExemptions,
       hasDayData: hasDayData,
+      away: away,
+      pendingAwayStart: pendingAwayStart,
     );
 
 /// 可编排的假计时核心。
@@ -188,6 +192,8 @@ void main() {
         'restDurationSec': 600,
         'dailyExemptionLimit': 2,
         'hasDayData': true,
+        'awaySec': 1800,
+        'pendingAwayStartMs': 2000,
       });
       expect(s.usedToday, const Duration(seconds: 300));
       expect(s.thresholdProgress, const Duration(seconds: 120));
@@ -200,6 +206,9 @@ void main() {
       expect(s.restExemptions, 1);
       expect(s.isScreenOn, isTrue);
       expect(s.hasDayData, isTrue);
+      expect(s.away, const Duration(seconds: 1800));
+      expect(s.pendingAwayStart,
+          DateTime.fromMillisecondsSinceEpoch(2000));
     });
 
     test('空 Map 解析为全零、时刻为 null', () {
@@ -210,6 +219,8 @@ void main() {
       expect(s.restEndsAt, isNull);
       expect(s.restStart, isNull);
       expect(s.hasDayData, isFalse);
+      expect(s.away, Duration.zero);
+      expect(s.pendingAwayStart, isNull);
     });
   });
 
@@ -258,6 +269,34 @@ void main() {
       );
       expect(machine.state.phase, AppPhase.resting);
       expect(machine.state.restEndsAt, now.add(const Duration(minutes: 3)));
+    });
+
+    test('镜像 awayClosed 与 pendingAwayStart', () {
+      final now = DateTime(2026, 10, 11, 9, 0);
+      final machine = _machine(() => now);
+      final pending = now.subtract(const Duration(minutes: 20));
+      machine.applyNativeSnapshot(
+        usedToday: const Duration(minutes: 5),
+        thresholdProgress: const Duration(minutes: 2),
+        exemptionsUsedToday: 0,
+        isScreenOn: false,
+        resting: false,
+        awayClosed: const Duration(minutes: 30),
+        pendingAwayStart: pending,
+      );
+      expect(machine.state.awayClosed, const Duration(minutes: 30));
+      expect(machine.state.pendingAwayStart, pending);
+
+      // 无挂起片段：pending 映射为 null。
+      machine.applyNativeSnapshot(
+        usedToday: const Duration(minutes: 5),
+        thresholdProgress: const Duration(minutes: 2),
+        exemptionsUsedToday: 0,
+        isScreenOn: false,
+        resting: false,
+        awayClosed: const Duration(minutes: 30),
+      );
+      expect(machine.state.pendingAwayStart, isNull);
     });
 
     test('resting 但截止已过 → 按计时阶段继续', () {
@@ -397,6 +436,44 @@ void main() {
 
       await controller.restoreFromSnapshot();
       expect(machine.state.usedToday, Duration.zero);
+    });
+
+    test('away 统计镜像：休息中实时部分 + 挂起片段实时部分', () async {
+      final now = DateTime(2026, 10, 11, 9, 0);
+      final machine = _machine(() => now);
+      final core = _FakeTimeCore(_snap(
+        resting: true,
+        // 与 _machine 的 restDuration=3min 保持一致：restStart..endsAt 共 3 分钟。
+        restStart: now.subtract(const Duration(minutes: 1)),
+        restEndsAt: now.add(const Duration(minutes: 2)),
+        restCount: 1,
+        away: const Duration(minutes: 30),
+      ));
+      final controller = ScreenTimeController(
+        machine: machine,
+        bankService: _bankWithOneQuestion(),
+        questionsPerQuiz: 1,
+        timeCore: core,
+        clock: () => now,
+        autoStart: false,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.restoreFromSnapshot();
+      // 休息中：已完结 30 分钟 + 进行中片段 [restStart, now] = 1 分钟。
+      expect(controller.todayAwayDuration, const Duration(minutes: 31));
+
+      // 休息结束屏幕熄灭 → 原生挂起片段；镜像后实时部分按 [pending, now] 计。
+      core.snapshotValue = _snap(
+        resting: false,
+        screenOn: false,
+        restCount: 1,
+        restCompleted: const Duration(minutes: 10),
+        away: const Duration(minutes: 30),
+        pendingAwayStart: now.subtract(const Duration(minutes: 15)),
+      );
+      await controller.restoreFromSnapshot();
+      expect(controller.todayAwayDuration, const Duration(minutes: 45));
     });
   });
 }

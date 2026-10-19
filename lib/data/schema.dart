@@ -7,7 +7,7 @@ library;
 import 'package:sqflite/sqflite.dart';
 
 /// 当前 schema 版本号。
-const int kSchemaVersion = 3;
+const int kSchemaVersion = 4;
 
 /// V1 建表语句：按外键依赖顺序排列。
 const List<String> kSchemaV1Statements = [
@@ -171,6 +171,21 @@ const List<String> kSchemaV3Statements = [
 Future<void> applySchemaV3(Database db) async {
   final batch = db.batch();
   for (final stmt in kSchemaV3Statements) {
+    batch.execute(stmt);
+  }
+  await batch.commit();
+}
+
+/// V4 迁移：app_settings 增加 `rest_timer_refresh_ms`（休息页秒表刷新间隔，
+/// 毫秒；默认 16）。低端机可调大以降低 CPU 占用与功耗。
+const List<String> kSchemaV4Statements = [
+  'ALTER TABLE app_settings ADD COLUMN rest_timer_refresh_ms INTEGER NOT NULL DEFAULT 16',
+];
+
+/// 在指定数据库上执行 V4 迁移。
+Future<void> applySchemaV4(Database db) async {
+  final batch = db.batch();
+  for (final stmt in kSchemaV4Statements) {
     batch.execute(stmt);
   }
   await batch.commit();

@@ -40,12 +40,18 @@ class ScreenTimeCore(
         private const val KEY_CONFIG_DAILY_LIMIT = "config_daily_limit"
         private const val KEY_IS_SCREEN_ON = "is_screen_on"
         private const val KEY_LAST_UPDATE_RT = "last_update_realtime_ms"
+        private const val KEY_AWAY_MS = "away_ms"
+        private const val KEY_PENDING_AWAY_START_MS = "pending_away_start_ms"
 
         /** 持久化节流间隔（发生状态转移时立即持久化）。 */
         private const val PERSIST_THROTTLE_MS = 5_000L
 
         /** 单次累计上限：防止时钟异常跳变导致误计（1 小时）。 */
         private const val MAX_DELTA_MS = 3_600_000L
+
+        /** 单个"远离手机"片段上限（24 小时）：片段按 wall 时钟计算，
+         * 仅用以防墙钟被用户/系统异常拨动产生离谱值；跨天重置会先行丢弃挂起片段。 */
+        private const val MAX_AWAY_MS = 86_400_000L
 
         private const val PHASE_TRACKING = "tracking"
         private const val PHASE_RESTING = "resting"
@@ -78,6 +84,13 @@ class ScreenTimeCore(
     /** 今日休息期豁免次数。 */
     private var restExemptions: Int
 
+    /** 今日"远离手机"已完结片段累计（毫秒，不含进行中片段）。 */
+    private var awayMs: Long
+
+    /** 挂起的"远离手机"片段起点（wall ms，0 表示无）：
+     * 休息自然结束/豁免结束时屏幕是灭的，片段延续到下次亮屏才计入。 */
+    private var pendingAwayStartMs: Long
+
     private var configQuizSec: Long
     private var configRestSec: Long
     private var configDailyLimit: Int
@@ -104,6 +117,8 @@ class ScreenTimeCore(
         restCount = store.getInt(KEY_REST_COUNT, 0)
         restElapsedMs = store.getLong(KEY_REST_ELAPSED_MS, 0)
         restExemptions = store.getInt(KEY_REST_EXEMPTIONS, 0)
+        awayMs = store.getLong(KEY_AWAY_MS, 0)
+        pendingAwayStartMs = store.getLong(KEY_PENDING_AWAY_START_MS, 0)
         configQuizSec = store.getLong(KEY_CONFIG_QUIZ_SEC, DEFAULT_QUIZ_SEC)
         configRestSec = store.getLong(KEY_CONFIG_REST_SEC, DEFAULT_REST_SEC)
         configDailyLimit = store.getInt(KEY_CONFIG_DAILY_LIMIT, DEFAULT_DAILY_LIMIT)
@@ -131,14 +146,18 @@ class ScreenTimeCore(
 
     /** 亮灭屏事件：切换前先把当前 interval 收尾累计，再翻转屏幕状态。 */
     fun setScreenState(isOn: Boolean): CoreEffect {
+        // 先跨天重置：隔夜亮屏时昨日的挂起"远离手机"片段应随跨天丢弃，
+        // 不能计入新的一天。
+        rolloverDayIfNeeded()
         if (isScreenOn == isOn) {
             lastUpdateRtMs = clock.realtimeMs()
             return CoreEffect.NONE
         }
         val effect = if (!isOn) accumulate() else CoreEffect.NONE
         isScreenOn = isOn
+        val closedAway = if (isOn) closePendingAwayOnScreenOn() else false
         lastUpdateRtMs = clock.realtimeMs()
-        persist(force = effect != CoreEffect.NONE)
+        persist(force = effect != CoreEffect.NONE || closedAway)
         return effect
     }
 
@@ -179,6 +198,7 @@ class ScreenTimeCore(
         if (exemptionsUsed >= configDailyLimit) return CoreEffect.NONE
         val nowWall = clock.wallMs()
         if (restStartMs > 0) restElapsedMs += (nowWall - restStartMs).coerceAtLeast(0)
+        closeAwayEpisodeOnRestEnd(nowWall)
         exemptionsUsed++
         restExemptions++
         resting = false
@@ -225,6 +245,8 @@ class ScreenTimeCore(
         restCount = restCount,
         restElapsedSec = restElapsedMs / 1000,
         restExemptions = restExemptions,
+        awaySec = awayMs / 1000,
+        pendingAwayStartMs = pendingAwayStartMs,
         isScreenOn = isScreenOn,
         quizIntervalSec = configQuizSec,
         restDurationSec = configRestSec,
@@ -265,12 +287,33 @@ class ScreenTimeCore(
         if (restStartMs > 0 && restEndsAtMs > restStartMs) {
             restElapsedMs += restEndsAtMs - restStartMs
         }
+        closeAwayEpisodeOnRestEnd(clock.wallMs())
         val resetExemptions = exemptionsUsed >= configDailyLimit
         resting = false
         restEndsAtMs = 0
         restStartMs = 0
         thresholdMs = 0
         if (resetExemptions) exemptionsUsed = 0
+    }
+
+    /** 休息结束（自然完成或豁免通过）时收尾"远离手机"片段：
+     * 屏幕亮 → 立即计入 [restStartMs, nowWall]；屏幕灭 → 挂起到下次亮屏
+     * （片段起点仍是 restStartMs，延续期间用户一直没碰手机）。 */
+    private fun closeAwayEpisodeOnRestEnd(nowWall: Long) {
+        if (restStartMs <= 0) return
+        if (isScreenOn) {
+            awayMs += (nowWall - restStartMs).coerceIn(0, MAX_AWAY_MS)
+        } else {
+            pendingAwayStartMs = restStartMs
+        }
+    }
+
+    /** 亮屏时关闭挂起的"远离手机"片段。返回是否有片段被计入。 */
+    private fun closePendingAwayOnScreenOn(): Boolean {
+        if (pendingAwayStartMs <= 0) return false
+        awayMs += (clock.wallMs() - pendingAwayStartMs).coerceIn(0, MAX_AWAY_MS)
+        pendingAwayStartMs = 0
+        return true
     }
 
     /** 跨自然日重置当日状态；进行中的休息带入新一天。返回是否跨天。 */
@@ -284,6 +327,8 @@ class ScreenTimeCore(
         restCount = 0
         restElapsedMs = 0
         restExemptions = 0
+        awayMs = 0
+        pendingAwayStartMs = 0
         if (resting) {
             // 跨天仍在休息：次数记 1，起点保留（影响有限）。
             restCount = 1
@@ -311,6 +356,8 @@ class ScreenTimeCore(
                 KEY_REST_COUNT to restCount,
                 KEY_REST_ELAPSED_MS to restElapsedMs,
                 KEY_REST_EXEMPTIONS to restExemptions,
+                KEY_AWAY_MS to awayMs,
+                KEY_PENDING_AWAY_START_MS to pendingAwayStartMs,
                 KEY_CONFIG_QUIZ_SEC to configQuizSec,
                 KEY_CONFIG_REST_SEC to configRestSec,
                 KEY_CONFIG_DAILY_LIMIT to configDailyLimit,
@@ -368,6 +415,10 @@ data class CoreSnapshot(
     val restCount: Int,
     val restElapsedSec: Long,
     val restExemptions: Int,
+    /** 今日"远离手机"已完结片段累计（秒，不含进行中/挂起片段）。 */
+    val awaySec: Long,
+    /** 挂起的"远离手机"片段起点（wall ms，0 表示无）。 */
+    val pendingAwayStartMs: Long,
     val isScreenOn: Boolean,
     val quizIntervalSec: Long,
     val restDurationSec: Long,
@@ -386,6 +437,8 @@ data class CoreSnapshot(
         "restCount" to restCount,
         "restElapsedSec" to restElapsedSec,
         "restExemptions" to restExemptions,
+        "awaySec" to awaySec,
+        "pendingAwayStartMs" to pendingAwayStartMs,
         "isScreenOn" to isScreenOn,
         "quizIntervalSec" to quizIntervalSec,
         "restDurationSec" to restDurationSec,

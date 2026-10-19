@@ -215,4 +215,103 @@ class ScreenTimeCoreTest {
         assertFalse(core.seedFromSnapshot(999_000, 0, 0, false, 0))
         assertEquals(120L, core.snapshot().screenTimeSec)
     }
+
+    @Test
+    fun restEndWithScreenOnCountsAwayImmediately() {
+        val clock = FakeClock()
+        val core = newCore(clock, MemoryStore())
+
+        core.setScreenState(true)
+        clock.rt += 60_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+        // 屏幕保持点亮，休息自然结束 → [restStart, now] 立即计入。
+        clock.wall = core.snapshot().restEndsAtMs
+        clock.rt += 30_000
+        assertEquals(CoreEffect.EXIT_REST, core.tick())
+        val snap = core.snapshot()
+        assertEquals(30L, snap.awaySec)
+        assertEquals(0L, snap.pendingAwayStartMs)
+    }
+
+    @Test
+    fun restEndWithScreenOffPendsAwayUntilNextScreenOn() {
+        val clock = FakeClock()
+        val core = newCore(clock, MemoryStore())
+
+        core.setScreenState(true)
+        clock.rt += 60_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+        // 灭屏后休息结束 → 挂起到下次亮屏。
+        core.setScreenState(false)
+        clock.wall = core.snapshot().restEndsAtMs
+        clock.rt += 30_000
+        assertEquals(CoreEffect.EXIT_REST, core.tick())
+        var snap = core.snapshot()
+        assertEquals(0L, snap.awaySec)
+        assertTrue(snap.pendingAwayStartMs > 0)
+
+        // 灭屏 10s 后重新亮屏：计入 [restStart, 亮屏] 全程（30+10s）。
+        clock.wall += 10_000
+        clock.rt += 10_000
+        core.setScreenState(true)
+        snap = core.snapshot()
+        assertEquals(40L, snap.awaySec)
+        assertEquals(0L, snap.pendingAwayStartMs)
+    }
+
+    @Test
+    fun exemptionCountsActualRestDurationIntoAway() {
+        val clock = FakeClock()
+        val core = newCore(clock, MemoryStore())
+
+        core.setScreenState(true)
+        clock.rt += 60_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+
+        clock.wall += 5_000
+        assertEquals(CoreEffect.EXIT_REST, core.consumeExemption())
+        assertEquals(5L, core.snapshot().awaySec)
+    }
+
+    @Test
+    fun crossDayResetsAwayAndDropsPending() {
+        val clock = FakeClock()
+        val core = newCore(clock, MemoryStore())
+
+        core.setScreenState(true)
+        clock.rt += 60_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+        core.setScreenState(false)
+        clock.wall = core.snapshot().restEndsAtMs
+        clock.rt += 30_000
+        assertEquals(CoreEffect.EXIT_REST, core.tick())
+        assertTrue(core.snapshot().pendingAwayStartMs > 0)
+
+        // 跨天：away 归零、挂起片段丢弃；次日亮屏不补记。
+        clock.day = "2026-01-02"
+        clock.rt += 1_000
+        core.tick()
+        val snap = core.snapshot()
+        assertEquals(0L, snap.awaySec)
+        assertEquals(0L, snap.pendingAwayStartMs)
+        core.setScreenState(true)
+        assertEquals(0L, core.snapshot().awaySec)
+    }
+
+    @Test
+    fun awayPersistsAcrossRecreation() {
+        val clock = FakeClock()
+        val store = MemoryStore()
+        val core = newCore(clock, store)
+
+        core.setScreenState(true)
+        clock.rt += 60_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+        clock.wall += 5_000
+        assertEquals(CoreEffect.EXIT_REST, core.consumeExemption())
+
+        // 模拟进程重启：用同一存储重新构造核心，away 累计保留。
+        val revived = ScreenTimeCore(clock, store)
+        assertEquals(5L, revived.snapshot().awaySec)
+    }
 }

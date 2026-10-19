@@ -32,6 +32,12 @@ class AppSettings {
   /// 用于防止儿童随意修改配置，非密码学安全场景。
   final String? adminPasswordHash;
 
+  /// 休息页秒表的刷新间隔（毫秒）。
+  ///
+  /// 默认 16ms（约 60fps）；低端机可调大以降低 CPU 占用与功耗，
+  /// 代价是毫秒数字跳动更明显。
+  final int restTimerRefreshMs;
+
   /// 创建配置并立即校验全部不变量，非法取值抛出 [ArgumentError]。
   AppSettings({
     required this.quizInterval,
@@ -40,6 +46,7 @@ class AppSettings {
     required this.restDuration,
     this.dailyExemptionLimit = 2,
     this.adminPasswordHash,
+    this.restTimerRefreshMs = 16,
   }) {
     if (quizInterval <= Duration.zero) {
       throw ArgumentError.value(quizInterval, 'quizInterval', '必须大于 0');
@@ -72,6 +79,13 @@ class AppSettings {
         dailyExemptionLimit,
         'dailyExemptionLimit',
         '不能为负',
+      );
+    }
+    if (restTimerRefreshMs <= 0) {
+      throw ArgumentError.value(
+        restTimerRefreshMs,
+        'restTimerRefreshMs',
+        '必须大于 0',
       );
     }
   }
@@ -122,6 +136,7 @@ class AppSettings {
       restDuration: Duration(seconds: restDurationSeconds.toInt()),
       dailyExemptionLimit: (dailyExemptionLimit as int?) ?? 2,
       adminPasswordHash: json['adminPasswordHash'] as String?,
+      restTimerRefreshMs: (json['restTimerRefreshMs'] as num?)?.toInt() ?? 16,
     );
   }
 
@@ -133,6 +148,7 @@ class AppSettings {
         'restDurationSeconds': restDuration.inSeconds,
         'dailyExemptionLimit': dailyExemptionLimit,
         'adminPasswordHash': adminPasswordHash,
+        'restTimerRefreshMs': restTimerRefreshMs,
       };
 
   AppSettings copyWith({
@@ -141,6 +157,7 @@ class AppSettings {
     int? requiredCorrectCount,
     Duration? restDuration,
     int? dailyExemptionLimit,
+    int? restTimerRefreshMs,
     Object? adminPasswordHash = _sentinel,
   }) {
     return AppSettings(
@@ -150,6 +167,7 @@ class AppSettings {
           requiredCorrectCount ?? this.requiredCorrectCount,
       restDuration: restDuration ?? this.restDuration,
       dailyExemptionLimit: dailyExemptionLimit ?? this.dailyExemptionLimit,
+      restTimerRefreshMs: restTimerRefreshMs ?? this.restTimerRefreshMs,
       adminPasswordHash: adminPasswordHash == _sentinel
           ? this.adminPasswordHash
           : adminPasswordHash as String?,
@@ -164,12 +182,18 @@ class AppSettings {
       other.requiredCorrectCount == requiredCorrectCount &&
       other.restDuration == restDuration &&
       other.dailyExemptionLimit == dailyExemptionLimit &&
-      other.adminPasswordHash == adminPasswordHash;
+      other.adminPasswordHash == adminPasswordHash &&
+      other.restTimerRefreshMs == restTimerRefreshMs;
 
   @override
-  int get hashCode =>
-      Object.hash(quizInterval, questionsPerQuiz, requiredCorrectCount,
-          restDuration, dailyExemptionLimit, adminPasswordHash);
+  int get hashCode => Object.hash(
+      quizInterval,
+      questionsPerQuiz,
+      requiredCorrectCount,
+      restDuration,
+      dailyExemptionLimit,
+      adminPasswordHash,
+      restTimerRefreshMs);
 
   @override
   String toString() => 'AppSettings(quizInterval: $quizInterval, '
@@ -177,6 +201,7 @@ class AppSettings {
       'requiredCorrectCount: $requiredCorrectCount, '
       'restDuration: $restDuration, '
       'dailyExemptionLimit: $dailyExemptionLimit, '
+      'restTimerRefreshMs: $restTimerRefreshMs, '
       'adminPasswordSet: ${adminPasswordHash != null})';
 }
 
