@@ -3,18 +3,24 @@ package com.screen_time_manager
 import android.app.Application
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.FlutterEngineCache
-import io.flutter.embedding.engine.dart.DartExecutor
 
 /**
  * Application 入口。
  *
  * 进程启动时预创建一个常驻 [FlutterEngine] 并放入 [FlutterEngineCache]：
  * - MainActivity 通过 [ENGINE_ID] 复用同一引擎，Activity 销毁不影响引擎；
- * - 前台服务保活期间，引擎内的 Dart isolate 持续运行（状态机每秒 tick、
- *   亮灭屏事件经 EventChannel 到达），无界面时不渲染帧但逻辑不停。
+ * - 用户打开过应用后，Activity 被销毁/退后台时引擎内的 Dart isolate 仍持续
+ *   运行（状态机每秒 tick、亮灭屏事件经 EventChannel 到达）。
  *
- * 平台通道在引擎执行 Dart 入口前注册完毕，保证 main() 中的
- * startMonitoring / 事件订阅调用一定有原生侧应答。
+ * **Dart 入口不在此执行（关键）**：开机广播 / 划卡闹钟会在"无任何 Activity"
+ * 的后台拉起本进程，若此时就 executeDartEntrypoint 跑 main()+runApp()，
+ * 引擎会在没有 FlutterView 可附着的上下文中进入不可渲染状态；用户随后点图标
+ * 挂载 MainActivity 时只能看到黑屏，必须去系统设置强制停止进程才能恢复
+ * （ZUXOS 真机复现）。因此这里只准备引擎壳与通道，Dart 入口改由
+ * [MainActivity] 在窗口就绪后触发——后台进程不跑 Dart，前台打开时才启动 UI。
+ *
+ * 平台通道在引擎创建时注册完毕，保证 Dart 启动后 startMonitoring / 事件订阅
+ * 调用一定有原生侧应答。
  */
 class ScreenMonitorApp : Application() {
 
@@ -46,9 +52,9 @@ class ScreenMonitorApp : Application() {
 
         val engine = FlutterEngine(this)
         ScreenMonitorChannels.register(engine, applicationContext)
-        engine.dartExecutor.executeDartEntrypoint(
-            DartExecutor.DartEntrypoint.createDefault(),
-        )
+        // 注意：此处**不**调用 executeDartEntrypoint，Dart 入口由 MainActivity
+        // 在窗口就绪后触发（见类注释）。后台拉起进程时引擎只作为空壳存在，
+        // 不跑 Dart、不渲染，因此不会进入不可渲染状态。
         FlutterEngineCache.getInstance().put(ENGINE_ID, engine)
     }
 }

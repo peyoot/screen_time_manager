@@ -11,6 +11,8 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.dart.DartExecutor
 
 /**
  * 应用唯一 Activity。
@@ -46,10 +48,34 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 缓存引擎由 Application 预创建但**未执行 Dart**（后台拉起进程时不跑
+        // Dart，避免无视图可附着导致引擎进入不可渲染状态）。此处窗口已就绪，
+        // 在此触发 Dart 入口，保证 runApp() 时一定有 FlutterView 可附着。
+        // 若 FlutterActivity 已自动执行（isExecutingDart 为 true）则跳过，
+        // 不会重复启动 isolate。
+        ensureDartEntrypoint()
         // 标记"用户手动打开过应用"：BootReceiver 依此决定开机后是否自启监控。
         BootReceiver.markUserStarted(this)
         ActivityTracker.onActivityResumed(this)
         ensureNotificationPermission()
+    }
+
+    /**
+     * 确保缓存引擎执行了 Dart 入口。
+     *
+     * 引擎在 [ScreenMonitorApp] 中只创建空壳，Dart 入口推迟到本 Activity 窗口
+     * 就绪后执行——这样无论是首次启动还是从后台（开机自启 / 划卡闹钟拉起）
+     * 复用缓存引擎，runApp() 都发生在有 FlutterView 的上下文里，界面必出。
+     * 已执行则直接返回，避免重复启动 Dart isolate。
+     */
+    private fun ensureDartEntrypoint() {
+        val engine = FlutterEngineCache.getInstance()
+            .get(ScreenMonitorApp.ENGINE_ID) ?: return
+        if (!engine.dartExecutor.isExecutingDart) {
+            engine.dartExecutor.executeDartEntrypoint(
+                DartExecutor.DartEntrypoint.createDefault(),
+            )
+        }
     }
 
     override fun onResume() {
