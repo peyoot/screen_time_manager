@@ -76,6 +76,59 @@ object ScreenMonitorChannels {
         registerScreenEvents(engine, context)
         registerMonitor(engine, context)
         registerIntervention(engine)
+        registerCore(engine, context)
+    }
+
+    /**
+     * `core` 通道：原生权威计时核心（[ScreenTimeCore]）的读写口。
+     *
+     * - `snapshot`：Dart 每秒读取权威状态镜像显示；
+     * - `configure`：Dart 推送配置（阈值/休息时长/每日豁免上限），原生持久化；
+     * - `manualRest` / `consumeExemption`：Dart 转发用户主动操作；
+     * - `seedFromSnapshot`：升级迁移，原生无当日数据时用旧快照初始化。
+     */
+    private fun registerCore(engine: FlutterEngine, context: Context) {
+        MethodChannel(engine.dartExecutor.binaryMessenger, "$NAMESPACE/core")
+            .setMethodCallHandler { call, result ->
+                val core = TimeCoreHost.core(context)
+                when (call.method) {
+                    "snapshot" -> result.success(core.snapshot().toMap())
+                    "configure" -> {
+                        core.configure(
+                            quizSec = call.argument<Number>("quizSeconds")
+                                ?.toLong() ?: ScreenTimeCore.DEFAULT_QUIZ_SEC,
+                            restSec = call.argument<Number>("restSeconds")
+                                ?.toLong() ?: ScreenTimeCore.DEFAULT_REST_SEC,
+                            dailyLimit = call.argument<Number>("dailyLimit")
+                                ?.toInt() ?: ScreenTimeCore.DEFAULT_DAILY_LIMIT,
+                        )
+                        result.success(null)
+                    }
+                    "manualRest" -> {
+                        TimeCoreHost.applyEffect(core.manualRest())
+                        result.success(null)
+                    }
+                    "consumeExemption" -> {
+                        TimeCoreHost.applyEffect(core.consumeExemption())
+                        result.success(null)
+                    }
+                    "seedFromSnapshot" -> {
+                        val seeded = core.seedFromSnapshot(
+                            usedTodayMs = call.argument<Number>("usedTodaySec")
+                                ?.toLong()?.times(1000) ?: 0L,
+                            thresholdMs = call.argument<Number>("thresholdSec")
+                                ?.toLong()?.times(1000) ?: 0L,
+                            exemptionsUsed = call.argument<Number>("exemptionsUsed")
+                                ?.toInt() ?: 0,
+                            resting = call.argument<Boolean>("resting") ?: false,
+                            restEndsAtMs = call.argument<Number>("restEndsAtMs")
+                                ?.toLong() ?: 0L,
+                        )
+                        result.success(seeded)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     private fun registerScreenEvents(engine: FlutterEngine, context: Context) {
@@ -165,7 +218,7 @@ object ScreenMonitorChannels {
      * 属于官方豁免范围，因此悬浮窗权限是"自动切到休息页"的关键前提；
      * 未授权时退化为高优先级通知（锁屏/灭屏下可全屏展示，亮屏使用中为横幅）。
      */
-    private fun requestIntervention(phase: String?) {
+    internal fun requestIntervention(phase: String?) {
         val app = ScreenMonitorApp.instance
         // 同步休息阶段给紧急退出控制器（密码通过后决定"退出"还是"改密"）。
         EmergencyKeyController.resting = phase == INTERVENTION_PHASE_RESTING
@@ -240,7 +293,7 @@ object ScreenMonitorChannels {
     }
 
     /** 撤销干预：取消到点通知与悬浮层兜底。 */
-    private fun dismissIntervention() {
+    internal fun dismissIntervention() {
         // 回到计时阶段：紧急退出控制器恢复"主界面可改密"分流。
         EmergencyKeyController.resting = false
         dismissInterventionNotification()
@@ -507,7 +560,7 @@ object ScreenMonitorChannels {
      * 非 Device Owner 调用会弹系统确认对话框（"固定此应用？"），用户
      * 确认后进入固定模式。
      */
-    private fun startScreenPinning(): Boolean {
+    internal fun startScreenPinning(): Boolean {
         // 无论 Activity 当前是否在前台都先武装守卫：若此刻不在前台
         // （例如到点干预正在把界面拉回来），MainActivity 恢复后其轮询
         // 会依据 armed 状态自动补上固定。
@@ -523,7 +576,7 @@ object ScreenMonitorChannels {
     }
 
     /** 退出屏幕固定模式（休息结束/豁免通过）。 */
-    private fun stopScreenPinning(): Boolean {
+    internal fun stopScreenPinning(): Boolean {
         // 必须先解除武装：stopLockTask 会触发 onLockTaskModeExiting 回调，
         // 若守卫仍处于 armed 状态会立刻重新固定，导致休息结束也退不出来。
         RestGuard.disarm()

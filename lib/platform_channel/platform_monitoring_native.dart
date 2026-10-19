@@ -20,10 +20,14 @@ class PlatformMonitoring {
   /// 到点干预桥；null 时阶段变化不通知原生。
   final InterventionBridge? interventionBridge;
 
+  /// 原生权威计时核心；null（非 Android）时控制器走本地 Timer 驱动。
+  final TimeCore? timeCore;
+
   const PlatformMonitoring({
     this.monitor,
     this.screenOnEvents,
     this.interventionBridge,
+    this.timeCore,
   });
 }
 
@@ -35,5 +39,6 @@ PlatformMonitoring createPlatformMonitoring() {
     monitor: monitor,
     screenOnEvents: ScreenEventStream().events(),
     interventionBridge: ChannelInterventionBridge(),
+    timeCore: ChannelTimeCore(),
   );
 }

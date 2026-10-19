@@ -114,20 +114,12 @@ Future<void> main() async {
     snoozeRecordRepo: snoozeRecordRepo,
     interventionBridge: platformMonitoring.interventionBridge,
     monitor: platformMonitoring.monitor,
+    timeCore: platformMonitoring.timeCore,
     screenOnEvents: platformMonitoring.screenOnEvents,
   );
 
-  // 恢复当日进度（被杀/划掉重启后计数计时延续）：在挂 UI 前完成，
-  // 避免首帧显示归零数据；若重启前正处于休息期，此处会同时恢复
-  // 休息状态并发起全屏干预。快照只是健壮性优化，恢复失败（如脏数据
-  // 解析异常）仅丢当日延续，绝不能阻断 UI。
-  try {
-    await controller.restoreFromSnapshot();
-  } catch (e) {
-    debugPrint('当日快照恢复失败，跳过: $e');
-  }
-
-  // Android：请求原生开始监控（真正启动前台服务与亮灭屏广播）。
+  // Android：先请求原生开始监控（真正启动前台服务）。原生权威计时核心
+  // （ScreenTimeCore）由服务驱动，先启动服务再恢复快照才能读到最新状态。
   // 捕获**所有**异常而非仅 MissingPluginException：划卡闹钟/开机广播在
   // 后台拉起进程时（无可见 Activity），Android 12+ 会拒绝启动前台服务
   // （ForegroundServiceStartNotAllowedException → PlatformException），
@@ -137,6 +129,25 @@ Future<void> main() async {
     await platformMonitoring.monitor?.startMonitoring();
   } catch (e) {
     debugPrint('启动原生监控失败（后台限制/通道未注册），跳过: $e');
+  }
+
+  // 恢复当日进度（被杀/划掉重启后计数计时延续）：在挂 UI 前完成，
+  // 避免首帧显示归零数据。原生权威模式下读取原生核心快照（并做升级迁移
+  // seed），本地模式下读 DB 快照；恢复失败仅丢当日延续，绝不能阻断 UI。
+  try {
+    await controller.restoreFromSnapshot();
+  } catch (e) {
+    debugPrint('当日快照恢复失败，跳过: $e');
+  }
+
+  // 把当前配置推送给原生权威计时核心（原生持久化，供后台重启后按此计时）。
+  final timeCore = platformMonitoring.timeCore;
+  if (timeCore != null) {
+    try {
+      await timeCore.configure(machine.settings);
+    } catch (e) {
+      debugPrint('推送原生计时核心配置失败，跳过: $e');
+    }
   }
 
   runApp(ScreenTimeManagerApp(controller: controller));

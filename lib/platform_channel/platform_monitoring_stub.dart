@@ -45,6 +45,9 @@ class PlatformMonitoring {
   /// 到点干预桥：Web 下返回空实现，所有调用静默 no-op。
   final InterventionBridge interventionBridge = const _NoopInterventionBridge();
 
+  /// 原生权威计时核心：Web 下为 null，控制器走本地 Timer 驱动。
+  final TimeCore? timeCore = null;
+
   /// 构造空接线。
   const PlatformMonitoring();
 }

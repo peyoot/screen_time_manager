@@ -227,9 +227,38 @@ class ScreenTimeMachine extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------------------------------------------------------------------
-  // 内部实现
-  // ---------------------------------------------------------------------
+  /// 用原生权威计时核心（Android `ScreenTimeCore`）的快照镜像状态。
+  ///
+  /// Android 上原生始终是唯一计时源，控制器每秒读取快照调用本方法镜像；
+  /// 桌面/Web/测试不调用（走本地 [tick]）。字段无变化时不发出通知，
+  /// 避免每秒无谓重建 UI。
+  /// - [resting] 且 [restEndsAt] 未过则恢复为休息中，否则按计时阶段。
+  void applyNativeSnapshot({
+    required Duration usedToday,
+    required Duration thresholdProgress,
+    required int exemptionsUsedToday,
+    required bool isScreenOn,
+    required bool resting,
+    DateTime? restEndsAt,
+  }) {
+    final now = _clock();
+    var state = ScreenTimeState.initial(
+      now: now,
+      quizInterval: _settings.quizInterval,
+      isScreenOn: isScreenOn,
+    ).copyWith(
+      dailyUsage: DailyUsage.today(now).addScreenTime(usedToday),
+      sinceLastGrant: thresholdProgress,
+      exemptionsUsedToday: exemptionsUsedToday,
+    );
+    if (resting && restEndsAt != null && restEndsAt.isAfter(now)) {
+      state = state.copyWith(phase: AppPhase.resting, restEndsAt: restEndsAt);
+    }
+    if (state == _state) return;
+    _state = state;
+    _lastTickAt = now;
+    notifyListeners();
+  }
 
   /// 根据 [now] 与距上次 tick 的增量 [delta] 推进状态。
   void _advance(DateTime now, Duration delta) {

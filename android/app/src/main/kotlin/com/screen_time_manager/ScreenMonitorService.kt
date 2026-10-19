@@ -59,6 +59,9 @@ class ScreenMonitorService : Service() {
         /** 非精确兜底闹钟的延迟（精确闹钟被拒/失效时仍有第二次拉起机会）。 */
         private const val RESTART_FALLBACK_DELAY_MS = 5000L
 
+        /** 权威计时核心的 tick 间隔（每秒推进一次亮屏累计与阈值判定）。 */
+        private const val CORE_TICK_MS = 1000L
+
         @Volatile
         var running: Boolean = false
             private set
@@ -110,11 +113,26 @@ class ScreenMonitorService : Service() {
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
+            val isOn = when (intent.action) {
                 Intent.ACTION_SCREEN_ON,
-                Intent.ACTION_USER_PRESENT -> ScreenEventBus.emitScreenOn(true)
-                Intent.ACTION_SCREEN_OFF -> ScreenEventBus.emitScreenOn(false)
+                Intent.ACTION_USER_PRESENT -> true
+                Intent.ACTION_SCREEN_OFF -> false
+                else -> return
             }
+            // 先喂权威计时核心（切换前收尾累计；可能因到点产生进入休息的转移），
+            // 再把事件推给 Dart（EventChannel）。
+            val effect = TimeCoreHost.core(context).setScreenState(isOn)
+            if (effect != CoreEffect.NONE) TimeCoreHost.applyEffect(effect)
+            ScreenEventBus.emitScreenOn(isOn)
+        }
+    }
+
+    /** 每秒推进权威计时核心；到点转移时执行全屏干预 / 屏幕固定副作用。 */
+    private val coreTicker = object : Runnable {
+        override fun run() {
+            val effect = TimeCoreHost.core(this@ScreenMonitorService).tick()
+            if (effect != CoreEffect.NONE) TimeCoreHost.applyEffect(effect)
+            mainHandler.postDelayed(this, CORE_TICK_MS)
         }
     }
 
@@ -157,10 +175,20 @@ class ScreenMonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         suppressAutoRestart = false
+        // 权威计时核心：对齐跨天状态并把计时起点重置到当前时刻
+        // （不累计进程死亡 / 深度睡眠期间的间隔，丢失窗口 ≤ 重启闹钟延迟）。
+        val core = TimeCoreHost.core(this)
+        core.prepareForTakeover()
+        // 重启前若仍在休息且截止未过，重新发起全屏干预把用户拉回休息页
+        // （进入休息的转移在进程存活时已执行过一次，此处负责恢复那次干预）。
+        if (core.snapshot().resting) {
+            TimeCoreHost.applyEffect(CoreEffect.ENTER_REST)
+        }
         createNotificationChannel()
         startAsForeground()
         registerScreenReceiver()
         registerVolumeObserver()
+        mainHandler.postDelayed(coreTicker, CORE_TICK_MS)
         running = true
     }
 
@@ -170,6 +198,7 @@ class ScreenMonitorService : Service() {
     override fun onBind(intent: Intent?): Nothing? = null
 
     override fun onDestroy() {
+        mainHandler.removeCallbacks(coreTicker)
         if (receiverRegistered) {
             unregisterReceiver(screenReceiver)
             receiverRegistered = false
@@ -257,6 +286,8 @@ class ScreenMonitorService : Service() {
         receiverRegistered = true
 
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        // 同步当前屏幕状态给权威计时核心（此刻 prepareForTakeover 已设起点，累计≈0）。
+        TimeCoreHost.core(this).setScreenState(powerManager.isInteractive)
         ScreenEventBus.emitScreenOn(powerManager.isInteractive)
     }
 

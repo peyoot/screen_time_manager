@@ -11,6 +11,8 @@ library;
 
 import 'package:flutter/services.dart';
 
+import '../models/app_settings.dart';
+
 /// 通道统一命名空间。
 const String kPlatformChannelNamespace = 'com.screen_time_manager/platform';
 
@@ -197,5 +199,162 @@ class ChannelInterventionBridge implements InterventionBridge {
   @override
   Future<bool> stopScreenPinning() async {
     return await _channel.invokeMethod<bool>('stopScreenPinning') ?? false;
+  }
+}
+
+// ---------------------------------------------------------------------
+// 原生权威计时核心
+// ---------------------------------------------------------------------
+
+/// 原生权威计时核心的对外快照。
+///
+/// 原生 `ScreenTimeCore` 始终是唯一计时源；Dart 每秒读取本快照镜像显示，
+/// 用户操作经 [TimeCore] 回写原生。
+class TimeCoreSnapshot {
+  /// 今日累计亮屏时长。
+  final Duration usedToday;
+
+  /// 自上次豁免通过 / 休息结束以来的阈值进度。
+  final Duration thresholdProgress;
+
+  /// 今日已用豁免次数（状态机口径）。
+  final int exemptionsUsedToday;
+
+  /// 是否处于强制休息阶段。
+  final bool resting;
+
+  /// 休息截止时刻；不在休息期时为 null。
+  final DateTime? restEndsAt;
+
+  /// 进行中休息的起点；不在休息期时为 null。
+  final DateTime? restStart;
+
+  /// 屏幕当前是否点亮。
+  final bool isScreenOn;
+
+  /// 今日触发休息次数（含进行中）。
+  final int restCount;
+
+  /// 今日**已完成**休息的实际时长（不含进行中）。
+  final Duration restCompleted;
+
+  /// 今日休息期豁免次数。
+  final int restExemptions;
+
+  /// 原生是否已有当日数据（升级迁移判定用）。
+  final bool hasDayData;
+
+  const TimeCoreSnapshot({
+    required this.usedToday,
+    required this.thresholdProgress,
+    required this.exemptionsUsedToday,
+    required this.resting,
+    required this.isScreenOn,
+    required this.restCount,
+    required this.restCompleted,
+    required this.restExemptions,
+    required this.hasDayData,
+    this.restEndsAt,
+    this.restStart,
+  });
+
+  /// 从通道返回的 Map 解析；毫秒为 0 的时刻字段映射为 null。
+  factory TimeCoreSnapshot.fromMap(Map<String, dynamic> map) {
+    int intOf(String key) => (map[key] as num?)?.toInt() ?? 0;
+    final restEndsAtMs = intOf('restEndsAtMs');
+    final restStartMs = intOf('restStartMs');
+    return TimeCoreSnapshot(
+      usedToday: Duration(seconds: intOf('screenTimeSec')),
+      thresholdProgress: Duration(seconds: intOf('thresholdSec')),
+      exemptionsUsedToday: intOf('exemptionsUsedToday'),
+      resting: map['resting'] == true,
+      restEndsAt: restEndsAtMs > 0
+          ? DateTime.fromMillisecondsSinceEpoch(restEndsAtMs)
+          : null,
+      restStart:
+          restStartMs > 0 ? DateTime.fromMillisecondsSinceEpoch(restStartMs) : null,
+      isScreenOn: map['isScreenOn'] == true,
+      restCount: intOf('restCount'),
+      restCompleted: Duration(seconds: intOf('restElapsedSec')),
+      restExemptions: intOf('restExemptions'),
+      hasDayData: map['hasDayData'] == true,
+    );
+  }
+}
+
+/// 权威计时核心抽象。
+///
+/// Android 走原生实现 [ChannelTimeCore]；桌面/Web/测试为 null，
+/// 控制器退化为本地 Timer 驱动状态机（现有行为不变）。
+abstract class TimeCore {
+  /// 读取当前权威快照。
+  Future<TimeCoreSnapshot> snapshot();
+
+  /// 推送配置（阈值 / 休息时长 / 每日豁免上限），原生持久化。
+  Future<void> configure(AppSettings settings);
+
+  /// 手动触发休息（计时页"立即休息"）。
+  Future<void> manualRest();
+
+  /// 休息期答题豁免通过：消耗一次额度并结束休息。
+  Future<void> consumeExemption();
+
+  /// 升级迁移：原生无当日数据时用旧快照初始化，返回是否已写入。
+  Future<bool> seedFromSnapshot({
+    required Duration usedToday,
+    required Duration thresholdProgress,
+    required int exemptionsUsedToday,
+    required bool resting,
+    DateTime? restEndsAt,
+  });
+}
+
+/// 基于 MethodChannel `core` 的生产实现。
+class ChannelTimeCore implements TimeCore {
+  ChannelTimeCore({MethodChannel? channel})
+      : _channel =
+            channel ?? const MethodChannel('$kPlatformChannelNamespace/core');
+
+  final MethodChannel _channel;
+
+  @override
+  Future<TimeCoreSnapshot> snapshot() async {
+    final raw = await _channel.invokeMapMethod<String, dynamic>('snapshot');
+    return TimeCoreSnapshot.fromMap(raw ?? const <String, dynamic>{});
+  }
+
+  @override
+  Future<void> configure(AppSettings settings) {
+    return _channel.invokeMethod<void>('configure', <String, dynamic>{
+      'quizSeconds': settings.quizInterval.inSeconds,
+      'restSeconds': settings.restDuration.inSeconds,
+      'dailyLimit': settings.dailyExemptionLimit,
+    });
+  }
+
+  @override
+  Future<void> manualRest() => _channel.invokeMethod<void>('manualRest');
+
+  @override
+  Future<void> consumeExemption() =>
+      _channel.invokeMethod<void>('consumeExemption');
+
+  @override
+  Future<bool> seedFromSnapshot({
+    required Duration usedToday,
+    required Duration thresholdProgress,
+    required int exemptionsUsedToday,
+    required bool resting,
+    DateTime? restEndsAt,
+  }) async {
+    return await _channel.invokeMethod<bool>('seedFromSnapshot',
+            <String, dynamic>{
+          'usedTodaySec': usedToday.inSeconds,
+          'thresholdSec': thresholdProgress.inSeconds,
+          'exemptionsUsed': exemptionsUsedToday,
+          'resting': resting,
+          'restEndsAtMs': restEndsAt?.millisecondsSinceEpoch ?? 0,
+        }) ??
+        false;
   }
 }

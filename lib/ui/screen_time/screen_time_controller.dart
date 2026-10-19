@@ -64,6 +64,15 @@ class ScreenTimeController extends ChangeNotifier {
   /// 平台亮灭屏事件订阅（Android 前台服务经 EventChannel 推送）。
   StreamSubscription<bool>? _screenEventsSub;
 
+  /// 原生权威计时核心（Android）；null 时控制器走本地 Timer 驱动状态机。
+  ///
+  /// 非 null 时：每秒读取原生快照镜像展示、用户操作回写原生，并停止本地
+  /// tick/统计/干预（原生 `ScreenTimeCore` 是唯一计时源）。
+  final TimeCore? timeCore;
+
+  /// 原生核心快照同步的重入保护（避免慢快照堆叠）。
+  bool _syncing = false;
+
   final Uuid _uuid = const Uuid();
   final DateTime Function() _clock;
 
@@ -132,6 +141,7 @@ class ScreenTimeController extends ChangeNotifier {
     this.snoozeRecordRepo,
     this.interventionBridge,
     this.monitor,
+    this.timeCore,
     Stream<bool>? screenOnEvents,
     DateTime Function()? clock,
     bool autoStart = true,
@@ -147,11 +157,7 @@ class ScreenTimeController extends ChangeNotifier {
     _screenEventsSub =
         screenOnEvents?.listen((isOn) => reportScreenOn(isOn));
     if (autoStart) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        _rolloverRestStatsIfNeeded();
-        machine.tick();
-        _flushDaySnapshot();
-      });
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     }
   }
 
@@ -163,6 +169,11 @@ class ScreenTimeController extends ChangeNotifier {
   /// 把用户拉回休息页（随后此处用快照值对齐计数，避免重复统计）。
   /// 应在挂 UI 前 await，避免首帧显示归零数据。
   Future<void> restoreFromSnapshot() async {
+    final core = timeCore;
+    if (core != null) {
+      await _restoreFromCore(core);
+      return;
+    }
     final repo = daySnapshotRepo;
     if (repo == null) return;
     final now = _clock();
@@ -183,9 +194,40 @@ class ScreenTimeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 原生权威模式下恢复当日状态：优先读原生快照；原生尚未有当日数据时
+  /// 用本地 DB 快照 seed（升级迁移，避免首次切到原生模式时当日数据归零）。
+  Future<void> _restoreFromCore(TimeCore core) async {
+    try {
+      var snap = await core.snapshot();
+      if (!snap.hasDayData) {
+        final repo = daySnapshotRepo;
+        if (repo != null) {
+          final now = _clock();
+          final local = await repo.loadForDay(now);
+          if (local != null && local.isForDay(now)) {
+            await core.seedFromSnapshot(
+              usedToday: local.screenTime,
+              thresholdProgress: local.thresholdProgress,
+              exemptionsUsedToday: local.exemptionsUsedToday,
+              resting:
+                  local.restEndsAt != null && local.restEndsAt!.isAfter(now),
+              restEndsAt: local.restEndsAt,
+            );
+            snap = await core.snapshot();
+          }
+        }
+      }
+      _applySnapshot(snap);
+    } catch (e) {
+      debugPrint('原生计时核心快照恢复失败，跳过: $e');
+    }
+  }
+
   /// 把当日运行状态写入快照表（[force] 为 true 时跳过节流）。
   /// 快照只作健壮性优化，写失败静默，不阻塞主流程。
   void _flushDaySnapshot({bool force = false}) {
+    // 原生权威模式下当日状态由原生核心持久化，Dart 侧无需再写快照。
+    if (timeCore != null) return;
     final repo = daySnapshotRepo;
     if (repo == null) return;
     final now = _clock();
@@ -204,6 +246,77 @@ class ScreenTimeController extends ChangeNotifier {
           restEndsAt: state.restEndsAt,
         ))
         .catchError((_) {});
+  }
+
+  /// 每秒 tick：原生模式读原生快照镜像；否则本地推进状态机。
+  void _onTick() {
+    final core = timeCore;
+    if (core == null) {
+      _rolloverRestStatsIfNeeded();
+      machine.tick();
+      _flushDaySnapshot();
+      return;
+    }
+    if (_syncing) return;
+    _syncing = true;
+    unawaited(_syncFromCore(core));
+  }
+
+  /// 读取一次原生权威快照并镜像到状态机与当日休息统计。
+  Future<void> _syncFromCore(TimeCore core) async {
+    try {
+      _applySnapshot(await core.snapshot());
+    } catch (_) {
+      // 通道异常：跳过本次同步，下一轮重试。
+    } finally {
+      _syncing = false;
+    }
+  }
+
+  /// 把原生快照镜像到状态机（触发既有阶段钩子）并覆盖当日休息统计。
+  ///
+  /// 原生是当日休息统计的权威源，故直接覆盖而非累加；[snap] 的
+  /// `restCompleted` 仅含已完成休息，进行中的部分由 [todayRestDuration]
+  /// 用 `_restStart` 实时补上。
+  void _applySnapshot(TimeCoreSnapshot snap) {
+    machine.applyNativeSnapshot(
+      usedToday: snap.usedToday,
+      thresholdProgress: snap.thresholdProgress,
+      exemptionsUsedToday: snap.exemptionsUsedToday,
+      isScreenOn: snap.isScreenOn,
+      resting: snap.resting,
+      restEndsAt: snap.restEndsAt,
+    );
+    _todayRestCount = snap.restCount;
+    _todayRestExemptions = snap.restExemptions;
+    _todayRestElapsed = snap.restCompleted;
+    if (snap.resting) {
+      _restStart = snap.restStart;
+      _restPlanned = machine.settings.restDuration;
+    } else {
+      _restStart = null;
+      _restPlanned = null;
+    }
+  }
+
+  /// 手动休息（原生模式）：转发原生并立即同步，避免等待下一个 tick。
+  Future<void> _manualRestViaCore(TimeCore core) async {
+    try {
+      await core.manualRest();
+      _applySnapshot(await core.snapshot());
+    } catch (_) {
+      machine.restNow();
+    }
+  }
+
+  /// 休息期豁免通过（原生模式）：转发原生并立即同步。
+  Future<void> _consumeExemptionViaCore(TimeCore core) async {
+    try {
+      await core.consumeExemption();
+      _applySnapshot(await core.snapshot());
+    } catch (_) {
+      machine.endRestEarly();
+    }
   }
 
   AppPhase get phase => machine.state.phase;
@@ -290,6 +403,8 @@ class ScreenTimeController extends ChangeNotifier {
   /// 状态机阶段变化时的回调：进入 quiz 时抽题，离开时重置答题 UI 状态。
   /// 同时记录休息会话（rest_session）的起止。
   void _onMachinePhaseChange() {
+    // 原生权威模式：干预与当日休息统计由原生核心负责，Dart 只做会话落库。
+    final native = timeCore != null;
     final phase = machine.state.phase;
     final previousPhase = _lastPhase;
     // 离开 resting 阶段：落库一条休息会话。
@@ -297,33 +412,37 @@ class ScreenTimeController extends ChangeNotifier {
       _flushRestSession(naturalCompletion: !_restEndedEarly);
       _restEndedEarly = false;
     }
-    // 进入 resting 阶段：记录起点与计划时长，当日触发次数 +1。
+    // 进入 resting 阶段：记录起点与计划时长（供会话落库）；本地模式下
+    // 额外累计当日次数。
     if (phase == AppPhase.resting && previousPhase != AppPhase.resting) {
-      _rolloverRestStatsIfNeeded();
-      _todayRestCount++;
+      if (!native) {
+        _rolloverRestStatsIfNeeded();
+        _todayRestCount++;
+      }
       _restStart = _clock();
       _restPlanned = machine.settings.restDuration;
     }
     _lastPhase = phase;
 
-    // 到点干预：进入答题/休息时请求原生把界面拉到前台；
-    // 从这两个阶段回到计时时撤销干预。原生侧自行判断 App 是否已在前台。
-    final bridge = interventionBridge;
-    if (phase == AppPhase.quiz && previousPhase != AppPhase.quiz) {
-      unawaited(bridge?.request(InterventionPhase.quiz));
-    } else if (phase == AppPhase.resting &&
-        previousPhase != AppPhase.resting) {
-      unawaited(bridge?.request(InterventionPhase.resting));
-      unawaited(bridge?.startScreenPinning());
-    } else if (phase == AppPhase.tracking) {
-      if (previousPhase == AppPhase.quiz) {
-        // 答题页本身不锁定屏幕，只需撤销干预通知。
-        unawaited(bridge?.dismiss());
-      } else if (previousPhase == AppPhase.resting) {
-        // 休息结束（自然完成或豁免通过）：撤销干预并退出屏幕固定，
-        // 之后恢复自由切换应用。
-        unawaited(bridge?.dismiss());
-        unawaited(bridge?.stopScreenPinning());
+    // 原生权威模式下改由 TimeCoreHost.applyEffect 负责，Dart 不再重复请求。
+    if (!native) {
+      final bridge = interventionBridge;
+      if (phase == AppPhase.quiz && previousPhase != AppPhase.quiz) {
+        unawaited(bridge?.request(InterventionPhase.quiz));
+      } else if (phase == AppPhase.resting &&
+          previousPhase != AppPhase.resting) {
+        unawaited(bridge?.request(InterventionPhase.resting));
+        unawaited(bridge?.startScreenPinning());
+      } else if (phase == AppPhase.tracking) {
+        if (previousPhase == AppPhase.quiz) {
+          // 答题页本身不锁定屏幕，只需撤销干预通知。
+          unawaited(bridge?.dismiss());
+        } else if (previousPhase == AppPhase.resting) {
+          // 休息结束（自然完成或豁免通过）：撤销干预并退出屏幕固定，
+          // 之后恢复自由切换应用。
+          unawaited(bridge?.dismiss());
+          unawaited(bridge?.stopScreenPinning());
+        }
       }
     }
 
@@ -349,8 +468,10 @@ class ScreenTimeController extends ChangeNotifier {
       restQuizFailed = false;
     }
     notifyListeners();
-    // 阶段变化（尤其进入/离开休息）立即固化快照，减小被杀丢失窗口。
-    _flushDaySnapshot(force: true);
+    if (!native) {
+      // 阶段变化（尤其进入/离开休息）立即固化快照，减小被杀丢失窗口。
+      _flushDaySnapshot(force: true);
+    }
   }
 
   /// 把已结束的休息会话写入 DB（仅 [restSessionRepo] 存在时），
@@ -364,11 +485,16 @@ class ScreenTimeController extends ChangeNotifier {
       return;
     }
     // 跨天处理可能把起点钳到今日零点，actual 与 DB 记录都只计新一天部分。
-    _rolloverRestStatsIfNeeded();
+    // 原生权威模式下当日休息统计由原生维护，Dart 不再本地累计。
+    if (timeCore == null) {
+      _rolloverRestStatsIfNeeded();
+    }
     final start = _restStart ?? startBeforeRollover;
     final end = _clock();
     final actual = end.difference(start);
-    _todayRestElapsed += actual;
+    if (timeCore == null) {
+      _todayRestElapsed += actual;
+    }
     _restStart = null;
     _restPlanned = null;
 
@@ -411,9 +537,13 @@ class ScreenTimeController extends ChangeNotifier {
 
   /// 主计时页"手动触发休息"。
   void manualRest() {
-    if (phase == AppPhase.tracking) {
+    if (phase != AppPhase.tracking) return;
+    final core = timeCore;
+    if (core == null) {
       machine.restNow();
+      return;
     }
+    unawaited(_manualRestViaCore(core));
   }
 
   /// 退出前台到后台继续运行（不销毁进程，监控与计时不受影响）。
@@ -440,11 +570,29 @@ class ScreenTimeController extends ChangeNotifier {
       ),
     );
     appSettingsRepo?.upsert(machine.settings).catchError((_) {});
+    // 同步给原生权威计时核心（后台重启后按新配置生效）。
+    final core = timeCore;
+    if (core != null) {
+      unawaited(core.configure(machine.settings).catchError((_) {}));
+    }
   }
 
   /// 平台层上报亮灭屏。结束当前亮屏会话并落库（灭屏时），
   /// 亮屏时开启新会话。无 [screenSessionRepo] 时仅转发给状态机。
   void reportScreenOn(bool isOn) {
+    if (timeCore != null) {
+      // 原生权威模式：屏幕状态由原生核心维护，此处仅记录屏幕会话边界。
+      if (isOn) {
+        _screenSessionStart = _clock();
+        _currentScreenSessionId = _uuid.v4();
+        _screenExemptions = 0;
+        _screenQuizCorrect = 0;
+        _screenQuizWrong = 0;
+      } else {
+        _flushScreenSession();
+      }
+      return;
+    }
     if (isOn) {
       machine.setScreenOn(true);
       _screenSessionStart = _clock();
@@ -522,8 +670,15 @@ class ScreenTimeController extends ChangeNotifier {
       restQuizQuestion = null;
       restQuizFailed = false;
       _restEndedEarly = true;
-      _todayRestExemptions++;
-      machine.endRestEarly(); // 消耗额度并触发阶段变化，页面自动切回计时。
+      final core = timeCore;
+      if (core == null) {
+        _todayRestExemptions++;
+        // 消耗额度并触发阶段变化，页面自动切回计时。
+        machine.endRestEarly();
+      } else {
+        // 原生权威模式：转发原生消耗额度并结束休息（统计由原生维护）。
+        unawaited(_consumeExemptionViaCore(core));
+      }
       return true;
     }
     _recordSnooze(

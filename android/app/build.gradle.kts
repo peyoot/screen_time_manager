@@ -47,3 +47,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // 权威计时核心（ScreenTimeCore）的 JVM 单元测试依赖。
+    testImplementation("junit:junit:4.13.2")
+}
