@@ -144,4 +144,49 @@ void main() {
     await repo.flush();
     expect((await repo.loadOrInit()).restTimerRefreshMs, 250);
   });
+
+  test('V4 旧库打开后自动迁移出 rest_enabled 列', () async {
+    // 手工构造 V4 结构的旧库（含一行 app_settings），经 openAppDatabase
+    // 升级到 V5 后新增列应带默认值 1（启用）。
+    final dir = await Directory.systemTemp.createTemp('stm_v4_');
+    final oldPath = p.join(dir.path, 'old.db');
+    final old = await openDatabase(
+      oldPath,
+      version: 4,
+      onCreate: (db, _) async {
+        await applySchemaV1(db);
+        await applySchemaV2(db);
+        await applySchemaV3(db);
+        await applySchemaV4(db);
+        await db.insert('app_settings', {
+          'id': 1,
+          'quiz_interval_seconds': 900,
+          'questions_per_quiz': 1,
+          'required_correct_count': 1,
+          'rest_duration_seconds': 600,
+          'daily_exemption_limit': 2,
+          'rest_timer_refresh_ms': 33,
+          'created_at': '2026-10-17T00:00:00.000Z',
+          'updated_at': '2026-10-17T00:00:00.000Z',
+          'deleted': 0,
+        });
+      },
+    );
+    await old.close();
+
+    final upgraded = await openAppDatabase(dbPath: oldPath);
+    // 迁移列存在且默认 1（启用），既有 rest_timer_refresh_ms 值保留。
+    final rows = await upgraded.query('app_settings');
+    expect(rows.single['rest_enabled'], 1);
+    expect(rows.single['rest_timer_refresh_ms'], 33);
+    // repo 读取映射为默认启用；关闭开关可正常往返。
+    final repo = AppSettingsRepository(upgraded);
+    final loaded = await repo.loadOrInit();
+    expect(loaded.restEnabled, isTrue);
+    await repo.upsert(
+      AppSettings.defaults.copyWith(restEnabled: false),
+    );
+    await repo.flush();
+    expect((await repo.loadOrInit()).restEnabled, isFalse);
+  });
 }

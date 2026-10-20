@@ -314,4 +314,78 @@ class ScreenTimeCoreTest {
         val revived = ScreenTimeCore(clock, store)
         assertEquals(5L, revived.snapshot().awaySec)
     }
+
+    @Test
+    fun restDisabledNeverEntersRestButStillAccumulatesScreenTime() {
+        val clock = FakeClock()
+        val core = ScreenTimeCore(clock, MemoryStore())
+        core.configure(60, 30, 2, restEnabled = false)
+        core.prepareForTakeover()
+
+        core.setScreenState(true)
+        clock.rt += 120_000 // 远超 60s 阈值
+
+        // 多次 tick 均不触发休息；亮屏时长照常累计，阈值进度冻结为 0。
+        assertEquals(CoreEffect.NONE, core.tick())
+        assertEquals(CoreEffect.NONE, core.tick())
+        val snap = core.snapshot()
+        assertFalse(snap.resting)
+        assertEquals(120L, snap.screenTimeSec)
+        assertEquals(0L, snap.thresholdSec)
+    }
+
+    @Test
+    fun manualRestRejectedWhenRestDisabled() {
+        val clock = FakeClock()
+        val core = ScreenTimeCore(clock, MemoryStore())
+        core.configure(60, 30, 2, restEnabled = false)
+        core.prepareForTakeover()
+
+        assertEquals(CoreEffect.NONE, core.manualRest())
+        assertFalse(core.snapshot().resting)
+
+        // 重新启用后手动休息恢复可用。
+        core.configure(60, 30, 2, restEnabled = true)
+        assertEquals(CoreEffect.ENTER_REST, core.manualRest())
+        assertTrue(core.snapshot().resting)
+    }
+
+    @Test
+    fun restEnabledFlagPersistsAcrossRecreation() {
+        val clock = FakeClock()
+        val store = MemoryStore()
+        val core = ScreenTimeCore(clock, store)
+        core.configure(60, 30, 2, restEnabled = false)
+
+        // 模拟进程重启：重新构造的核心仍为关闭状态，阈值不触发。
+        val revived = ScreenTimeCore(clock, store)
+        revived.prepareForTakeover()
+        revived.setScreenState(true)
+        clock.rt += 120_000
+        assertEquals(CoreEffect.NONE, revived.tick())
+        assertFalse(revived.snapshot().resting)
+        assertEquals(120L, revived.snapshot().screenTimeSec)
+    }
+
+    @Test
+    fun thresholdFrozenWhileDisabledResumesAfterReEnable() {
+        val clock = FakeClock()
+        val core = newCore(clock, MemoryStore())
+
+        // 先累计 40s 阈值进度，然后关闭开关推进 120s（进度冻结）。
+        core.setScreenState(true)
+        clock.rt += 40_000
+        assertEquals(CoreEffect.NONE, core.tick())
+        core.configure(60, 30, 2, restEnabled = false)
+        clock.rt += 120_000
+        assertEquals(CoreEffect.NONE, core.tick())
+        assertEquals(40L, core.snapshot().thresholdSec)
+        assertEquals(160L, core.snapshot().screenTimeSec)
+
+        // 重新启用：从 40s 继续，再累计 20s 达到阈值 → 进入休息。
+        core.configure(60, 30, 2, restEnabled = true)
+        clock.rt += 20_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+        assertTrue(core.snapshot().resting)
+    }
 }

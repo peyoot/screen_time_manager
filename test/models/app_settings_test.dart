@@ -23,6 +23,19 @@ void main() {
       expect(decoded, s);
     });
 
+    test('restEnabled 默认启用，可序列化往返，缺失字段回退为 true', () {
+      expect(AppSettings.defaults.restEnabled, isTrue);
+
+      final disabled = AppSettings.defaults.copyWith(restEnabled: false);
+      final decoded = AppSettings.fromJson(disabled.toJson());
+      expect(decoded.restEnabled, isFalse);
+      expect(decoded, disabled);
+
+      // 旧版 JSON 无该字段：按默认启用处理。
+      final legacy = AppSettings.defaults.toJson()..remove('restEnabled');
+      expect(AppSettings.fromJson(legacy).restEnabled, isTrue);
+    });
+
     test('字段类型错误抛出 FormatException', () {
       expect(
         () => AppSettings.fromJson({

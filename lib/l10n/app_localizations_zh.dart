@@ -44,6 +44,9 @@ class SZh extends S {
   String get homeManualRest => '手动触发休息';
 
   @override
+  String get homeRestDisabled => '强制休息未启用';
+
+  @override
   String get adminPasswordTitle => '管理密码';
 
   @override
@@ -183,6 +186,12 @@ class SZh extends S {
 
   @override
   String get settingsRestMinutes => '强制休息时长';
+
+  @override
+  String get settingsRestEnabled => '强制休息';
+
+  @override
+  String get settingsRestEnabledHint => '关闭后只统计亮屏时长，不再触发或手动进入休息';
 
   @override
   String get settingsRestTimerRefresh => '休息秒表刷新间隔';

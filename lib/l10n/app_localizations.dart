@@ -149,6 +149,12 @@ abstract class S {
   /// **'手动触发休息'**
   String get homeManualRest;
 
+  /// No description provided for @homeRestDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'强制休息未启用'**
+  String get homeRestDisabled;
+
   /// No description provided for @adminPasswordTitle.
   ///
   /// In zh, this message translates to:
@@ -418,6 +424,18 @@ abstract class S {
   /// In zh, this message translates to:
   /// **'强制休息时长'**
   String get settingsRestMinutes;
+
+  /// No description provided for @settingsRestEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'强制休息'**
+  String get settingsRestEnabled;
+
+  /// No description provided for @settingsRestEnabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭后只统计亮屏时长，不再触发或手动进入休息'**
+  String get settingsRestEnabledHint;
 
   /// No description provided for @settingsRestTimerRefresh.
   ///

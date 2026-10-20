@@ -193,7 +193,11 @@ class _TimingViewState extends State<_TimingView>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 32),
-                    _TimeCard(state: state),
+                    _TimeCard(
+                      state: state,
+                      restEnabled:
+                          widget.controller.machine.settings.restEnabled,
+                    ),
                     const SizedBox(height: 24),
                     _StatRow(
                       remainingExemptions: widget.controller.remainingExemptions,
@@ -202,11 +206,13 @@ class _TimingViewState extends State<_TimingView>
                       away: widget.controller.todayAwayDuration,
                     ),
                     const Spacer(),
-                    FilledButton.icon(
-                      onPressed: widget.controller.manualRest,
-                      icon: const Icon(Icons.bedtime_outlined),
-                      label: Text(l10n.homeManualRest),
-                    ),
+                    // 强制休息关闭时不提供手动休息入口（无任何休息/锁屏行为）。
+                    if (widget.controller.machine.settings.restEnabled)
+                      FilledButton.icon(
+                        onPressed: widget.controller.manualRest,
+                        icon: const Icon(Icons.bedtime_outlined),
+                        label: Text(l10n.homeManualRest),
+                      ),
                     const SizedBox(height: 12),
                     // 显眼的"退到后台"按钮：点击立即退后台，显示倒计时，
                     // 15 秒无操作自动退后台。
@@ -285,7 +291,10 @@ class _TimingViewState extends State<_TimingView>
 class _TimeCard extends StatelessWidget {
   final ScreenTimeState state;
 
-  const _TimeCard({required this.state});
+  /// 强制休息是否启用：关闭时第二行显示"强制休息未启用"。
+  final bool restEnabled;
+
+  const _TimeCard({required this.state, required this.restEnabled});
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +317,10 @@ class _TimeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.homeNextQuizIn(_formatDuration(state.remainingToQuiz)),
+              restEnabled
+                  ? l10n.homeNextQuizIn(
+                      _formatDuration(state.remainingToQuiz))
+                  : l10n.homeRestDisabled,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -429,6 +441,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   late final TextEditingController _quizController;
   late final TextEditingController _restController;
   late int _refreshMs;
+  late bool _restEnabled;
   String? _error;
 
   @override
@@ -440,6 +453,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
     _restController =
         TextEditingController(text: '${settings.restDuration.inMinutes}');
     _refreshMs = settings.restTimerRefreshMs;
+    _restEnabled = settings.restEnabled;
   }
 
   @override
@@ -463,6 +477,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
       quizMinutes: quizMinutes,
       restMinutes: restMinutes,
       restTimerRefreshMs: _refreshMs,
+      restEnabled: _restEnabled,
     );
     Navigator.of(context).pop();
   }
@@ -489,6 +504,16 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 强制休息总开关：关闭后只统计亮屏时长，
+            // 到点不触发休息、主页隐藏手动休息入口。
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.settingsRestEnabled),
+              subtitle: Text(l10n.settingsRestEnabledHint),
+              value: _restEnabled,
+              onChanged: (value) => setState(() => _restEnabled = value),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _quizController,
               keyboardType: TextInputType.number,

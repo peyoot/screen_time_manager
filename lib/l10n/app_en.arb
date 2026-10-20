@@ -23,6 +23,7 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "Take a break now",
+  "homeRestDisabled": "Forced rest disabled",
   "adminPasswordTitle": "Admin password",
   "adminPasswordStatusSet": "set",
   "adminPasswordStatusNotSet": "not set",
@@ -70,6 +71,8 @@
   "settingsTitle": "Timing settings",
   "settingsQuizMinutes": "Screen time before break",
   "settingsRestMinutes": "Mandatory break duration",
+  "settingsRestEnabled": "Forced rest",
+  "settingsRestEnabledHint": "When off, only screen time is tracked; no forced or manual rest",
   "settingsRestTimerRefresh": "Rest stopwatch refresh interval",
   "settingsRestTimerRefreshHint": "Larger values save power; digits update less smoothly",
   "settingsMinutesUnit": "min",

@@ -572,9 +572,10 @@ class ScreenTimeController extends ChangeNotifier {
     }
   }
 
-  /// 主计时页"手动触发休息"。
+  /// 主计时页"手动触发休息"。强制休息功能关闭时静默忽略（UI 已隐藏入口）。
   void manualRest() {
     if (phase != AppPhase.tracking) return;
+    if (!machine.settings.restEnabled) return;
     final core = timeCore;
     if (core == null) {
       machine.restNow();
@@ -596,7 +597,7 @@ class ScreenTimeController extends ChangeNotifier {
   }
 
   /// 更新计时配置：亮屏触发时长与强制休息时长（单位：分钟），
-  /// 以及可选的休息页秒表刷新间隔（毫秒）。
+  /// 可选的休息页秒表刷新间隔（毫秒）与强制休息总开关。
   ///
   /// 非法取值（<= 0）抛出 [ArgumentError]（由 [AppSettings] 构造函数校验）。
   /// 若缩短亮屏时长且既有进度已达到新阈值，状态机会立即触发答题/休息。
@@ -604,12 +605,14 @@ class ScreenTimeController extends ChangeNotifier {
     required int quizMinutes,
     required int restMinutes,
     int? restTimerRefreshMs,
+    bool? restEnabled,
   }) {
     machine.updateSettings(
       machine.settings.copyWith(
         quizInterval: Duration(minutes: quizMinutes),
         restDuration: Duration(minutes: restMinutes),
         restTimerRefreshMs: restTimerRefreshMs,
+        restEnabled: restEnabled,
       ),
     );
     appSettingsRepo?.upsert(machine.settings).catchError((_) {});

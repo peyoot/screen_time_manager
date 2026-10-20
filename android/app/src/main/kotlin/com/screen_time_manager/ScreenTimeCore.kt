@@ -38,6 +38,7 @@ class ScreenTimeCore(
         private const val KEY_CONFIG_QUIZ_SEC = "config_quiz_sec"
         private const val KEY_CONFIG_REST_SEC = "config_rest_sec"
         private const val KEY_CONFIG_DAILY_LIMIT = "config_daily_limit"
+        private const val KEY_CONFIG_REST_ENABLED = "config_rest_enabled"
         private const val KEY_IS_SCREEN_ON = "is_screen_on"
         private const val KEY_LAST_UPDATE_RT = "last_update_realtime_ms"
         private const val KEY_AWAY_MS = "away_ms"
@@ -95,6 +96,9 @@ class ScreenTimeCore(
     private var configRestSec: Long
     private var configDailyLimit: Int
 
+    /** 强制休息功能总开关：关闭时只累计亮屏时长，阈值进度冻结，永不触发休息。 */
+    private var configRestEnabled: Boolean
+
     private var isScreenOn: Boolean
     private var lastUpdateRtMs: Long
     private var day: String
@@ -122,6 +126,7 @@ class ScreenTimeCore(
         configQuizSec = store.getLong(KEY_CONFIG_QUIZ_SEC, DEFAULT_QUIZ_SEC)
         configRestSec = store.getLong(KEY_CONFIG_REST_SEC, DEFAULT_REST_SEC)
         configDailyLimit = store.getInt(KEY_CONFIG_DAILY_LIMIT, DEFAULT_DAILY_LIMIT)
+        configRestEnabled = store.getBoolean(KEY_CONFIG_REST_ENABLED, true)
         isScreenOn = store.getBoolean(KEY_IS_SCREEN_ON, false)
         lastUpdateRtMs = store.getLong(KEY_LAST_UPDATE_RT, 0)
     }
@@ -137,10 +142,11 @@ class ScreenTimeCore(
     }
 
     /** 更新配置（由 Dart 推送 settings，原生持久化供后台重启复用）。 */
-    fun configure(quizSec: Long, restSec: Long, dailyLimit: Int) {
+    fun configure(quizSec: Long, restSec: Long, dailyLimit: Int, restEnabled: Boolean = true) {
         configQuizSec = if (quizSec > 0) quizSec else DEFAULT_QUIZ_SEC
         configRestSec = if (restSec > 0) restSec else DEFAULT_REST_SEC
         configDailyLimit = if (dailyLimit >= 0) dailyLimit else DEFAULT_DAILY_LIMIT
+        configRestEnabled = restEnabled
         persist(force = true)
     }
 
@@ -181,10 +187,10 @@ class ScreenTimeCore(
         return effect
     }
 
-    /** 手动触发休息（UI 计时页"立即休息"）。 */
+    /** 手动触发休息（UI 计时页"立即休息"）；强制休息关闭时拒绝。 */
     fun manualRest(): CoreEffect {
         rolloverDayIfNeeded()
-        if (resting) return CoreEffect.NONE
+        if (resting || !configRestEnabled) return CoreEffect.NONE
         enterRest(clock.wallMs())
         lastUpdateRtMs = clock.realtimeMs()
         persist(force = true)
@@ -258,7 +264,10 @@ class ScreenTimeCore(
     // 内部实现
     // -----------------------------------------------------------------
 
-    /** 亮屏累计 + 阈值判定。仅在计时阶段且屏幕点亮时生效。 */
+    /** 亮屏累计 + 阈值判定。仅在计时阶段且屏幕点亮时生效。
+     *
+     * 强制休息关闭（[configRestEnabled] = false）时只累计当日亮屏时长，
+     * 阈值进度冻结（重新启用后从冻结值继续），永不进入休息。 */
     private fun accumulate(): CoreEffect {
         if (resting || !isScreenOn) return CoreEffect.NONE
         var delta = clock.realtimeMs() - lastUpdateRtMs
@@ -266,6 +275,7 @@ class ScreenTimeCore(
         if (delta > MAX_DELTA_MS) delta = MAX_DELTA_MS
         if (delta <= 0) return CoreEffect.NONE
         screenMs += delta
+        if (!configRestEnabled) return CoreEffect.NONE
         thresholdMs += delta
         if (thresholdMs >= configQuizSec * 1000) {
             enterRest(clock.wallMs())
@@ -361,6 +371,7 @@ class ScreenTimeCore(
                 KEY_CONFIG_QUIZ_SEC to configQuizSec,
                 KEY_CONFIG_REST_SEC to configRestSec,
                 KEY_CONFIG_DAILY_LIMIT to configDailyLimit,
+                KEY_CONFIG_REST_ENABLED to configRestEnabled,
                 KEY_IS_SCREEN_ON to isScreenOn,
                 KEY_LAST_UPDATE_RT to lastUpdateRtMs,
             ),

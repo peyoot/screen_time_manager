@@ -34,6 +34,7 @@ Future<Database> openAppDatabase({String? dbPath}) async {
       await applySchemaV2(db);
       await applySchemaV3(db);
       await applySchemaV4(db);
+      await applySchemaV5(db);
     },
     onUpgrade: (db, oldVersion, newVersion) async {
       // 阶梯式迁移：每个版本只补自己的增量语句。
@@ -45,6 +46,9 @@ Future<Database> openAppDatabase({String? dbPath}) async {
       }
       if (oldVersion < 4) {
         await applySchemaV4(db);
+      }
+      if (oldVersion < 5) {
+        await applySchemaV5(db);
       }
     },
   );

@@ -23,6 +23,7 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "지금 휴식하기",
+  "homeRestDisabled": "강제 휴식이 비활성화됨",
   "adminPasswordTitle": "관리자 비밀번호",
   "adminPasswordStatusSet": "설정됨",
   "adminPasswordStatusNotSet": "설정 안 됨",
@@ -70,6 +71,8 @@
   "settingsTitle": "타이밍 설정",
   "settingsQuizMinutes": "휴식 전 화면 켜짐 시간",
   "settingsRestMinutes": "강제 휴식 시간",
+  "settingsRestEnabled": "강제 휴식",
+  "settingsRestEnabledHint": "끄면 화면 사용 시간만 기록하고 휴식이 시작되지 않습니다",
   "settingsRestTimerRefresh": "휴식 스톱워치 새로고침 간격",
   "settingsRestTimerRefreshHint": "값이 클수록 전력을 절약하지만 숫자가 뚝뚝 끊겨 보입니다",
   "settingsMinutesUnit": "분",

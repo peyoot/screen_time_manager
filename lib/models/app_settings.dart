@@ -38,6 +38,13 @@ class AppSettings {
   /// 代价是毫秒数字跳动更明显。
   final int restTimerRefreshMs;
 
+  /// 是否启用强制休息功能（默认启用）。
+  ///
+  /// 关闭后：亮屏时长照常累计，但达到阈值不再进入休息，
+  /// 主页显示"强制休息未启用"且隐藏手动休息按钮，
+  /// 不会发生任何强制或手动的休息/锁屏行为。
+  final bool restEnabled;
+
   /// 创建配置并立即校验全部不变量，非法取值抛出 [ArgumentError]。
   AppSettings({
     required this.quizInterval,
@@ -47,6 +54,7 @@ class AppSettings {
     this.dailyExemptionLimit = 2,
     this.adminPasswordHash,
     this.restTimerRefreshMs = 16,
+    this.restEnabled = true,
   }) {
     if (quizInterval <= Duration.zero) {
       throw ArgumentError.value(quizInterval, 'quizInterval', '必须大于 0');
@@ -137,6 +145,7 @@ class AppSettings {
       dailyExemptionLimit: (dailyExemptionLimit as int?) ?? 2,
       adminPasswordHash: json['adminPasswordHash'] as String?,
       restTimerRefreshMs: (json['restTimerRefreshMs'] as num?)?.toInt() ?? 16,
+      restEnabled: json['restEnabled'] as bool? ?? true,
     );
   }
 
@@ -149,6 +158,7 @@ class AppSettings {
         'dailyExemptionLimit': dailyExemptionLimit,
         'adminPasswordHash': adminPasswordHash,
         'restTimerRefreshMs': restTimerRefreshMs,
+        'restEnabled': restEnabled,
       };
 
   AppSettings copyWith({
@@ -158,6 +168,7 @@ class AppSettings {
     Duration? restDuration,
     int? dailyExemptionLimit,
     int? restTimerRefreshMs,
+    bool? restEnabled,
     Object? adminPasswordHash = _sentinel,
   }) {
     return AppSettings(
@@ -168,6 +179,7 @@ class AppSettings {
       restDuration: restDuration ?? this.restDuration,
       dailyExemptionLimit: dailyExemptionLimit ?? this.dailyExemptionLimit,
       restTimerRefreshMs: restTimerRefreshMs ?? this.restTimerRefreshMs,
+      restEnabled: restEnabled ?? this.restEnabled,
       adminPasswordHash: adminPasswordHash == _sentinel
           ? this.adminPasswordHash
           : adminPasswordHash as String?,
@@ -183,7 +195,8 @@ class AppSettings {
       other.restDuration == restDuration &&
       other.dailyExemptionLimit == dailyExemptionLimit &&
       other.adminPasswordHash == adminPasswordHash &&
-      other.restTimerRefreshMs == restTimerRefreshMs;
+      other.restTimerRefreshMs == restTimerRefreshMs &&
+      other.restEnabled == restEnabled;
 
   @override
   int get hashCode => Object.hash(
@@ -193,7 +206,8 @@ class AppSettings {
       restDuration,
       dailyExemptionLimit,
       adminPasswordHash,
-      restTimerRefreshMs);
+      restTimerRefreshMs,
+      restEnabled);
 
   @override
   String toString() => 'AppSettings(quizInterval: $quizInterval, '

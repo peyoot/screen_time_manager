@@ -133,6 +133,62 @@ void main() {
     });
   });
 
+  group('强制休息开关（restEnabled）', () {
+    final disabledSettings = AppSettings(
+      quizInterval: const Duration(minutes: 30),
+      questionsPerQuiz: 1,
+      requiredCorrectCount: 1,
+      restDuration: const Duration(minutes: 3),
+      dailyExemptionLimit: 2,
+      restEnabled: false,
+    );
+
+    test('关闭时达到阈值不进入休息，亮屏时长照常累计、阈值进度冻结', () {
+      final m = buildMachine(settings: disabledSettings);
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.usedToday, const Duration(minutes: 30));
+      expect(m.state.sinceLastGrant, Duration.zero);
+
+      // 继续推进：依旧不触发休息，亮屏继续累计。
+      advance(m, const Duration(minutes: 10));
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.usedToday, const Duration(minutes: 40));
+      expect(m.state.sinceLastGrant, Duration.zero);
+    });
+
+    test('关闭时手动触发休息抛出 StateError', () {
+      final m = buildMachine(settings: disabledSettings);
+      expect(m.restNow, throwsStateError);
+      expect(m.state.phase, AppPhase.tracking);
+    });
+
+    test('关闭状态下缩短阈值低于既有进度也不会触发休息', () {
+      final m = buildMachine();
+      advance(m, const Duration(minutes: 20));
+      m.updateSettings(disabledSettings.copyWith(
+        quizInterval: const Duration(minutes: 10),
+      ));
+      expect(m.state.phase, AppPhase.tracking);
+    });
+
+    test('重新启用后阈值进度从冻结值继续累计并可触发休息', () {
+      final m = buildMachine();
+      // 先累计 20 分钟进度，然后关闭开关再推进 15 分钟（进度冻结）。
+      advance(m, const Duration(minutes: 20));
+      m.updateSettings(disabledSettings);
+      advance(m, const Duration(minutes: 15));
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.sinceLastGrant, const Duration(minutes: 20));
+
+      // 重新启用：再累计 10 分钟达到 30 分钟阈值 → 进入休息。
+      m.updateSettings(testSettings);
+      expect(m.state.phase, AppPhase.tracking);
+      advance(m, const Duration(minutes: 10));
+      expect(m.state.phase, AppPhase.resting);
+    });
+  });
+
   group('休息结束与豁免流转', () {
     test('到点进休息，休息自然结束回到计时并重新累计阈值', () {
       final settings = AppSettings(

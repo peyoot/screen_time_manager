@@ -84,7 +84,8 @@ class ScreenTimeMachine extends ChangeNotifier {
   void updateSettings(AppSettings settings) {
     _settings = settings;
     _state = _state.copyWith(quizInterval: settings.quizInterval);
-    if (_state.phase == AppPhase.tracking &&
+    if (settings.restEnabled &&
+        _state.phase == AppPhase.tracking &&
         _state.sinceLastGrant >= settings.quizInterval) {
       _enterQuizOrRest(_clock());
     }
@@ -156,10 +157,15 @@ class ScreenTimeMachine extends ChangeNotifier {
   /// 从计时阶段手动触发一次全屏休息（用户主动点击"立即休息"）。
   ///
   /// 仅在 [AppPhase.tracking] 阶段允许调用；其他阶段抛出 [StateError]。
+  /// 强制休息功能已关闭（`AppSettings.restEnabled == false`）时同样抛出
+  /// [StateError]——UI 层此时已隐藏手动休息入口，此检查为兜底。
   /// 休息结束后正常回到计时阶段并重新累计阈值。
   void restNow() {
     if (_state.phase != AppPhase.tracking) {
       throw StateError('仅计时阶段可手动触发休息');
+    }
+    if (!_settings.restEnabled) {
+      throw StateError('强制休息功能已关闭，无法手动触发休息');
     }
     _enterRest(_clock());
     notifyListeners();
@@ -313,9 +319,16 @@ class ScreenTimeMachine extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  /// 累计亮屏时长，达到阈值则直接强制休息（无提醒页中间态）。
+  /// 累计亮屏时长；强制休息启用时达到阈值则直接强制休息（无提醒页中间态）。
+  ///
+  /// 强制休息关闭（`restEnabled == false`）时只累计当日亮屏时长，
+  /// 阈值进度冻结，永不进入休息阶段。
   void _accumulate(Duration delta, DateTime now) {
     final nextUsage = _state.dailyUsage.addScreenTime(delta);
+    if (!_settings.restEnabled) {
+      _state = _state.copyWith(dailyUsage: nextUsage);
+      return;
+    }
     final nextProgress = _state.sinceLastGrant + delta;
     _state = _state.copyWith(
       dailyUsage: nextUsage,

@@ -44,6 +44,9 @@ class SEn extends S {
   String get homeManualRest => 'Take a break now';
 
   @override
+  String get homeRestDisabled => 'Forced rest disabled';
+
+  @override
   String get adminPasswordTitle => 'Admin password';
 
   @override
@@ -189,6 +192,13 @@ class SEn extends S {
 
   @override
   String get settingsRestMinutes => 'Mandatory break duration';
+
+  @override
+  String get settingsRestEnabled => 'Forced rest';
+
+  @override
+  String get settingsRestEnabledHint =>
+      'When off, only screen time is tracked; no forced or manual rest';
 
   @override
   String get settingsRestTimerRefresh => 'Rest stopwatch refresh interval';

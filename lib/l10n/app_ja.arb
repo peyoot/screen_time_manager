@@ -23,6 +23,7 @@
     "placeholders": {"time": {"type": "String"}}
   },
   "homeManualRest": "今すぐ休憩",
+  "homeRestDisabled": "強制休憩は無効です",
   "adminPasswordTitle": "管理パスワード",
   "adminPasswordStatusSet": "設定済み",
   "adminPasswordStatusNotSet": "未設定",
@@ -70,6 +71,8 @@
   "settingsTitle": "タイミング設定",
   "settingsQuizMinutes": "休憩までの画面点灯時間",
   "settingsRestMinutes": "強制休憩時間",
+  "settingsRestEnabled": "強制休憩",
+  "settingsRestEnabledHint": "オフにすると画面点灯時間のみを記録し、休憩は発生しません",
   "settingsRestTimerRefresh": "休憩ストップウォッチ更新間隔",
   "settingsRestTimerRefreshHint": "値が大きいほど省電力になりますが、数字の動きが粗くなります",
   "settingsMinutesUnit": "分",

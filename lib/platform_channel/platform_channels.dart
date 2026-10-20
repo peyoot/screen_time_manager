@@ -342,6 +342,7 @@ class ChannelTimeCore implements TimeCore {
       'quizSeconds': settings.quizInterval.inSeconds,
       'restSeconds': settings.restDuration.inSeconds,
       'dailyLimit': settings.dailyExemptionLimit,
+      'restEnabled': settings.restEnabled,
     });
   }
 

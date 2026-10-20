@@ -44,6 +44,9 @@ class SKo extends S {
   String get homeManualRest => '지금 휴식하기';
 
   @override
+  String get homeRestDisabled => '강제 휴식이 비활성화됨';
+
+  @override
   String get adminPasswordTitle => '관리자 비밀번호';
 
   @override
@@ -187,6 +190,12 @@ class SKo extends S {
 
   @override
   String get settingsRestMinutes => '강제 휴식 시간';
+
+  @override
+  String get settingsRestEnabled => '강제 휴식';
+
+  @override
+  String get settingsRestEnabledHint => '끄면 화면 사용 시간만 기록하고 휴식이 시작되지 않습니다';
 
   @override
   String get settingsRestTimerRefresh => '휴식 스톱워치 새로고침 간격';

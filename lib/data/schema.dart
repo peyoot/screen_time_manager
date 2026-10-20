@@ -7,7 +7,7 @@ library;
 import 'package:sqflite/sqflite.dart';
 
 /// 当前 schema 版本号。
-const int kSchemaVersion = 4;
+const int kSchemaVersion = 5;
 
 /// V1 建表语句：按外键依赖顺序排列。
 const List<String> kSchemaV1Statements = [
@@ -186,6 +186,21 @@ const List<String> kSchemaV4Statements = [
 Future<void> applySchemaV4(Database db) async {
   final batch = db.batch();
   for (final stmt in kSchemaV4Statements) {
+    batch.execute(stmt);
+  }
+  await batch.commit();
+}
+
+/// V5 迁移：app_settings 增加 `rest_enabled`（强制休息功能总开关，
+/// 1=启用（默认），0=关闭）。关闭后只统计亮屏时长，不触发/不允许休息。
+const List<String> kSchemaV5Statements = [
+  'ALTER TABLE app_settings ADD COLUMN rest_enabled INTEGER NOT NULL DEFAULT 1',
+];
+
+/// 在指定数据库上执行 V5 迁移。
+Future<void> applySchemaV5(Database db) async {
+  final batch = db.batch();
+  for (final stmt in kSchemaV5Statements) {
     batch.execute(stmt);
   }
   await batch.commit();

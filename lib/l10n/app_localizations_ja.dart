@@ -44,6 +44,9 @@ class SJa extends S {
   String get homeManualRest => '今すぐ休憩';
 
   @override
+  String get homeRestDisabled => '強制休憩は無効です';
+
+  @override
   String get adminPasswordTitle => '管理パスワード';
 
   @override
@@ -187,6 +190,12 @@ class SJa extends S {
 
   @override
   String get settingsRestMinutes => '強制休憩時間';
+
+  @override
+  String get settingsRestEnabled => '強制休憩';
+
+  @override
+  String get settingsRestEnabledHint => 'オフにすると画面点灯時間のみを記録し、休憩は発生しません';
 
   @override
   String get settingsRestTimerRefresh => '休憩ストップウォッチ更新間隔';

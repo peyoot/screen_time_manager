@@ -40,6 +40,7 @@ Map<String, Object?> appSettingsToRow(
     'daily_exemption_limit': s.dailyExemptionLimit,
     'admin_password_hash': s.adminPasswordHash,
     'rest_timer_refresh_ms': s.restTimerRefreshMs,
+    'rest_enabled': s.restEnabled ? 1 : 0,
     'created_at': toTimestamp(createdAt ?? now),
     'updated_at': ts,
     'deleted': 0,
@@ -58,6 +59,8 @@ AppSettings appSettingsFromRow(Map<String, Object?> row) {
     restTimerRefreshMs: row['rest_timer_refresh_ms'] == null
         ? 16
         : _asInt(row['rest_timer_refresh_ms']),
+    restEnabled:
+        row['rest_enabled'] == null || _asInt(row['rest_enabled']) != 0,
   );
 }
 

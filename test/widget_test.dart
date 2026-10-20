@@ -13,7 +13,7 @@ import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
 import 'package:screen_time_manager/ui/permissions/permission_guide_page.dart';
 import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
 
-ScreenTimeController buildController() {
+ScreenTimeController buildController({bool restEnabled = true}) {
   final bankService = QuestionBankService.demo();
   final machineBank = QuestionBank(
     id: 'machine',
@@ -34,6 +34,7 @@ ScreenTimeController buildController() {
       questionsPerQuiz: 2,
       requiredCorrectCount: 1,
       restDuration: const Duration(minutes: 3),
+      restEnabled: restEnabled,
     ),
     questionBank: machineBank,
   );
@@ -342,5 +343,69 @@ void main() {
       controller.machine.settings.restDuration,
       const Duration(minutes: 1),
     );
+  });
+
+  testWidgets('强制休息关闭：主页显示未启用文案、隐藏手动休息按钮、亮屏照常统计',
+      (tester) async {
+    final controller = buildController(restEnabled: false);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 今日亮屏照常显示；倒计时行变为"强制休息未启用"；手动休息按钮隐藏。
+    expect(find.text('Screen time today'), findsOneWidget);
+    expect(find.text('Forced rest disabled'), findsOneWidget);
+    expect(find.text('Take a break now'), findsNothing);
+
+    // 控制器手动休息入口静默忽略，不会进入休息页。
+    controller.manualRest();
+    await tester.pumpAndSettle();
+    expect(controller.phase, AppPhase.tracking);
+    expect(find.text('Forced rest disabled'), findsOneWidget);
+  });
+
+  testWidgets('设置对话框关闭强制休息开关并保存后主页联动', (tester) async {
+    final controller = buildController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTimeManagerApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 初始启用：显示倒计时文案与手动休息按钮。
+    expect(find.text('Take a break now'), findsOneWidget);
+    expect(find.text('Forced rest disabled'), findsNothing);
+
+    // 打开设置：开关初始为开。
+    await tester.tap(find.byTooltip('Timing settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Forced rest'), findsOneWidget);
+    final switchTile = find.byType(SwitchListTile);
+    expect(switchTile, findsOneWidget);
+    expect(
+      tester.widget<SwitchListTile>(switchTile).value,
+      isTrue,
+    );
+
+    // 关闭开关并保存：主页文案与按钮联动。
+    await tester.tap(switchTile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(controller.machine.settings.restEnabled, isFalse);
+    expect(find.text('Forced rest disabled'), findsOneWidget);
+    expect(find.text('Take a break now'), findsNothing);
+
+    // 重新打开设置恢复开关。
+    await tester.tap(find.byTooltip('Timing settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(controller.machine.settings.restEnabled, isTrue);
+    expect(find.text('Take a break now'), findsOneWidget);
   });
 }

@@ -101,6 +101,7 @@ object ScreenMonitorChannels {
                                 ?.toLong() ?: ScreenTimeCore.DEFAULT_REST_SEC,
                             dailyLimit = call.argument<Number>("dailyLimit")
                                 ?.toInt() ?: ScreenTimeCore.DEFAULT_DAILY_LIMIT,
+                            restEnabled = call.argument<Boolean>("restEnabled") ?: true,
                         )
                         result.success(null)
                     }
