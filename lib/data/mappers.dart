@@ -57,7 +57,7 @@ AppSettings appSettingsFromRow(Map<String, Object?> row) {
     dailyExemptionLimit: _asInt(row['daily_exemption_limit']),
     adminPasswordHash: row['admin_password_hash'] as String?,
     restTimerRefreshMs: row['rest_timer_refresh_ms'] == null
-        ? 16
+        ? 17
         : _asInt(row['rest_timer_refresh_ms']),
     restEnabled:
         row['rest_enabled'] == null || _asInt(row['rest_enabled']) != 0,

@@ -86,7 +86,7 @@
   "settingsRestTimerRefresh": "休息秒表刷新间隔",
   "settingsRestTimerRefreshHint": "数值越大越省电，计时数字跳动越明显",
   "settingsMinutesUnit": "分钟",
-  "settingsInvalid": "请输入大于 0 的整数",
+  "settingsInvalid": "请输入 1-99 的整数",
   "settingsSave": "保存",
 
   "reminderTitle": "该休息一下了",

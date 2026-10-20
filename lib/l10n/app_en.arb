@@ -76,7 +76,7 @@
   "settingsRestTimerRefresh": "Rest stopwatch refresh interval",
   "settingsRestTimerRefreshHint": "Larger values save power; digits update less smoothly",
   "settingsMinutesUnit": "min",
-  "settingsInvalid": "Please enter positive integers",
+  "settingsInvalid": "Please enter an integer between 1 and 99",
   "settingsSave": "Save",
 
   "reminderTitle": "Time for a break",

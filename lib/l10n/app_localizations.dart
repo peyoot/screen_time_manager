@@ -458,7 +458,7 @@ abstract class S {
   /// No description provided for @settingsInvalid.
   ///
   /// In zh, this message translates to:
-  /// **'请输入大于 0 的整数'**
+  /// **'请输入 1-99 的整数'**
   String get settingsInvalid;
 
   /// No description provided for @settingsSave.

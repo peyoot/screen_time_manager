@@ -33,6 +33,10 @@ class _RestPageState extends State<RestPage> {
   late final DateTime _restStart;
   bool _countDown = false;
 
+  /// 秒表刷新是否暂停：点击秒表切换；暂停时实际计时仍在进行，
+  /// 只是界面不刷新，方便用户当作秒表记录时间。
+  bool _refreshPaused = false;
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +55,10 @@ class _RestPageState extends State<RestPage> {
 
   void _tick() {
     final elapsed = DateTime.now().difference(_restStart);
-    setState(() => _elapsed = elapsed < Duration.zero ? Duration.zero : elapsed);
+    final clamped = elapsed < Duration.zero ? Duration.zero : elapsed;
+    // 暂停时不调用 setState，界面保持上次的值；计数本身（基于 wall 时钟）继续。
+    if (_refreshPaused) return;
+    setState(() => _elapsed = clamped);
   }
 
   @override
@@ -98,9 +105,20 @@ class _RestPageState extends State<RestPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              _StopwatchDisplay(
-                duration: displayDuration,
-                isCountDown: _countDown,
+              GestureDetector(
+                onTap: () {
+                  setState(() => _refreshPaused = !_refreshPaused);
+                  // 立即刷新一次，让显示跳转到当前真实计时。
+                  _tick();
+                },
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: _refreshPaused ? 0.5 : 1.0,
+                  child: _StopwatchDisplay(
+                    duration: displayDuration,
+                    isCountDown: _countDown,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(

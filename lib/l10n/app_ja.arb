@@ -76,7 +76,7 @@
   "settingsRestTimerRefresh": "休憩ストップウォッチ更新間隔",
   "settingsRestTimerRefreshHint": "値が大きいほど省電力になりますが、数字の動きが粗くなります",
   "settingsMinutesUnit": "分",
-  "settingsInvalid": "1 以上の整数を入力してください",
+  "settingsInvalid": "1〜99 の整数を入力してください",
   "settingsSave": "保存",
 
   "reminderTitle": "休憩しましょう",

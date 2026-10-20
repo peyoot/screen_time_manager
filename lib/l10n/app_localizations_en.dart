@@ -211,7 +211,7 @@ class SEn extends S {
   String get settingsMinutesUnit => 'min';
 
   @override
-  String get settingsInvalid => 'Please enter positive integers';
+  String get settingsInvalid => 'Please enter an integer between 1 and 99';
 
   @override
   String get settingsSave => 'Save';

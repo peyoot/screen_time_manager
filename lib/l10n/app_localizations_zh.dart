@@ -203,7 +203,7 @@ class SZh extends S {
   String get settingsMinutesUnit => '分钟';
 
   @override
-  String get settingsInvalid => '请输入大于 0 的整数';
+  String get settingsInvalid => '请输入 1-99 的整数';
 
   @override
   String get settingsSave => '保存';

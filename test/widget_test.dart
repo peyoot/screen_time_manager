@@ -325,7 +325,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '0');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(find.text('Please enter positive integers'), findsOneWidget);
+    expect(find.text('Please enter an integer between 1 and 99'), findsOneWidget);
     expect(controller.machine.settings.quizInterval,
         const Duration(minutes: 30));
 

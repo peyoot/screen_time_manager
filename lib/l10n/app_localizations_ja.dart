@@ -207,7 +207,7 @@ class SJa extends S {
   String get settingsMinutesUnit => '分';
 
   @override
-  String get settingsInvalid => '1 以上の整数を入力してください';
+  String get settingsInvalid => '1〜99 の整数を入力してください';
 
   @override
   String get settingsSave => '保存';

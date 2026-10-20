@@ -434,9 +434,7 @@ class _TimingSettingsDialog extends StatefulWidget {
 
 class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   /// 休息页秒表刷新间隔的可选值（毫秒）。
-  static const List<int> _refreshOptions = [
-    16, 33, 50, 100, 250, 500, 1000,
-  ];
+  static const List<int> _refreshOptions = [1, 7, 13, 17, 31];
 
   late final TextEditingController _quizController;
   late final TextEditingController _restController;
@@ -469,7 +467,9 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
     if (quizMinutes == null ||
         restMinutes == null ||
         quizMinutes <= 0 ||
-        restMinutes <= 0) {
+        restMinutes <= 0 ||
+        quizMinutes > 99 ||
+        restMinutes > 99) {
       setState(() => _error = S.of(context).settingsInvalid);
       return;
     }
@@ -517,28 +517,30 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
             TextField(
               controller: _quizController,
               keyboardType: TextInputType.number,
+              maxLength: 2,
               decoration: InputDecoration(
                 labelText: l10n.settingsQuizMinutes,
                 suffixText: l10n.settingsMinutesUnit,
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _restController,
               keyboardType: TextInputType.number,
+              maxLength: 2,
               decoration: InputDecoration(
                 labelText: l10n.settingsRestMinutes,
                 suffixText: l10n.settingsMinutesUnit,
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
-            // 休息秒表刷新间隔：低端机调大可降低 CPU 占用与功耗。
+            // 休息秒表刷新间隔：默认 17ms，可调低提高刷新率或调高降低功耗。
             DropdownButtonFormField<int>(
               initialValue: _refreshMs,
               decoration: InputDecoration(
                 labelText: l10n.settingsRestTimerRefresh,
-                helperText: l10n.settingsRestTimerRefreshHint,
-                helperMaxLines: 2,
               ),
               items: [
                 for (final ms in _refreshOptions)

@@ -34,7 +34,7 @@ class AppSettings {
 
   /// 休息页秒表的刷新间隔（毫秒）。
   ///
-  /// 默认 16ms（约 60fps）；低端机可调大以降低 CPU 占用与功耗，
+  /// 默认 17ms（约 60fps）；可选 1/7/13/17/31ms，调大可降低 CPU 占用与功耗，
   /// 代价是毫秒数字跳动更明显。
   final int restTimerRefreshMs;
 
@@ -53,7 +53,7 @@ class AppSettings {
     required this.restDuration,
     this.dailyExemptionLimit = 2,
     this.adminPasswordHash,
-    this.restTimerRefreshMs = 16,
+    this.restTimerRefreshMs = 17,
     this.restEnabled = true,
   }) {
     if (quizInterval <= Duration.zero) {
@@ -144,7 +144,7 @@ class AppSettings {
       restDuration: Duration(seconds: restDurationSeconds.toInt()),
       dailyExemptionLimit: (dailyExemptionLimit as int?) ?? 2,
       adminPasswordHash: json['adminPasswordHash'] as String?,
-      restTimerRefreshMs: (json['restTimerRefreshMs'] as num?)?.toInt() ?? 16,
+      restTimerRefreshMs: (json['restTimerRefreshMs'] as num?)?.toInt() ?? 17,
       restEnabled: json['restEnabled'] as bool? ?? true,
     );
   }

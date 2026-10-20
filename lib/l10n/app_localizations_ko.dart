@@ -207,7 +207,7 @@ class SKo extends S {
   String get settingsMinutesUnit => '분';
 
   @override
-  String get settingsInvalid => '0보다 큰 정수를 입력하세요';
+  String get settingsInvalid => '1부터 99 사이의 정수를 입력하세요';
 
   @override
   String get settingsSave => '저장';
