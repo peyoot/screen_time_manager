@@ -42,18 +42,12 @@ object TimeCoreHost {
     fun applyEffect(effect: CoreEffect) {
         when (effect) {
             CoreEffect.ENTER_REST -> {
-                // 进入休息优先熄屏：屏幕熄灭期间用户自然离开手机；
-                // 用户重新亮屏时由 [ScreenMonitorService] 亮屏接收器补发
-                // 全屏干预，把休息页拉到前台（常亮当计时器）。
-                // 未授权 Device Admin / 熄屏失败 → 回退旧行为：立即全屏干预。
-                val locked = ScreenMonitorChannels.lockScreen()
-                if (locked) {
-                    // 仅武装屏幕固定：亮屏后 MainActivity 轮询依据 armed 状态补固定。
-                    ScreenMonitorChannels.startScreenPinning()
-                } else {
-                    ScreenMonitorChannels.requestIntervention("resting")
-                    ScreenMonitorChannels.startScreenPinning()
-                }
+                // 到点直接把休息页拉到前台并武装屏幕固定（不再立即熄屏）。
+                // 休息页展示后 10 秒内无答题豁免操作，由 Dart 侧经
+                // intervention.lockScreen 熄屏（Device Admin）；用户之后
+                // 重新亮屏由亮屏接收器补发干预，但不再熄屏，休息页常亮当秒表。
+                ScreenMonitorChannels.requestIntervention("resting")
+                ScreenMonitorChannels.startScreenPinning()
             }
             CoreEffect.EXIT_REST -> {
                 ScreenMonitorChannels.dismissIntervention()

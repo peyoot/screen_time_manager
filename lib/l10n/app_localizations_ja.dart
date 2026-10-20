@@ -176,6 +176,13 @@ class SJa extends S {
   String get permAccessibilityDesc => '緊急退出が音量キーを監視するために使用します（第 3 のフォールバック経路）。';
 
   @override
+  String get permDeviceAdminTitle => 'デバイス管理（自動画面オフ）';
+
+  @override
+  String get permDeviceAdminDesc =>
+      '許可すると、休憩ページで 10 秒間クイズ操作がない場合に自動で画面がオフになります。未許可の場合は休憩ページが点灯したまま秒表として使えます。';
+
+  @override
   String get permAutoStartTitle => '自動起動（OEM）';
 
   @override
@@ -201,13 +208,13 @@ class SJa extends S {
   String get settingsRestTimerRefresh => '休憩ストップウォッチ更新間隔';
 
   @override
-  String get settingsRestTimerRefreshHint => '値が大きいほど省電力になりますが、数字の動きが粗くなります';
-
-  @override
   String get settingsMinutesUnit => '分';
 
   @override
   String get settingsInvalid => '1〜99 の整数を入力してください';
+
+  @override
+  String get settingsInvalidQuiz => '1〜300 の整数を入力してください';
 
   @override
   String get settingsSave => '保存';

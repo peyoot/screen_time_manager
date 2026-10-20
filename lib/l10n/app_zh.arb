@@ -75,6 +75,8 @@
   "permExactAlarmDesc": "划掉应用后约 1 秒自动重启监控依赖精确闹钟。Android 14+ 默认关闭，未授权时退化为非精确闹钟（重启可能延迟数秒）。",
   "permAccessibilityTitle": "无障碍服务",
   "permAccessibilityDesc": "紧急退出功能用它监听音量键（第三层兜底通路）。",
+  "permDeviceAdminTitle": "设备管理器（自动熄屏）",
+  "permDeviceAdminDesc": "授权后，休息页展示 10 秒无答题操作将自动熄屏；未授权则休息页常亮当秒表。",
   "permAutoStartTitle": "自启动管理（厂商）",
   "permAutoStartDesc": "部分国产 ROM（MIUI、EMUI、ColorOS、OriginOS 等）需允许自启动，开机后才能自动恢复监控。",
 
@@ -84,9 +86,9 @@
   "settingsRestEnabled": "强制休息",
   "settingsRestEnabledHint": "关闭后只统计亮屏时长，不再触发或手动进入休息",
   "settingsRestTimerRefresh": "休息秒表刷新间隔",
-  "settingsRestTimerRefreshHint": "数值越大越省电，计时数字跳动越明显",
   "settingsMinutesUnit": "分钟",
   "settingsInvalid": "请输入 1-99 的整数",
+  "settingsInvalidQuiz": "请输入 1-300 的整数",
   "settingsSave": "保存",
 
   "reminderTitle": "该休息一下了",

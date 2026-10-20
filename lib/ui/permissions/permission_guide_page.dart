@@ -81,6 +81,12 @@ class _PermissionGuidePageState extends State<PermissionGuidePage>
       permission: MonitorPermission.accessibility,
     ),
     _PermissionEntry(
+      icon: Icons.screen_lock_portrait_outlined,
+      title: _permDeviceAdminTitle,
+      description: _permDeviceAdminDesc,
+      permission: MonitorPermission.deviceAdmin,
+    ),
+    _PermissionEntry(
       icon: Icons.restart_alt_outlined,
       title: _permAutoStartTitle,
       description: _permAutoStartDesc,
@@ -247,5 +253,7 @@ String _permExactAlarmTitle(S l10n) => l10n.permExactAlarmTitle;
 String _permExactAlarmDesc(S l10n) => l10n.permExactAlarmDesc;
 String _permAccessibilityTitle(S l10n) => l10n.permAccessibilityTitle;
 String _permAccessibilityDesc(S l10n) => l10n.permAccessibilityDesc;
+String _permDeviceAdminTitle(S l10n) => l10n.permDeviceAdminTitle;
+String _permDeviceAdminDesc(S l10n) => l10n.permDeviceAdminDesc;
 String _permAutoStartTitle(S l10n) => l10n.permAutoStartTitle;
 String _permAutoStartDesc(S l10n) => l10n.permAutoStartDesc;

@@ -178,6 +178,13 @@ class SEn extends S {
       'Used by the emergency exit to observe volume keys (third fallback path).';
 
   @override
+  String get permDeviceAdminTitle => 'Device admin (auto screen-off)';
+
+  @override
+  String get permDeviceAdminDesc =>
+      'When granted, the screen turns off after 10 seconds without quiz interaction on the rest page; otherwise the rest page stays on as a stopwatch.';
+
+  @override
   String get permAutoStartTitle => 'Auto-start (OEM)';
 
   @override
@@ -204,14 +211,13 @@ class SEn extends S {
   String get settingsRestTimerRefresh => 'Rest stopwatch refresh interval';
 
   @override
-  String get settingsRestTimerRefreshHint =>
-      'Larger values save power; digits update less smoothly';
-
-  @override
   String get settingsMinutesUnit => 'min';
 
   @override
   String get settingsInvalid => 'Please enter an integer between 1 and 99';
+
+  @override
+  String get settingsInvalidQuiz => 'Please enter an integer between 1 and 300';
 
   @override
   String get settingsSave => 'Save';

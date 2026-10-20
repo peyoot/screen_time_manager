@@ -2,9 +2,7 @@ package com.screen_time_manager
 
 import android.app.Activity
 import android.app.AlarmManager
-import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -13,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.core.app.NotificationCompat
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -52,15 +49,14 @@ object ScreenEventBus {
  *   [ScreenMonitorService] 动态注册后经 [ScreenEventBus] 推送。
  * - `monitor`：启停 [ScreenMonitorService]（前台服务 + 屏幕广播）；
  *   另提供权限状态查询与系统设置页跳转。
- * - `intervention`：请求 / 撤销到点干预（拉 Activity 到前台 + 高优全屏通知 +
- *   悬浮层兜底）；休息期自动熄屏（DevicePolicyManager.lockNow）
- *   与屏幕固定（startLockTask / stopLockTask）。
+ * - `intervention`：请求 / 撤销到点干预（拉 Activity 到前台 + 悬浮层兜底）；
+ *   休息期自动熄屏（DevicePolicyManager.lockNow）与屏幕固定
+ *   （startLockTask / stopLockTask）。
  */
 object ScreenMonitorChannels {
     private const val NAMESPACE = "com.screen_time_manager/platform"
 
-    /** 到点干预通知渠道（高优先级 + 全屏 intent）。 */
-    private const val ALERT_CHANNEL_ID = "screen_monitor_alert"
+    /** 历史版本到点干预通知的 ID（通知已移除；保留 ID 以便撤销残留通知）。 */
     private const val ALERT_NOTIFICATION_ID = 1002
 
     /** 启动 MainActivity 时透传当前阶段，供冷启动路由使用。 */
@@ -213,11 +209,15 @@ object ScreenMonitorChannels {
     // -----------------------------------------------------------------
 
     /**
-     * 到点干预：尽力把 [MainActivity] 拉到前台，并补一条全屏 intent 通知兜底。
+     * 到点干预：尽力把 [MainActivity] 拉到前台。
      *
      * Android 10+ 限制后台启动 Activity，但持有 `SYSTEM_ALERT_WINDOW` 的应用
      * 属于官方豁免范围，因此悬浮窗权限是"自动切到休息页"的关键前提；
-     * 未授权时退化为高优先级通知（锁屏/灭屏下可全屏展示，亮屏使用中为横幅）。
+     * 未授权时仅剩悬浮层兜底（同为悬浮窗权限，未授权则无法干预，
+     * 用户下次亮屏/打开应用时由亮屏接收器补发干预拉到休息页）。
+     *
+     * 历史上此处还发一条高优 + 全屏 intent 通知兜底；休息页已能稳定
+     * 拉前台并固定，该通知已移除（避免锁屏/横幅打扰）。
      */
     internal fun requestIntervention(phase: String?) {
         val app = ScreenMonitorApp.instance
@@ -234,66 +234,19 @@ object ScreenMonitorChannels {
         // 悬浮层兜底（第 3 步）：若拉起失败（权限/ROM 限制）导致短延迟后
         // Activity 仍未到前台，且用户已授权悬浮窗，则全屏遮罩覆盖当前应用。
         // 已授权 canDrawOverlays 时 startActivity 本身就是官方豁免项；
-        // 未授权则连遮罩也加不上，仅剩通知路径。
+        // 未授权则连遮罩也加不上，等待用户下次亮屏时补发干预。
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             Settings.canDrawOverlays(app)
         ) {
             InterventionOverlay.requestShow(app, phase)
         }
-        showInterventionNotification(app, intent, phase)
     }
 
     /** 后台启动 Activity 是否被系统允许（悬浮窗权限是官方豁免项）。 */
     private fun canStartActivityFromBackground(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || Settings.canDrawOverlays(context)
 
-    /** 发送高优先级 + 全屏 intent 通知，锁屏/灭屏时可直接全屏展示。 */
-    private fun showInterventionNotification(
-        context: Context,
-        contentIntent: Intent,
-        phase: String?,
-    ) {
-        val manager = context.getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(
-                NotificationChannel(
-                    ALERT_CHANNEL_ID,
-                    "Rest reminders",
-                    NotificationManager.IMPORTANCE_HIGH,
-                ).apply { description = "Full-screen rest reminder" },
-            )
-        }
-
-        val pending = PendingIntent.getActivity(
-            context,
-            0,
-            contentIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    PendingIntent.FLAG_IMMUTABLE
-                } else {
-                    0
-                },
-        )
-        val isRest = phase == INTERVENTION_PHASE_RESTING
-
-        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
-            .setContentTitle(if (isRest) "Time to rest" else "Quick check-in")
-            .setContentText(
-                if (isRest) "Take a short break now" else "Answer to continue",
-            )
-            .setSmallIcon(R.drawable.ic_screen_monitor)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
-            .setContentIntent(pending)
-            .setFullScreenIntent(pending, true)
-            .build()
-
-        manager.notify(ALERT_NOTIFICATION_ID, notification)
-    }
-
-    /** 撤销干预：取消到点通知与悬浮层兜底。 */
+    /** 撤销干预：取消到点通知（历史版本可能残留）与悬浮层兜底。 */
     internal fun dismissIntervention() {
         // 回到计时阶段：紧急退出控制器恢复"主界面可改密"分流。
         EmergencyKeyController.resting = false
@@ -348,6 +301,7 @@ object ScreenMonitorChannels {
             "fullScreenIntent" to fullScreenIntentAllowed,
             "accessibility" to isEmergencyKeyAccessibilityEnabled(context),
             "exactAlarm" to exactAlarmAllowed,
+            "deviceAdmin" to isDeviceAdminEnabled(),
         )
     }
 
@@ -384,6 +338,11 @@ object ScreenMonitorChannels {
             )
             "notifications" -> listOf(notificationSettingsIntent(packageName))
             "accessibility" -> listOf(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            "deviceAdmin" -> {
+                // Device Admin 授权页（@hide API 反射，失败回退安全设置页）。
+                openDeviceAdminSettings()
+                return
+            }
             "exactAlarm" ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     listOf(
@@ -528,8 +487,8 @@ object ScreenMonitorChannels {
     /**
      * 调用 DevicePolicyManager.lockNow() 熄屏。
      *
-     * 两个调用点：进入强制休息时优先熄屏（[TimeCoreHost.applyEffect] 的
-     * ENTER_REST 分支），以及 Dart 侧经 intervention 通道的 lockScreen 请求。
+     * 调用点：Dart 侧经 intervention 通道的 lockScreen 请求（休息页展示后
+     * 10 秒内无答题豁免操作时自动熄屏）。
      * 先临时解除 [RestGuard] 武装，避免锁屏后 Activity 进入 onStop 被误判为
      * "用户强行切走"；锁屏完成后重新武装（若仍在休息阶段会重新固定）。
      *

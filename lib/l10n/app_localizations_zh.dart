@@ -172,6 +172,12 @@ class SZh extends S {
   String get permAccessibilityDesc => '紧急退出功能用它监听音量键（第三层兜底通路）。';
 
   @override
+  String get permDeviceAdminTitle => '设备管理器（自动熄屏）';
+
+  @override
+  String get permDeviceAdminDesc => '授权后，休息页展示 10 秒无答题操作将自动熄屏；未授权则休息页常亮当秒表。';
+
+  @override
   String get permAutoStartTitle => '自启动管理（厂商）';
 
   @override
@@ -197,13 +203,13 @@ class SZh extends S {
   String get settingsRestTimerRefresh => '休息秒表刷新间隔';
 
   @override
-  String get settingsRestTimerRefreshHint => '数值越大越省电，计时数字跳动越明显';
-
-  @override
   String get settingsMinutesUnit => '分钟';
 
   @override
   String get settingsInvalid => '请输入 1-99 的整数';
+
+  @override
+  String get settingsInvalidQuiz => '请输入 1-300 的整数';
 
   @override
   String get settingsSave => '保存';

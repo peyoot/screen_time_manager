@@ -42,6 +42,10 @@ ScreenTimeController buildController({bool restEnabled = true}) {
     machine: machine,
     bankService: bankService,
     questionsPerQuiz: 2,
+    // widget 测试禁用休息期自动熄屏定时器：FakeAsync 环境下挂起的
+    // Timer 会在 tearDown 前触发框架的 pending-timer 检查；自动熄屏
+    // 逻辑由 platform_channel_wiring_test 专门覆盖。
+    restAutoLockDelay: Duration.zero,
     autoStart: false,
   );
 }
@@ -274,6 +278,7 @@ void main() {
     final monitor = _FakeMonitorChannel(const {
       MonitorPermission.overlay: true,
       MonitorPermission.exactAlarm: false,
+      MonitorPermission.deviceAdmin: false,
     });
     await tester.pumpWidget(
       MaterialApp(
@@ -291,13 +296,23 @@ void main() {
 
     // 新条目渲染（测试环境默认 en locale）：未授权显示 Not granted。
     expect(find.text('Exact alarms'), findsOneWidget);
-    expect(find.text('Not granted'), findsOneWidget);
+    expect(find.text('Not granted'), findsWidgets);
     expect(find.text('Granted'), findsOneWidget);
 
     // 点击条目 → 请求跳转 exactAlarm 设置页。
     await tester.tap(find.text('Exact alarms'));
     await tester.pumpAndSettle();
     expect(monitor.lastOpened, MonitorPermission.exactAlarm);
+
+    // Device Admin 条目：滚动到可见后点击 → 请求跳转 deviceAdmin 设置页。
+    await tester.scrollUntilVisible(
+      find.text('Device admin (auto screen-off)'),
+      200,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Device admin (auto screen-off)'));
+    await tester.pumpAndSettle();
+    expect(monitor.lastOpened, MonitorPermission.deviceAdmin);
   });
 
   testWidgets('计时设置对话框可修改亮屏与休息时长', (tester) async {
@@ -321,11 +336,37 @@ void main() {
     expect(find.text('30'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
 
-    // 非法输入（0）不允许保存，对话框保持打开并报错。
+    // 非法输入（0）不允许保存，对话框保持打开并报错（亮屏上限 300 分钟）。
     await tester.enterText(find.byType(TextField).first, '0');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(find.text('Please enter an integer between 1 and 99'), findsOneWidget);
+    expect(
+      find.text('Please enter an integer between 1 and 300'),
+      findsOneWidget,
+    );
+    expect(controller.machine.settings.quizInterval,
+        const Duration(minutes: 30));
+
+    // 亮屏超过上限（301）同样拒绝保存。
+    await tester.enterText(find.byType(TextField).first, '301');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Please enter an integer between 1 and 300'),
+      findsOneWidget,
+    );
+    expect(controller.machine.settings.quizInterval,
+        const Duration(minutes: 30));
+
+    // 亮屏合法（300）但休息超过上限（100）→ 报休息上限（99）错误。
+    await tester.enterText(find.byType(TextField).first, '300');
+    await tester.enterText(find.byType(TextField).last, '100');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Please enter an integer between 1 and 99'),
+      findsOneWidget,
+    );
     expect(controller.machine.settings.quizInterval,
         const Duration(minutes: 30));
 

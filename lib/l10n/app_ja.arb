@@ -65,6 +65,8 @@
   "permExactAlarmDesc": "アプリをスワイプで終了した約 1 秒後に監視を自動再起動するために必要です。Android 14+ では既定でオフ。未許可の場合は不正確なアラームにフォールバックします（再起動が数秒遅れることがあります）。",
   "permAccessibilityTitle": "ユーザー補助サービス",
   "permAccessibilityDesc": "緊急退出が音量キーを監視するために使用します（第 3 のフォールバック経路）。",
+  "permDeviceAdminTitle": "デバイス管理（自動画面オフ）",
+  "permDeviceAdminDesc": "許可すると、休憩ページで 10 秒間クイズ操作がない場合に自動で画面がオフになります。未許可の場合は休憩ページが点灯したまま秒表として使えます。",
   "permAutoStartTitle": "自動起動（OEM）",
   "permAutoStartDesc": "MIUI・EMUI・ColorOS・OriginOS などの ROM では自動起動を許可しないと、再起動後に監視が再開されません。",
 
@@ -74,9 +76,9 @@
   "settingsRestEnabled": "強制休憩",
   "settingsRestEnabledHint": "オフにすると画面点灯時間のみを記録し、休憩は発生しません",
   "settingsRestTimerRefresh": "休憩ストップウォッチ更新間隔",
-  "settingsRestTimerRefreshHint": "値が大きいほど省電力になりますが、数字の動きが粗くなります",
   "settingsMinutesUnit": "分",
   "settingsInvalid": "1〜99 の整数を入力してください",
+  "settingsInvalidQuiz": "1〜300 の整数を入力してください",
   "settingsSave": "保存",
 
   "reminderTitle": "休憩しましょう",

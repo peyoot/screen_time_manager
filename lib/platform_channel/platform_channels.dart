@@ -60,6 +60,11 @@ enum MonitorPermission {
   /// 划掉应用后自动重启监控依赖它；未授权时退化为非精确闹钟兜底。
   exactAlarm,
 
+  /// 设备管理器授权（force-lock 策略）。
+  /// 休息页展示后 10 秒内无答题豁免操作时自动熄屏（lockNow）依赖它；
+  /// 未授权时休息页常亮当秒表。
+  deviceAdmin,
+
   /// OEM 自启动管理（无公开 API，仅提供跳转，无状态查询）。
   autoStart,
 }

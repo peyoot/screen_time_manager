@@ -395,6 +395,18 @@ abstract class S {
   /// **'紧急退出功能用它监听音量键（第三层兜底通路）。'**
   String get permAccessibilityDesc;
 
+  /// No description provided for @permDeviceAdminTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设备管理器（自动熄屏）'**
+  String get permDeviceAdminTitle;
+
+  /// No description provided for @permDeviceAdminDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'授权后，休息页展示 10 秒无答题操作将自动熄屏；未授权则休息页常亮当秒表。'**
+  String get permDeviceAdminDesc;
+
   /// No description provided for @permAutoStartTitle.
   ///
   /// In zh, this message translates to:
@@ -443,12 +455,6 @@ abstract class S {
   /// **'休息秒表刷新间隔'**
   String get settingsRestTimerRefresh;
 
-  /// No description provided for @settingsRestTimerRefreshHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'数值越大越省电，计时数字跳动越明显'**
-  String get settingsRestTimerRefreshHint;
-
   /// No description provided for @settingsMinutesUnit.
   ///
   /// In zh, this message translates to:
@@ -460,6 +466,12 @@ abstract class S {
   /// In zh, this message translates to:
   /// **'请输入 1-99 的整数'**
   String get settingsInvalid;
+
+  /// No description provided for @settingsInvalidQuiz.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入 1-300 的整数'**
+  String get settingsInvalidQuiz;
 
   /// No description provided for @settingsSave.
   ///

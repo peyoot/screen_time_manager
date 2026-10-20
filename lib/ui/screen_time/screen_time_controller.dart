@@ -103,6 +103,14 @@ class ScreenTimeController extends ChangeNotifier {
 
   Timer? _timer;
 
+  /// 休息期自动熄屏计时器：进入休息后 [_restAutoLockDelay] 内无答题
+  /// 豁免操作则熄屏一次（Device Admin）；用户之后主动亮屏不再熄屏，
+  /// 休息页常亮当秒表。申请/提交豁免、离开休息阶段都会取消它。
+  Timer? _restAutoLockTimer;
+
+  /// 进入休息后无答题操作自动熄屏的等待时长（默认 10 秒，测试可注入）。
+  final Duration restAutoLockDelay;
+
   /// 当日快照写入节流间隔（约 5 秒一条；被杀最多丢 5 秒累计）。
   static const _snapshotInterval = Duration(seconds: 5);
 
@@ -142,6 +150,7 @@ class ScreenTimeController extends ChangeNotifier {
     this.interventionBridge,
     this.monitor,
     this.timeCore,
+    this.restAutoLockDelay = const Duration(seconds: 10),
     Stream<bool>? screenOnEvents,
     DateTime Function()? clock,
     bool autoStart = true,
@@ -445,6 +454,11 @@ class ScreenTimeController extends ChangeNotifier {
       }
       _restStart = _clock();
       _restPlanned = machine.settings.restDuration;
+      // 休息页展示后 10 秒内无答题豁免操作 → 自动熄屏一次（两种模式通用；
+      // 恢复到休息期且休息早已开始时不会重新武装，见方法内注释）。
+      _armRestAutoLockIfFresh();
+    } else if (previousPhase == AppPhase.resting && phase != AppPhase.resting) {
+      _cancelRestAutoLock();
     }
     _lastPhase = phase;
 
@@ -455,9 +469,10 @@ class ScreenTimeController extends ChangeNotifier {
         unawaited(bridge?.request(InterventionPhase.quiz));
       } else if (phase == AppPhase.resting &&
           previousPhase != AppPhase.resting) {
-        // 进入休息：优先熄屏（Device Admin），失败才立即全屏干预；
-        // 屏幕固定照常武装，亮屏后由原生轮询补固定。
-        unawaited(_enterRestWithLockFirst(bridge));
+        // 到点直接把休息页拉到前台并武装屏幕固定（不再立即熄屏；
+        // 10 秒无答题操作的自动熄屏由上面的 _armRestAutoLockIfFresh 负责）。
+        unawaited(bridge?.request(InterventionPhase.resting));
+        unawaited(bridge?.startScreenPinning());
       } else if (phase == AppPhase.tracking) {
         if (previousPhase == AppPhase.quiz) {
           // 答题页本身不锁定屏幕，只需撤销干预通知。
@@ -536,16 +551,34 @@ class ScreenTimeController extends ChangeNotifier {
     repo.insert(session).catchError((_) {});
   }
 
-  /// 本地模式进入休息：优先尝试熄屏（Device Admin）；熄屏失败
-  /// （未授权/通道异常）时回退为立即全屏干预把休息页拉到前台。
-  /// 屏幕固定无论成败都先武装，亮屏后由原生轮询补固定。
-  Future<void> _enterRestWithLockFirst(InterventionBridge? bridge) async {
-    if (bridge == null) return;
-    final locked = await bridge.lockScreen().catchError((_) => false);
-    if (!locked) {
-      unawaited(bridge.request(InterventionPhase.resting));
-    }
-    unawaited(bridge.startScreenPinning());
+  /// 进入休息时武装"10 秒无答题操作自动熄屏"计时器。
+  ///
+  /// 仅在休息刚开始（距休息起点不足 [restAutoLockDelay]）时武装剩余时间；
+  /// 休息早已开始（如进程被杀后恢复、或用户熄屏一段时间后主动亮屏）时
+  /// 不再武装——用户主动亮屏后不应再熄屏，休息页常亮当秒表。
+  void _armRestAutoLockIfFresh() {
+    _cancelRestAutoLock();
+    final endsAt = machine.state.restEndsAt;
+    if (endsAt == null) return;
+    final restStart = endsAt.subtract(machine.settings.restDuration);
+    final remaining = restAutoLockDelay - _clock().difference(restStart);
+    if (remaining <= Duration.zero) return;
+    _restAutoLockTimer = Timer(remaining, _fireRestAutoLock);
+  }
+
+  /// 取消休息期自动熄屏计时器（申请/提交豁免、离开休息、dispose）。
+  void _cancelRestAutoLock() {
+    _restAutoLockTimer?.cancel();
+    _restAutoLockTimer = null;
+  }
+
+  /// 自动熄屏触发：仍在休息且屏幕亮着才熄屏（Device Admin 未授权时
+  /// 通道返回 false，休息页保持常亮）。每次休息只触发一次。
+  void _fireRestAutoLock() {
+    _restAutoLockTimer = null;
+    if (machine.state.phase != AppPhase.resting) return;
+    if (!machine.state.isScreenOn) return;
+    unawaited(interventionBridge?.lockScreen().catchError((_) => false));
   }
 
   /// 从启用分组中抽取 [questionsPerQuiz] 道输入式题目。
@@ -646,8 +679,8 @@ class ScreenTimeController extends ChangeNotifier {
       _screenExemptions = 0;
       _screenQuizCorrect = 0;
       _screenQuizWrong = 0;
-      // 休息期重新亮屏：把休息页拉到前台并补屏幕固定（熄屏优先策略下，
-      // 进入休息时可能只熄了屏、未发干预）。
+      // 休息期重新亮屏：把休息页拉到前台并补屏幕固定（自动熄屏只发生在
+      // 休息刚触发后的 10 秒窗口内；用户主动亮屏后不再熄屏，常亮当秒表）。
       if (machine.state.phase == AppPhase.resting) {
         unawaited(interventionBridge?.request(InterventionPhase.resting));
         unawaited(interventionBridge?.startScreenPinning());
@@ -686,6 +719,8 @@ class ScreenTimeController extends ChangeNotifier {
   /// 今日豁免次数用完时不做任何操作（UI 已隐藏入口）。
   void requestRestExemption() {
     if (machine.state.phase != AppPhase.resting || !machine.canExempt) return;
+    // 用户开始答题豁免操作：取消"10 秒无操作自动熄屏"。
+    _cancelRestAutoLock();
     try {
       restQuizQuestion = bankService.drawQuestions(1).first;
     } catch (_) {
@@ -708,6 +743,8 @@ class ScreenTimeController extends ChangeNotifier {
         !machine.canExempt) {
       return false;
     }
+    // 提交答案也算答题豁免操作：取消"10 秒无操作自动熄屏"。
+    _cancelRestAutoLock();
     final correct = question.matchesAnswer(input);
     bankService.recordAnswer(question.id, correct: correct);
     final round = machine.state.quizRound;
@@ -818,6 +855,7 @@ class ScreenTimeController extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _cancelRestAutoLock();
     _screenEventsSub?.cancel();
     machine.removeListener(_onMachinePhaseChange);
     // 应用退出时落库当前亮屏会话（若仍进行中）并固化当日快照。

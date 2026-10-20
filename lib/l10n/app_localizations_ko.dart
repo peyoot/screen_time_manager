@@ -176,6 +176,13 @@ class SKo extends S {
   String get permAccessibilityDesc => '긴급 종료가 볼륨 키를 감지하는 데 사용됩니다 (세 번째 대체 경로).';
 
   @override
+  String get permDeviceAdminTitle => '기기 관리자(자동 화면 끄기)';
+
+  @override
+  String get permDeviceAdminDesc =>
+      '허용하면 휴식 페이지에서 10초 동안 퀴즈 조작이 없을 때 화면이 자동으로 꺼집니다. 허용하지 않으면 휴식 페이지가 켜진 상태로 유지됩니다.';
+
+  @override
   String get permAutoStartTitle => '자동 실행 (OEM)';
 
   @override
@@ -201,13 +208,13 @@ class SKo extends S {
   String get settingsRestTimerRefresh => '휴식 스톱워치 새로고침 간격';
 
   @override
-  String get settingsRestTimerRefreshHint => '값이 클수록 전력을 절약하지만 숫자가 뚝뚝 끊겨 보입니다';
-
-  @override
   String get settingsMinutesUnit => '분';
 
   @override
   String get settingsInvalid => '1부터 99 사이의 정수를 입력하세요';
+
+  @override
+  String get settingsInvalidQuiz => '1부터 300 사이의 정수를 입력하세요';
 
   @override
   String get settingsSave => '저장';

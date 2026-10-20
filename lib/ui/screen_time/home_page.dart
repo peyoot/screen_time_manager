@@ -434,7 +434,7 @@ class _TimingSettingsDialog extends StatefulWidget {
 
 class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   /// 休息页秒表刷新间隔的可选值（毫秒）。
-  static const List<int> _refreshOptions = [1, 7, 13, 17, 31];
+  static const List<int> _refreshOptions = [1, 7, 13, 17, 31, 57];
 
   late final TextEditingController _quizController;
   late final TextEditingController _restController;
@@ -464,12 +464,12 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   void _save() {
     final quizMinutes = int.tryParse(_quizController.text.trim());
     final restMinutes = int.tryParse(_restController.text.trim());
-    if (quizMinutes == null ||
-        restMinutes == null ||
-        quizMinutes <= 0 ||
-        restMinutes <= 0 ||
-        quizMinutes > 99 ||
-        restMinutes > 99) {
+    // 亮屏触发时长上限 300 分钟，强制休息时长上限 99 分钟。
+    if (quizMinutes == null || quizMinutes <= 0 || quizMinutes > 300) {
+      setState(() => _error = S.of(context).settingsInvalidQuiz);
+      return;
+    }
+    if (restMinutes == null || restMinutes <= 0 || restMinutes > 99) {
       setState(() => _error = S.of(context).settingsInvalid);
       return;
     }
@@ -517,7 +517,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
             TextField(
               controller: _quizController,
               keyboardType: TextInputType.number,
-              maxLength: 2,
+              maxLength: 3,
               decoration: InputDecoration(
                 labelText: l10n.settingsQuizMinutes,
                 suffixText: l10n.settingsMinutesUnit,
@@ -528,7 +528,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
             TextField(
               controller: _restController,
               keyboardType: TextInputType.number,
-              maxLength: 2,
+              maxLength: 3,
               decoration: InputDecoration(
                 labelText: l10n.settingsRestMinutes,
                 suffixText: l10n.settingsMinutesUnit,
@@ -537,10 +537,12 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
             ),
             const SizedBox(height: 12),
             // 休息秒表刷新间隔：默认 17ms，可调低提高刷新率或调高降低功耗。
+            // InputBorder.none 去掉输入装饰自带的下划线（删除提示词后残留）。
             DropdownButtonFormField<int>(
               initialValue: _refreshMs,
               decoration: InputDecoration(
                 labelText: l10n.settingsRestTimerRefresh,
+                border: InputBorder.none,
               ),
               items: [
                 for (final ms in _refreshOptions)

@@ -20,6 +20,7 @@ class _RecordingInterventionBridge implements InterventionBridge {
   int dismissCount = 0;
   int startPinCount = 0;
   int stopPinCount = 0;
+  int lockCount = 0;
 
   @override
   Future<void> request(InterventionPhase phase) async {
@@ -31,7 +32,12 @@ class _RecordingInterventionBridge implements InterventionBridge {
     dismissCount++;
   }
 
-  @override Future<bool> lockScreen() async => false;
+  @override
+  Future<bool> lockScreen() async {
+    lockCount++;
+    return true;
+  }
+
   @override Future<bool> get isDeviceAdminEnabled async => false;
   @override Future<void> openDeviceAdminSettings() async {}
   @override
@@ -133,8 +139,7 @@ void main() {
 
       machine.restNow();
       expect(machine.state.phase, AppPhase.resting);
-      // 熄屏优先策略：先尝试 lockScreen（本假实现返回 false），
-      // 异步回退到全屏干预 + 固定屏幕，需先让出事件循环。
+      // 到点直接拉前台 + 武装屏幕固定（不再先熄屏）。
       await Future<void>.delayed(Duration.zero);
       expect(bridge.requests, [InterventionPhase.resting]);
       expect(bridge.dismissCount, 0);
@@ -176,7 +181,7 @@ void main() {
       now = now.add(const Duration(seconds: 2));
       machine.tick();
       expect(machine.state.phase, AppPhase.resting);
-      // 熄屏优先策略：先尝试 lockScreen（返回 false），异步回退到干预。
+      // 到点直接拉前台 + 固定屏幕（不再先熄屏）。
       await Future<void>.delayed(Duration.zero);
       expect(bridge.requests, [InterventionPhase.resting]);
       expect(bridge.dismissCount, 0);
@@ -213,6 +218,97 @@ void main() {
       expect(() => machine.restNow(), returnsNormally);
       expect(() => machine.endRestEarly(), returnsNormally);
       expect(machine.state.phase, AppPhase.tracking);
+    });
+  });
+
+  group('休息期自动熄屏（10 秒无答题操作）', () {
+    ScreenTimeMachine buildMachine(DateTime Function() clock) {
+      return ScreenTimeMachine(
+        settings: AppSettings(
+          quizInterval: const Duration(minutes: 30),
+          questionsPerQuiz: 1,
+          requiredCorrectCount: 1,
+          restDuration: const Duration(minutes: 3),
+        ),
+        clock: clock,
+        initiallyScreenOn: true,
+      );
+    }
+
+    test('进入休息后超时未答题 → 自动熄屏一次；提前结束后不再熄屏', () async {
+      final now = DateTime(2026, 10, 11, 9, 0);
+      final machine = buildMachine(() => now);
+      final bridge = _RecordingInterventionBridge();
+      final controller = ScreenTimeController(
+        machine: machine,
+        bankService: _bankWithOneQuestion(),
+        questionsPerQuiz: 1,
+        interventionBridge: bridge,
+        clock: () => now,
+        restAutoLockDelay: const Duration(milliseconds: 60),
+        autoStart: false,
+      );
+      addTearDown(controller.dispose);
+
+      machine.restNow();
+      expect(machine.state.phase, AppPhase.resting);
+      // 触发前不应熄屏；等待超过自动熄屏延迟后恰好熄屏一次。
+      expect(bridge.lockCount, 0);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(bridge.lockCount, 1);
+
+      // 第二次休息：答题豁免（申请/提交会取消计时器）期间不熄屏。
+      machine.endRestEarly();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(bridge.lockCount, 1);
+    });
+
+    test('申请豁免取消自动熄屏；休息早已开始时恢复不再武装', () async {
+      var now = DateTime(2026, 10, 11, 9, 0);
+      final machine = buildMachine(() => now);
+      final bridge = _RecordingInterventionBridge();
+      final controller = ScreenTimeController(
+        machine: machine,
+        bankService: _bankWithOneQuestion(),
+        questionsPerQuiz: 1,
+        interventionBridge: bridge,
+        clock: () => now,
+        restAutoLockDelay: const Duration(milliseconds: 60),
+        autoStart: false,
+      );
+      addTearDown(controller.dispose);
+
+      // 申请豁免：用户已开始答题操作，自动熄屏被取消。
+      machine.restNow();
+      controller.requestRestExemption();
+      expect(controller.restQuizQuestion, isNotNull);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(bridge.lockCount, 0);
+      machine.endRestEarly();
+
+      // 模拟进程重启后恢复：新控制器经 restoreDay 恢复到一个早已开始
+      // 的休息（起点距现在 1 分钟，超出 60ms 窗口）→ 不再武装熄屏。
+      now = now.add(const Duration(minutes: 1));
+      final lateMachine = buildMachine(() => now);
+      final lateController = ScreenTimeController(
+        machine: lateMachine,
+        bankService: _bankWithOneQuestion(),
+        questionsPerQuiz: 1,
+        interventionBridge: bridge,
+        clock: () => now,
+        restAutoLockDelay: const Duration(milliseconds: 60),
+        autoStart: false,
+      );
+      addTearDown(lateController.dispose);
+      lateMachine.restoreDay(
+        usedToday: Duration.zero,
+        thresholdProgress: Duration.zero,
+        exemptionsUsedToday: 0,
+        restEndsAt: now.add(const Duration(minutes: 2)),
+      );
+      expect(lateMachine.state.phase, AppPhase.resting);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(bridge.lockCount, 0);
     });
   });
 }
