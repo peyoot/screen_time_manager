@@ -9,6 +9,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../config/app_info.dart';
 import '../data/repositories/question_repository.dart';
 import 'bank_question.dart';
 import 'question_group.dart';
@@ -19,6 +20,7 @@ class QuestionBankService extends ChangeNotifier {
   QuestionBankService({
     this.recentMemorySize = 10,
     this.maxWeight = 8,
+    this.limits = AppLimits.pro,
     this._repository,
   })  : assert(recentMemorySize >= 0, 'recentMemorySize 不能为负'),
         assert(maxWeight >= 1, 'maxWeight 至少为 1');
@@ -80,6 +82,9 @@ class QuestionBankService extends ChangeNotifier {
   /// 答错加权后的权重上限，防止某道题权重无限膨胀。
   final int maxWeight;
 
+  /// 当前发行版本（Free / Pro）的题库配额；新增分组/题目时强制校验。
+  final AppLimits limits;
+
   final List<QuestionGroup> _groups = [];
 
   /// 题目 id -> 当前权重（缺省为 1）。
@@ -110,11 +115,14 @@ class QuestionBankService extends ChangeNotifier {
   // ------------------------------------------------------------------
 
   /// 新建一个空分组并返回。
+  ///
+  /// 分组数量达到当前版本上限时抛出 [LimitExceededException]。
   QuestionGroup createGroup(
     String name, {
     String type = 'input',
     bool enabled = true,
   }) {
+    _ensureCanAddGroup();
     final group = QuestionGroup(
       name: name,
       type: type,
@@ -128,11 +136,21 @@ class QuestionBankService extends ChangeNotifier {
   }
 
   /// 导入数据创建新分组并返回。
+  ///
+  /// 分组数量或单组题目数量超过当前版本上限时抛出
+  /// [LimitExceededException]。
   QuestionGroup importIntoNewGroup({
     required String name,
     String? type,
     required List<BankQuestion> questions,
   }) {
+    _ensureCanAddGroup();
+    if (questions.length > limits.maxQuestionsPerGroup) {
+      throw LimitExceededException(
+        kind: LimitKind.questions,
+        limit: limits.maxQuestionsPerGroup,
+      );
+    }
     final group = QuestionGroup(
       name: name,
       type: type ?? 'input',
@@ -175,8 +193,20 @@ class QuestionBankService extends ChangeNotifier {
   }
 
   /// 向分组追加题目（手动添加或导入到现有分组）。
+  ///
+  /// 追加后题目总数超过当前版本单组上限时抛出
+  /// [LimitExceededException]（不写入任何题目）。
   void addQuestions(String groupId, List<BankQuestion> questions) {
     if (questions.isEmpty) return;
+    final group = groupById(groupId);
+    if (group == null) return;
+    if (group.questions.length + questions.length >
+        limits.maxQuestionsPerGroup) {
+      throw LimitExceededException(
+        kind: LimitKind.questions,
+        limit: limits.maxQuestionsPerGroup,
+      );
+    }
     _mutateGroup(
       groupId,
       (group) {
@@ -334,6 +364,16 @@ class QuestionBankService extends ChangeNotifier {
   // ------------------------------------------------------------------
   // 内部实现
   // ------------------------------------------------------------------
+
+  /// 分组数量达到当前版本上限时抛出 [LimitExceededException]。
+  void _ensureCanAddGroup() {
+    if (_groups.length >= limits.maxGroups) {
+      throw LimitExceededException(
+        kind: LimitKind.groups,
+        limit: limits.maxGroups,
+      );
+    }
+  }
 
   /// 就地修改分组并通知监听者；分组不存在时静默忽略。
   void _mutateGroup(

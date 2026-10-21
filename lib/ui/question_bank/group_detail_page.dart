@@ -1,12 +1,16 @@
 /// 题库分组详情页：题目列表、手动添加、编辑、批量删除。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 
+import '../../config/app_info.dart';
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
 import '../../question_bank/question_group.dart';
+import '../about/upgrade_prompt.dart';
 
 /// 展示某个分组内的题目列表。
 ///
@@ -127,9 +131,26 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                   tooltip: l10n.groupDetailAddTooltip,
                   icon: const Icon(Icons.add),
                   onPressed: () async {
+                    final limits = widget.service.limits;
+                    // 本组已满：提示升级到 Pro 版，不再弹出添加对话框。
+                    if (questions.length >= limits.maxQuestionsPerGroup) {
+                      await showUpgradePrompt(
+                        context,
+                        LimitExceededException(
+                          kind: LimitKind.questions,
+                          limit: limits.maxQuestionsPerGroup,
+                        ),
+                      );
+                      return;
+                    }
                     final question = await _showQuestionDialog();
-                    if (question != null) {
+                    if (question == null) return;
+                    try {
                       widget.service.addQuestions(group.id, [question]);
+                    } on LimitExceededException catch (e) {
+                      if (context.mounted) {
+                        unawaited(showUpgradePrompt(context, e));
+                      }
                     }
                   },
                 ),

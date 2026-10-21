@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:screen_time_manager/config/app_info.dart';
 import 'package:screen_time_manager/question_bank/bank_question.dart';
 import 'package:screen_time_manager/question_bank/question_bank_service.dart';
 
@@ -223,6 +224,84 @@ void main() {
                 '加权题仅 $weakCount 次，权重未生效');
       }
       expect(weakCount, greaterThan(200 ~/ 3));
+    });
+  });
+
+  group('版本配额（Free / Pro）', () {
+    test('Free 版：第 6 个分组被拒绝，Pro 版允许', () {
+      final free = QuestionBankService(limits: AppLimits.free);
+      for (var i = 0; i < AppLimits.free.maxGroups; i++) {
+        free.createGroup('G$i');
+      }
+      expect(
+        () => free.createGroup('超限'),
+        throwsA(
+          isA<LimitExceededException>()
+              .having((e) => e.kind, 'kind', LimitKind.groups)
+              .having((e) => e.limit, 'limit', 5),
+        ),
+      );
+      expect(free.groups.length, 5);
+
+      final pro = QuestionBankService(limits: AppLimits.pro);
+      for (var i = 0; i < 6; i++) {
+        pro.createGroup('G$i');
+      }
+      expect(pro.groups.length, 6);
+    });
+
+    test('Free 版：单组第 11 题被拒绝且不写入，Pro 版允许', () {
+      final free = QuestionBankService(limits: AppLimits.free);
+      final groupId = free.createGroup('G').id;
+      free.addQuestions(groupId, buildQuestions('q', 10));
+      expect(free.groupById(groupId)!.questions.length, 10);
+
+      expect(
+        () => free.addQuestions(groupId, buildQuestions('extra', 1)),
+        throwsA(
+          isA<LimitExceededException>()
+              .having((e) => e.kind, 'kind', LimitKind.questions)
+              .having((e) => e.limit, 'limit', 10),
+        ),
+      );
+      // 超限的批次整体丢弃。
+      expect(free.groupById(groupId)!.questions.length, 10);
+
+      final pro = QuestionBankService(limits: AppLimits.pro);
+      final proGroupId = pro.createGroup('G').id;
+      pro.addQuestions(proGroupId, buildQuestions('q', 10));
+      pro.addQuestions(proGroupId, buildQuestions('extra', 1));
+      expect(pro.groupById(proGroupId)!.questions.length, 11);
+    });
+
+    test('导入新分组时同时校验分组数与题目数', () {
+      final free = QuestionBankService(limits: AppLimits.free);
+      expect(
+        () => free.importIntoNewGroup(
+          name: '超量',
+          questions: buildQuestions('q', 11),
+        ),
+        throwsA(isA<LimitExceededException>()
+            .having((e) => e.kind, 'kind', LimitKind.questions)),
+      );
+
+      for (var i = 0; i < 5; i++) {
+        free.importIntoNewGroup(name: 'G$i', questions: buildQuestions('q', 1));
+      }
+      expect(
+        () => free.importIntoNewGroup(
+          name: '超组',
+          questions: buildQuestions('q', 1),
+        ),
+        throwsA(isA<LimitExceededException>()
+            .having((e) => e.kind, 'kind', LimitKind.groups)),
+      );
+    });
+
+    test('AppInfo 默认（无原生信息）为 Free 版，配额取 Free', () {
+      expect(AppInfo.flavor, AppFlavor.free);
+      expect(AppInfo.limits.maxGroups, 5);
+      expect(AppInfo.limits.maxQuestionsPerGroup, 10);
     });
   });
 }

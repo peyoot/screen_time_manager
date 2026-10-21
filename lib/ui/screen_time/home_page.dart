@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state_machine/app_phase.dart';
 import '../../state_machine/screen_time_state.dart';
 import '../question_bank/group_list_page.dart';
+import '../about/about_page.dart';
 import '../permissions/permission_guide_page.dart';
 import 'admin_password_dialogs.dart';
 import 'reminder_page.dart';
@@ -172,11 +173,12 @@ class _TimingViewState extends State<_TimingView>
               onPressed: () => _showLanguagePicker(context, widget.controller),
             ),
             IconButton(
-              tooltip: l10n.homeBackgroundTooltip,
-              icon: const Icon(Icons.exit_to_app),
-              // 退出前台到后台继续运行（监控/计时不中断）；
-              // 回到前台时根组件会自动恢复沉浸全屏。
-              onPressed: _exitNow,
+              tooltip: l10n.homeAboutTooltip,
+              icon: const Icon(Icons.info_outline),
+              // 关于页：版本号、Free / Pro 配额、许可与帮助入口。
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const AboutPage()),
+              ),
             ),
           ],
         ),

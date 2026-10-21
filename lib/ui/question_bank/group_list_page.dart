@@ -1,12 +1,16 @@
 /// 题库分组管理页：分组列表、新建、导入、编辑、删除与启用开关。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 
+import '../../config/app_info.dart';
 import '../../question_bank/bank_question.dart';
 import '../../question_bank/question_bank_service.dart';
 import '../../question_bank/question_group.dart';
+import '../about/upgrade_prompt.dart';
 import 'group_detail_page.dart';
 import 'import_sheet.dart';
 
@@ -114,6 +118,8 @@ class GroupListPage extends StatelessWidget {
     required bool requireGroupName,
     required void Function(List<BankQuestion> questions, String? groupName)
         onImport,
+    int? maxQuestions,
+    VoidCallback? onLimitExceeded,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -125,6 +131,8 @@ class GroupListPage extends StatelessWidget {
         child: ImportSheet(
           title: title,
           requireGroupName: requireGroupName,
+          maxQuestions: maxQuestions,
+          onLimitExceeded: onLimitExceeded,
           onImport: onImport,
         ),
       ),
@@ -132,20 +140,62 @@ class GroupListPage extends StatelessWidget {
   }
 
   Future<void> _importToNewGroup(BuildContext context) async {
+    final limits = service.limits;
+    // 分组已满：直接提示升级，不再打开导入面板。
+    if (service.groups.length >= limits.maxGroups) {
+      await showUpgradePrompt(
+        context,
+        LimitExceededException(kind: LimitKind.groups, limit: limits.maxGroups),
+      );
+      return;
+    }
     await _showImportSheet(
       context,
       title: S.of(context).bankImportToNew,
       requireGroupName: true,
+      maxQuestions: limits.maxQuestionsPerGroup,
+      onLimitExceeded: () => unawaited(
+        showUpgradePrompt(
+          context,
+          LimitExceededException(
+            kind: LimitKind.questions,
+            limit: limits.maxQuestionsPerGroup,
+          ),
+        ),
+      ),
       onImport: (questions, groupName) =>
           service.importIntoNewGroup(name: groupName!, questions: questions),
     );
   }
 
-  Future<void> _importToGroup(BuildContext context, QuestionGroup group) {
-    return _showImportSheet(
+  Future<void> _importToGroup(BuildContext context, QuestionGroup group) async {
+    final limits = service.limits;
+    final remaining = limits.maxQuestionsPerGroup - group.questions.length;
+    // 本组已满：直接提示升级。
+    if (remaining <= 0) {
+      await showUpgradePrompt(
+        context,
+        LimitExceededException(
+          kind: LimitKind.questions,
+          limit: limits.maxQuestionsPerGroup,
+        ),
+      );
+      return;
+    }
+    await _showImportSheet(
       context,
       title: S.of(context).bankImportToGroup(group.name),
       requireGroupName: false,
+      maxQuestions: remaining,
+      onLimitExceeded: () => unawaited(
+        showUpgradePrompt(
+          context,
+          LimitExceededException(
+            kind: LimitKind.questions,
+            limit: limits.maxQuestionsPerGroup,
+          ),
+        ),
+      ),
       onImport: (questions, _) => service.addQuestions(group.id, questions),
     );
   }
@@ -187,6 +237,15 @@ class GroupListPage extends StatelessWidget {
   }
 
   Future<void> _createGroup(BuildContext context) async {
+    final limits = service.limits;
+    // 分组已满：提示升级到 Pro 版，不再弹出命名对话框。
+    if (service.groups.length >= limits.maxGroups) {
+      await showUpgradePrompt(
+        context,
+        LimitExceededException(kind: LimitKind.groups, limit: limits.maxGroups),
+      );
+      return;
+    }
     final name = await _promptForText(context, title: S.of(context).bankNewGroup);
     if (name == null || name.isEmpty) return;
     service.createGroup(name);

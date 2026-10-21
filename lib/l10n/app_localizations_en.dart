@@ -465,4 +465,111 @@ class SEn extends S {
 
   @override
   String get importErrorJsonEmpty => 'No questions parsed from JSON';
+
+  @override
+  String get homeAboutTooltip => 'About';
+
+  @override
+  String get aboutTitle => 'About';
+
+  @override
+  String aboutVersion(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get aboutEditionFree => 'Free edition';
+
+  @override
+  String get aboutEditionPro => 'Pro edition';
+
+  @override
+  String get aboutDescription =>
+      'A cross-platform screen-time self-management app: screen-on timer, forced rest, quiz exemptions and a customizable question bank.';
+
+  @override
+  String get aboutLicense => 'License & Disclaimer';
+
+  @override
+  String get aboutLicenseSubtitle => 'Read the developer disclaimer before use';
+
+  @override
+  String get aboutHelp => 'Help & Usage';
+
+  @override
+  String get aboutHelpSubtitle => 'Main features and step-by-step usage';
+
+  @override
+  String get aboutLimitsTitle => 'Edition limits';
+
+  @override
+  String aboutLimitsText(int groups, int questions) {
+    return 'Up to $groups groups, with up to $questions questions per group';
+  }
+
+  @override
+  String aboutProHint(int proGroups, int proQuestions) {
+    return 'Upgrade to Pro to unlock up to $proGroups groups and $proQuestions questions per group.';
+  }
+
+  @override
+  String get aboutCopyright => '© 2026 keekey.com All rights reserved.';
+
+  @override
+  String get licenseTitle => 'License & Disclaimer';
+
+  @override
+  String get licenseAgreeNote =>
+      'By continuing to use this app, you confirm that you have read and agree to the following terms.';
+
+  @override
+  String get licenseBody =>
+      'Important: This app is provided \"AS IS\" solely to help you manage your own screen time. It does not constitute medical, health, educational or legal advice.\n\n1. License\nSubject to these terms, you may install and use this app on your personal devices under the edition you obtained (Free or Pro). You may not reverse engineer, crack or redistribute the app, or use it for unlawful purposes.\n\n2. Disclaimer of Warranty\nThe developer does not warrant that the app will be uninterrupted, error-free, or fit for your particular purpose. The developer assumes no responsibility for inaccurate timing, failed interventions, missing notifications or data loss caused by OS restrictions, vendor ROM customization, system updates, revoked permissions or background process killing.\n\n3. Limitation of Liability and Assumption of Risk\nTo the maximum extent permitted by applicable law, the developer and its affiliates shall not be liable for any direct, indirect, incidental, special, punitive or consequential damages (including but not limited to device lockout, data loss, lost time, impact on study or work, or third-party claims) arising from the use of or inability to use this app. You use this app voluntarily and bear all risks and liability arising from it.\n\n4. Forced Rest and Device Lock\nThis app may restrict device usage through a full-screen rest page, screen pinning and automatic screen-off (which requires Device Admin authorization). Do not rely on this app in emergencies, while driving, for medical needs, or in any situation where the device must remain immediately operable. You are solely responsible for any consequences of these features.\n\n5. Data and Privacy\nQuestion banks, settings and statistics are stored locally on your device by default. You should back up important data yourself; uninstalling the app, clearing data or changing devices may cause data loss, and the developer has no obligation to recover it.\n\n6. Third-Party and System Services\nThe app relies on permissions, alarms, notifications, accessibility and other services provided by the operating system. Their availability is determined by the system and device vendors, and the developer cannot guarantee they work on every device.\n\n7. Changes and Applicability\nThe developer may update these terms at any time, and updated terms take effect with each new release. Continued use constitutes acceptance. These terms do not exclude or limit any rights mandatorily granted to you by applicable law.\n\nIf you do not agree to any of these terms, please stop using the app and uninstall it immediately.';
+
+  @override
+  String get helpTitle => 'Help & Usage';
+
+  @override
+  String get helpBody =>
+      'Main features\n• Screen-on timer: counts only while the screen is on and pauses automatically when off.\n• Forced rest: when screen-on time reaches the threshold, the full-screen rest page opens and the app is pinned.\n• Quiz exemption: during rest you may request one question; a correct answer ends the rest early. Two exemptions per day by default, reset after a full natural rest.\n• Auto screen-off: if no quiz action occurs within 10 seconds on the rest page, the screen turns off (requires Device Admin); after you turn it back on, the rest page stays on as a stopwatch.\n• Question bank: import CSV/JSON, add or edit questions manually, and weighted drawing based on wrong-answer counts.\n• Rest switch: disable forced rest in timing settings to only track screen-on time.\n• Permission guide: shortcuts to overlay, notification, full-screen intent, battery optimization, exact alarm, accessibility and device admin settings.\n• Background running: monitoring and timing continue in the background; on some Chinese ROMs enable auto-start and battery whitelist.\n• Emergency exit: on the rest page press volume up → down → up quickly, then volume down five times (default password).\n• Languages: follows the system language; Chinese, English, Japanese and Korean can be switched on the home page.\n\nGetting started\n1. After first launch, open \"Permissions & Reliability\" and grant each item to ensure intervention and background survival.\n2. Adjust the screen-on threshold, rest duration and stopwatch refresh interval in \"Timing settings\"; set an admin password to prevent changes.\n3. Use your phone normally; when the threshold is reached, follow the rest page. Request a quiz exemption to end the rest early.\n4. Import or edit questions in \"Question bank\". The Free edition has quotas; upgrade to Pro for more capacity.\n\nData\nSettings, question banks and statistics are stored only on this device by default. Uninstalling the app or clearing data will delete them; please back up important data yourself.';
+
+  @override
+  String get helpLimitsTitle => 'Free vs Pro';
+
+  @override
+  String helpLimitsText(
+    int freeGroups,
+    int freeQuestions,
+    int proGroups,
+    int proQuestions,
+  ) {
+    return 'Free: up to $freeGroups groups, $freeQuestions questions per group.\nPro: up to $proGroups groups, $proQuestions questions per group.';
+  }
+
+  @override
+  String get limitGroupsTitle => 'Group limit reached';
+
+  @override
+  String limitGroupsMessage(int limit, int proGroups) {
+    return 'This edition supports up to $limit groups; Pro supports up to $proGroups groups.';
+  }
+
+  @override
+  String get limitQuestionsTitle => 'Question limit reached';
+
+  @override
+  String limitQuestionsMessage(int limit, int proQuestions) {
+    return 'This edition supports up to $limit questions per group; Pro supports up to $proQuestions per group.';
+  }
+
+  @override
+  String get limitUpgrade => 'Explore Pro';
+
+  @override
+  String get limitLater => 'Not now';
+
+  @override
+  String importErrorTooMany(int limit) {
+    return 'Exceeds the per-group limit: you can still add up to $limit questions';
+  }
 }

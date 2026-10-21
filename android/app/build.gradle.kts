@@ -36,6 +36,24 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // 生成 BuildConfig.FLAVOR，供 monitor 通道的 getAppInfo 回传给 Dart。
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // 产品风味：free（免费版）/ pro（专业版）。
+    // 两者共用同一 applicationId，安装时相互覆盖升级；配额差异由 Dart 侧
+    // 依据 native 回传的 BuildConfig.FLAVOR 决定（见 lib/config/app_info.dart）。
+    flavorDimensions += "tier"
+    productFlavors {
+        create("free") {
+            dimension = "tier"
+        }
+        create("pro") {
+            dimension = "tier"
+        }
+    }
 }
 
 kotlin {

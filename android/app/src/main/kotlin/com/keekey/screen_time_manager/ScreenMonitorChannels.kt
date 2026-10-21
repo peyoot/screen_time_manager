@@ -158,6 +158,21 @@ object ScreenMonitorChannels {
                     }
                     "isMonitoring" -> result.success(monitoring)
                     "getPermissions" -> result.success(permissionStatus(context))
+                    // 安装包构建信息：版本号 + 产品风味（free / pro）。
+                    // Dart 侧据此展示 About 页版本与题库配额。
+                    "getAppInfo" -> {
+                        val version = runCatching {
+                            context.packageManager
+                                .getPackageInfo(context.packageName, 0)
+                                .versionName
+                        }.getOrNull() ?: ""
+                        result.success(
+                            mapOf(
+                                "version" to version,
+                                "flavor" to BuildConfig.FLAVOR,
+                            )
+                        )
+                    }
                     "openPermissionSettings" -> {
                         openPermissionSettings(context, call.argument<String>("kind"))
                         result.success(null)

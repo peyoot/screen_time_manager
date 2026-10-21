@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemChrome, SystemUiMode;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'config/app_info.dart';
 import 'data/database.dart';
 import 'data/repositories/app_settings_repository.dart';
 import 'data/repositories/day_snapshot_repository.dart';
@@ -35,6 +36,22 @@ Future<void> main() async {
   // 之后由 [ScreenTimeManagerApp] 的生命周期观察在每次回前台时重新声明。
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
+  // 平台监控接线：Android 返回真实通道（亮灭屏事件流 + 干预桥），
+  // 桌面/Web 返回空资源包，控制器退化为 Timer 驱动。
+  // 尽早创建以便读取安装包真实的 flavor 与版本号（决定题库配额）。
+  final platformMonitoring = createPlatformMonitoring();
+  try {
+    final appBuildInfo = await platformMonitoring.monitor?.getAppInfo();
+    if (appBuildInfo != null) {
+      AppInfo.applyNative(
+        flavor: appBuildInfo.flavor,
+        version: appBuildInfo.version,
+      );
+    }
+  } catch (e) {
+    debugPrint('读取应用构建信息失败，沿用编译期默认 flavor: $e');
+  }
+
   // 数据层初始化：**任何失败都不得阻断 UI**。缓存引擎的 main() 只在进程
   // 启动时执行一次，这里抛异常 runApp 就永远不会执行——之后用户点图标
   // 只会挂载到这个"无 UI 的引擎"上，表现为黑屏（ZUXOS 真机已复现）。
@@ -45,7 +62,8 @@ Future<void> main() async {
   ScreenSessionRepository? screenSessionRepo;
   RestSessionRepository? restSessionRepo;
   SnoozeRecordRepository? snoozeRecordRepo;
-  QuestionBankService bankService = QuestionBankService();
+  QuestionBankService bankService =
+      QuestionBankService(limits: AppInfo.limits);
   try {
     final db = await openAppDatabase();
 
@@ -60,7 +78,10 @@ Future<void> main() async {
     settings = await appSettingsRepo.loadOrInit();
 
     // 题库服务：注入 repo 后从 DB 载入分组与权重。
-    bankService = QuestionBankService(repository: questionRepo);
+    bankService = QuestionBankService(
+      repository: questionRepo,
+      limits: AppInfo.limits,
+    );
     await bankService.loadFromDb();
     // 首次运行题库为空时写入默认题库：所有语种加载英文分组，
     // 中文环境额外追加"文化常识"古诗文飞花令分组。
@@ -99,10 +120,7 @@ Future<void> main() async {
     questionBank: machineBank,
   );
 
-  // 平台监控接线：Android 返回真实通道（亮灭屏事件流 + 干预桥），
-  // 桌面/Web 返回空资源包，控制器退化为 Timer 驱动。
-  final platformMonitoring = createPlatformMonitoring();
-
+  // 平台监控接线（已在启动时创建并读取构建信息）。
   final controller = ScreenTimeController(
     machine: machine,
     bankService: bankService,

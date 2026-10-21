@@ -26,6 +26,14 @@ class ImportSheet extends StatefulWidget {
   /// 是否需要填写分组名称（导入到新分组时为 true）。
   final bool requireGroupName;
 
+  /// 本次可导入的最大题目数；null 表示不限制。
+  ///
+  /// 导入到已有分组时传入"本组剩余容量"，超过时在面板内提示并保留输入。
+  final int? maxQuestions;
+
+  /// 超过 [maxQuestions] 时的回调（用于弹出升级到 Pro 的提示）。
+  final VoidCallback? onLimitExceeded;
+
   /// 解析成功后的回调；[ImportSheet.onImport] 的 `groupName` 仅在
   /// [requireGroupName] 为 true 时非空。
   final void Function(List<BankQuestion> questions, String? groupName)
@@ -35,6 +43,8 @@ class ImportSheet extends StatefulWidget {
     super.key,
     required this.title,
     this.requireGroupName = false,
+    this.maxQuestions,
+    this.onLimitExceeded,
     required this.onImport,
   });
 
@@ -55,6 +65,16 @@ class _ImportSheetState extends State<ImportSheet> {
     super.dispose();
   }
 
+  /// 检查本次导入是否超过配额；超限时显示错误并触发升级提示。
+  /// 返回 true 表示已超限、应中止导入。
+  bool _exceedsLimit(int count) {
+    final limit = widget.maxQuestions;
+    if (limit == null || count <= limit) return false;
+    setState(() => _error = S.of(context).importErrorTooMany(limit));
+    widget.onLimitExceeded?.call();
+    return true;
+  }
+
   /// 校验并解析输入文本，成功后回调并关闭面板，失败则在面板内报错。
   void _submit() {
     final name = _nameController.text.trim();
@@ -70,6 +90,7 @@ class _ImportSheetState extends State<ImportSheet> {
           setState(() => _error = l10n.importErrorCsvEmpty);
           return;
         }
+        if (_exceedsLimit(questions.length)) return;
         widget.onImport(
           questions,
           widget.requireGroupName ? name : null,
@@ -80,6 +101,7 @@ class _ImportSheetState extends State<ImportSheet> {
           setState(() => _error = l10n.importErrorJsonEmpty);
           return;
         }
+        if (_exceedsLimit(group.questions.length)) return;
         widget.onImport(
           group.questions,
           widget.requireGroupName ? (name.isEmpty ? group.name : name) : null,

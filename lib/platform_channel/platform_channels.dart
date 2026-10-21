@@ -118,6 +118,33 @@ class MonitorChannel {
   Future<bool> moveToBack() async {
     return await _channel.invokeMethod<bool>('moveToBack') ?? false;
   }
+
+  /// 查询安装包构建信息（版本号 + 产品风味 free / pro）。
+  ///
+  /// 非 Android 或原生未实现时返回 null，调用方沿用编译期默认值。
+  Future<AppBuildInfo?> getAppInfo() async {
+    final raw =
+        await _channel.invokeMapMethod<String, dynamic>('getAppInfo');
+    if (raw == null) return null;
+    final flavor = raw['flavor'];
+    final version = raw['version'];
+    if (flavor is! String) return null;
+    return AppBuildInfo(
+      flavor: flavor,
+      version: version is String ? version : '',
+    );
+  }
+}
+
+/// 原生上报的构建信息（Android `BuildConfig.FLAVOR` / `VERSION_NAME`）。
+class AppBuildInfo {
+  const AppBuildInfo({required this.flavor, required this.version});
+
+  /// 产品风味：`free` 或 `pro`。
+  final String flavor;
+
+  /// 版本号（来自 pubspec 的 versionName）。
+  final String version;
 }
 
 // ---------------------------------------------------------------------

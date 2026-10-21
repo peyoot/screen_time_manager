@@ -226,7 +226,7 @@ void main() {
     expect(find.text('今日豁免次数已用完，请等待休息结束'), findsOneWidget);
   });
 
-  testWidgets('后台运行按钮渲染；无平台通道时点击安全 no-op', (tester) async {
+  testWidgets('右上角关于按钮：展示版本号、当前版本配额与 License/帮助入口', (tester) async {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -234,12 +234,49 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 右上角"后台运行"退出按钮（测试环境 monitor 为 null，点击应静默 no-op）。
-    final button = find.byTooltip('Run in background');
+    // 主页右上角为关于按钮。
+    final button = find.byTooltip('About');
     expect(button, findsOneWidget);
+    expect(find.byTooltip('Run in background'), findsNothing);
     await tester.tap(button);
     await tester.pumpAndSettle();
-    expect(find.text('Screen Time Manager'), findsOneWidget);
+
+    // 关于页：版本号与 Free 版标识，配额文案来自 AppLimits.free。
+    expect(find.text('About'), findsWidgets);
+    expect(find.text('Version 1.0.0'), findsOneWidget);
+    expect(find.text('Free edition'), findsOneWidget);
+    expect(
+      find.text('Up to 5 groups, with up to 10 questions per group'),
+      findsOneWidget,
+    );
+
+    // 进入许可与免责声明页。
+    await tester.tap(find.text('License & Disclaimer'));
+    await tester.pumpAndSettle();
+    expect(find.text('License & Disclaimer'), findsWidgets);
+    expect(
+      find.textContaining('AS IS'),
+      findsOneWidget,
+    );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // 进入帮助页，末段展示 Free / Pro 配额对比。
+    await tester.tap(find.text('Help & Usage'));
+    await tester.pumpAndSettle();
+    expect(find.text('Help & Usage'), findsWidgets);
+    // 帮助正文较长，配额对比在列表末尾，需滚动到可见。
+    await tester.scrollUntilVisible(
+      find.text('Free vs Pro'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Free vs Pro'), findsOneWidget);
+    expect(
+      find.textContaining('Free: up to 5 groups, 10 questions per group'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('设置管理密码后：权限入口需先验证，错误不放行、正确才进入',

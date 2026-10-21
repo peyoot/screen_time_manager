@@ -10,8 +10,22 @@
 - 运行（Linux桌面）: `flutter run -d linux`
 - 运行（Web调试）: `flutter run -d web-server --web-hostname 0.0.0.0 --web-port 8080`
 - 运行测试: `flutter test`
-- 构建Android: `flutter build apk`
+- Kotlin 单元测试: `./gradlew :app:testFreeDebugUnitTest`（定义 flavor 后任务按风味拆分，`testDebugUnitTest` 会因歧义失败）
+- 构建Android Free版: `flutter build apk --flavor free`
+- 构建Android Pro版: `flutter build apk --flavor pro`
 - 构建HarmonyOS: `flutter build hap` (需切换到Flutter-OH SDK)
+
+## Editions & Limits
+应用通过 Android product flavor 发布两个版本，共用同一 `applicationId`（相互覆盖安装）：
+- `free`：最多 5 个题库分组，每组最多 10 题。
+- `pro`：最多 100 个题库分组，每组最多 10000 题。
+
+实现约定：
+- 配额与版本号单一数据源为 `lib/config/app_info.dart`（`AppFlavor` / `AppLimits` / `LimitExceededException`）。
+- 运行期版本以原生 `BuildConfig.FLAVOR` 为准：Dart 启动时经 `monitor` 通道 `getAppInfo` 读取，非 Android/测试退化为编译期 `APP_FLAVOR`（默认 `free`）。
+- `QuestionBankService.limits` 在新增分组/导入/追加题目处强制校验；UI 预检查后经 `showUpgradePrompt`（`lib/ui/about/upgrade_prompt.dart`）提示升级。
+- 版本号为 `1.0.0`（`pubspec.yaml` → 原生 versionName → `AppInfo.version`）。
+- 关于页（主页右上角）：版本号、Free/Pro 标识、当前配额、License 与帮助入口；许可页含完整免责声明（用户自行承担全部风险）。
 
 ## Code Style
 - 遵循Flutter官方Dart风格指南。
@@ -167,7 +181,7 @@ Dart 侧镜像与接线：
 
 **已知边界**：纯后台（Dart 未运行）期间发生的休息 / 亮屏**明细表**（`rest_session` / `screen_session`）不写入 DB；但**当日聚合统计与主页展示由原生核心完整保留**。
 
-**测试**：`android/.../src/test/.../ScreenTimeCoreTest.kt`（14 用例，JUnit4，`./gradlew :app:testDebugUnitTest`）+ Dart `test/ui/native_time_core_test.dart`（12 用例：快照解析 / `applyNativeSnapshot` / 控制器镜像与转发与 seed 与异常静默 / away 统计镜像）。
+**测试**：`android/.../src/test/.../ScreenTimeCoreTest.kt`（14 用例，JUnit4，`./gradlew :app:testFreeDebugUnitTest`）+ Dart `test/ui/native_time_core_test.dart`（12 用例：快照解析 / `applyNativeSnapshot` / 控制器镜像与转发与 seed 与异常静默 / away 统计镜像）。
 
 ### 本地端之后（顺序待定）
 1. 本地统计查询与按天聚合页（数据层实现顺序第 2 步）。
@@ -225,9 +239,11 @@ Dart 侧镜像与接线：
 - **本地数据层（SQLite）**：已实现建表 + CRUD + 接线（`lib/data/`）；`app_settings` 启动加载、`question_group`/`question` cache-aside 持久化、`screen_session`/`rest_session`/`snooze_record` 在控制器阶段切换时落库。`sync_queue` 仅建表 + 入队。
 - **默认题库**：纯英文，不做多语种翻译（用户自行导入所需题库）——`Missing Piece`（谚语填空）、`Curious Mind`（科普问答）；中文系统环境额外加载"文化常识"古诗文飞花令分组。
 - **管理密码（本机）**：可在设置对话框内设置/修改/清除（最短 4 位）；设置后进入设置对话框、题库管理页与**权限引导页**均需先输密码验证（`openWithAdminGate` 门禁，`lib/ui/screen_time/admin_password_dialogs.dart`）。只存 FNV-1a 64 位加盐哈希不落明文（`AppSettings.adminPasswordHash` ↔ `app_settings.admin_password_hash`，schema V2 阶梯迁移，V1 库升级走 `applySchemaV2` 增量 ALTER）。`AppSettingsRepository` 带 `_lastWrite` 写入门串行化 upsert 并提供 `flush()`（测试断言 DB 前必等），与 QuestionBankService 约定一致。
-- **默认全屏 + 后台运行**：应用默认沉浸全屏（`SystemUiMode.immersiveSticky` 隐藏状态栏/导航栏），`main()` 启动即声明，`ScreenTimeManagerApp` 的 WidgetsBindingObserver 在每次 `resumed` 时重新声明（从后台/系统设置返回、强制休息被原生拉到前台都自动恢复全屏，休息页无需单独处理）。主页 AppBar 最右"后台运行"按钮（仅计时页有，resting 不提供）经 `monitor` 通道 `moveToBack` → `Activity.moveTaskToBack(true)` 退到后台但不销毁进程，监控/计时不中断；桌面/Web/测试（monitor 为 null）静默 no-op。**计时页显眼"退到后台"按钮**：位于手动休息按钮下方，点击立即退到后台；按钮显示 15 秒倒计时，期间无操作则自动退到后台（点击页面任意处重置倒计时，对话框/子页面打开时不触发自动退后台）；从后台回到前台时倒计时重置。该机制作为部分国产 ROM（如 ZUXOS）划掉应用无法自动重启的兜底替代。
+- **默认全屏 + 后台运行**：应用默认沉浸全屏（`SystemUiMode.immersiveSticky` 隐藏状态栏/导航栏），`main()` 启动即声明，`ScreenTimeManagerApp` 的 WidgetsBindingObserver 在每次 `resumed` 时重新声明（从后台/系统设置返回、强制休息被原生拉到前台都自动恢复全屏，休息页无需单独处理）。主页 AppBar 最右为**关于按钮**（`Icons.info_outline` → `AboutPage`）；"退到后台"能力保留为计时页正文的显眼按钮：点击经 `monitor` 通道 `moveToBack` → `Activity.moveTaskToBack(true)` 退到后台但不销毁进程，监控/计时不中断；桌面/Web/测试（monitor 为 null）静默 no-op。**计时页显眼"退到后台"按钮**：位于手动休息按钮下方，点击立即退到后台；按钮显示 15 秒倒计时，期间无操作则自动退到后台（点击页面任意处重置倒计时，对话框/子页面打开时不触发自动退后台）；从后台回到前台时倒计时重置。该机制作为部分国产 ROM（如 ZUXOS）划掉应用无法自动重启的兜底替代。
+- **关于 / 许可 / 帮助页**：`lib/ui/about/` 下 `about_page.dart`（版本号、Free/Pro 标识、当前配额、版权，入口跳转许可与帮助）、`license_page.dart`（`LicenseDisclaimerPage`，避开 Flutter 自带 `LicensePage` 命名；免责声明按空行分段渲染）、`help_page.dart`（主要功能、使用步骤、数据说明、Free/Pro 配额对比）、`upgrade_prompt.dart`（超限升级提示，可跳转关于页）。四语 l10n 文案齐全。
 - **紧急退出（音量键）超时缩短为 5 秒**：`EmergencyKeyController.INPUT_WINDOW_MS` 由 10s 改为 5s；超时回到 IDLE 态后可重新用 音量+→-→+ 交替序列触发。
-- **测试**：195 个 Dart 测试全过（193 既有 + 2 新增：休息期自动熄屏接线 2 例；另扩充设置对话框上限边界断言与权限页 Device Admin 条目断言）——状态机含 restoreDay/applyNativeSnapshot / 题库 / widget 含权限引导页精确闹钟条目 / 数据层含 day_snapshot 与 V2→V3、V3→V4、V4→V5 迁移 / 会话记录 / 平台通道接线 / 当日休息统计 / 管理密码与 V1→V2 迁移 / 权限门禁与后台按钮 / 当日快照恢复 / 原生计时核心镜像 / away 统计；另有 18 个 Kotlin JUnit 测试（`ScreenTimeCoreTest` 含 away 统计 5 例 + restEnabled 4 例，`./gradlew :app:testDebugUnitTest`）。
+- **测试**：199 个 Dart 测试全过——状态机含 restoreDay/applyNativeSnapshot / 题库（含 Free/Pro 配额边界）/ widget 含关于页导航与权限引导页精确闹钟条目 / 数据层含 day_snapshot 与 V2→V3、V3→V4、V4→V5 迁移 / 会话记录 / 平台通道接线 / 当日休息统计 / 管理密码与 V1→V2 迁移 / 权限门禁与后台按钮 / 当日快照恢复 / 原生计时核心镜像 / away 统计；另有 18 个 Kotlin JUnit 测试（`ScreenTimeCoreTest` 含 away 统计 5 例 + restEnabled 4 例，`./gradlew :app:testFreeDebugUnitTest`）。
+- **版本 / 版本风味 / 配额已完成**：`lib/config/app_info.dart` 为单一数据源（`AppVersion=1.0.0`、`AppLimits.free/pro`、`LimitExceededException`）；Gradle 定义 `free`/`pro` flavor（共用 applicationId，`buildFeatures.buildConfig=true`）；`monitor` 通道 `getAppInfo` 回传 `BuildConfig.FLAVOR` 与 versionName，`main.dart` 据此构造 `QuestionBankService(limits: AppInfo.limits)`；Free 5 组/每组 10 题、Pro 100 组/每组 10000 题，服务层强制 + UI（分组列表/导入面板/分组详情）预检查并弹升级提示。两个 flavor `flutter build apk --debug --flavor free|pro` 均通过。
 - **Android 第 1 步已完成**：包名/applicationId 已改为 `com.keekey.screen_time_manager`；`lib/platform_channel/` 通道层就绪（screen_events / monitor / intervention，条件导入保证 Web 不引入 `dart:io`）；`ScreenTimeController` 支持注入亮灭屏事件流与干预桥，未注入时退化为 Timer 驱动；Kotlin 侧通道（含 `ScreenEventBus`、权限状态查询与设置页跳转）已注册；`flutter build apk --debug` 与 `flutter build web` 均通过。
 - **Android 第 2 步已完成**：`ScreenMonitorApp` 预创建并缓存 FlutterEngine（ID `screen_monitor_engine`），MainActivity 复用之；`ScreenMonitorService` 前台服务（specialUse + 常驻通知）内动态注册亮灭屏/解锁广播，事件经 EventChannel 驱动状态机，后台/灭屏期间 Dart 持续 tick；POST_NOTIFICATIONS 首启申请；合并后 Manifest 已核验。
 - **Dart 入口推迟到 Activity（开机自启后点图标黑屏修复，ZUXOS 真机复现）**：此前 `ScreenMonitorApp.onCreate` 里就 `executeDartEntrypoint` 跑 main()+runApp()；开机广播/划卡闹钟在**无任何 Activity**的后台拉起进程时，引擎在无 FlutterView 可附着的上下文中跑起来后进入不可渲染状态，用户随后点图标复用该缓存引擎只能看到黑屏，必须到系统设置强制停止让 pid 消失、再冷启动才恢复。修复：Application 只预创建引擎壳（注册通道 + 入缓存，不跑 Dart），MainActivity 在 `onCreate` 窗口就绪后由 `ensureDartEntrypoint()` 触发 Dart 入口（`isExecutingDart` 为 true 则跳过）。**取舍**：纯后台拉起、尚未被用户打开的进程不跑 Dart；该区间已由**原生权威计时核心**（第 6 步）在 Kotlin 前台服务内独立计时覆盖——不累计亮屏时长 / 不触发休息干预的问题已消除；用户打开一次后往返后台仍由 Dart 镜像原生快照。
