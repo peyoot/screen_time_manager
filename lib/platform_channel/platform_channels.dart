@@ -1,6 +1,6 @@
 /// Flutter ↔ Android 原生平台通道定义。
 ///
-/// 所有通道共用命名空间 `com.screen_time_manager/platform`：
+/// 所有通道共用命名空间 `com.keekey.screen_time_manager/platform`：
 /// - EventChannel `screen_events`：原生 → Dart 的亮屏（true）/灭屏（false）事件；
 /// - MethodChannel `monitor`：监控服务的启停控制与权限查询/跳转；
 /// - MethodChannel `intervention`：Dart 进入答题/休息阶段时请求原生把界面拉到前台。
@@ -14,7 +14,7 @@ import 'package:flutter/services.dart';
 import '../models/app_settings.dart';
 
 /// 通道统一命名空间。
-const String kPlatformChannelNamespace = 'com.screen_time_manager/platform';
+const String kPlatformChannelNamespace = 'com.keekey.screen_time_manager/platform';
 
 // ---------------------------------------------------------------------
 // 亮灭屏事件

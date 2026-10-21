@@ -1,4 +1,4 @@
-package com.screen_time_manager
+package com.keekey.screen_time_manager
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
