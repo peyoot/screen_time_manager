@@ -190,6 +190,13 @@ class SKo extends S {
       'MIUI, EMUI, ColorOS, OriginOS 등 일부 ROM은 자동 실행을 허용해야 재부팅 후 모니터링이 재개됩니다.';
 
   @override
+  String get permScreenTimeTitle => '스크린 타임 인증(Family Controls)';
+
+  @override
+  String get permScreenTimeDesc =>
+      'iOS는 전역 화면 켜짐을 감지할 수 없어 선택한 앱만 모니터링할 수 있습니다. 탭하여 인증하고 제한할 앱을 선택하세요. 시간이 되면 해당 앱이 전체 화면으로 차단되며, 퀴즈 면제로 해제할 수 있습니다.';
+
+  @override
   String get settingsTitle => '타이밍 설정';
 
   @override

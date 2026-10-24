@@ -1,0 +1,24 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "屏幕时间管理入口模块"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "屏幕时间管理主界面"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "屏幕时间管理"
+    },
+    {
+      "name": "perm_keep_background_reason",
+      "value": "需要在后台持续统计亮屏时长并在到点时提醒您休息"
+    },
+    {
+      "name": "perm_notification_reason",
+      "value": "到达设定的使用时间后，通过通知提醒您进入休息"
+    }
+  ]
+}

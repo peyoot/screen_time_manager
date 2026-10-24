@@ -1,7 +1,10 @@
 /// 权限引导页：逐项展示监控运行所需的系统权限状态，点击跳转对应设置页。
 ///
-/// 覆盖第 4 步的权限引导项：悬浮窗、通知、全屏 intent、电池优化白名单、
-/// 无障碍服务与 OEM 自启动管理。自启动无公开状态 API，仅提供跳转。
+/// Android 条目集：悬浮窗、通知、全屏 intent、电池优化白名单、精确闹钟、
+/// 无障碍服务、设备管理器与 OEM 自启动管理（自启动无公开状态 API，仅跳转）。
+/// iOS 条目集：Family Controls（屏幕使用时间）授权——iOS 只能监控用户选定
+/// 的应用，其余 Android 权限项不存在。条目集由原生 `getPermissions` 返回的
+/// 键决定（含 `screenTime` 键即 iOS），避免在 Web 可达代码里使用 `dart:io`。
 /// 返回本页（从系统设置切回）时自动刷新各权限状态。
 library;
 
@@ -43,7 +46,7 @@ class PermissionGuidePage extends StatefulWidget {
 
 class _PermissionGuidePageState extends State<PermissionGuidePage>
     with WidgetsBindingObserver {
-  static const _entries = <_PermissionEntry>[
+  static const _androidEntries = <_PermissionEntry>[
     _PermissionEntry(
       icon: Icons.layers_outlined,
       title: _permOverlayTitle,
@@ -94,8 +97,24 @@ class _PermissionGuidePageState extends State<PermissionGuidePage>
     ),
   ];
 
+  /// iOS 条目集：仅 Family Controls 授权（点击可发起授权/选择受限应用）。
+  static const _iosEntries = <_PermissionEntry>[
+    _PermissionEntry(
+      icon: Icons.family_restroom_outlined,
+      title: _permScreenTimeTitle,
+      description: _permScreenTimeDesc,
+      permission: MonitorPermission.screenTime,
+    ),
+  ];
+
   /// 各权限当前状态；未查询到（非 Android/通道异常）时为空表。
   Map<MonitorPermission, bool> _status = const {};
+
+  /// 条目集选择：原生返回含 `screenTime` 键即 iOS，否则按 Android 展示。
+  List<_PermissionEntry> get _entries =>
+      _status.containsKey(MonitorPermission.screenTime)
+          ? _iosEntries
+          : _androidEntries;
 
   /// 通道调用是否失败（非 Android 平台或通道未注册）。
   bool _unavailable = false;
@@ -257,3 +276,5 @@ String _permDeviceAdminTitle(S l10n) => l10n.permDeviceAdminTitle;
 String _permDeviceAdminDesc(S l10n) => l10n.permDeviceAdminDesc;
 String _permAutoStartTitle(S l10n) => l10n.permAutoStartTitle;
 String _permAutoStartDesc(S l10n) => l10n.permAutoStartDesc;
+String _permScreenTimeTitle(S l10n) => l10n.permScreenTimeTitle;
+String _permScreenTimeDesc(S l10n) => l10n.permScreenTimeDesc;

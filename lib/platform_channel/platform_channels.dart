@@ -67,6 +67,13 @@ enum MonitorPermission {
 
   /// OEM 自启动管理（无公开 API，仅提供跳转，无状态查询）。
   autoStart,
+
+  /// iOS Family Controls（屏幕使用时间）授权。
+  ///
+  /// 仅 iOS 使用：iOS 无法监听全局亮灭屏，只能经 Screen Time API
+  /// 监控用户选定的应用；该授权是一切监控/屏蔽能力的前提。
+  /// Android 的 `getPermissions` 不会返回此键。
+  screenTime,
 }
 
 /// `monitor` 通道的 Dart 侧封装。
@@ -117,6 +124,21 @@ class MonitorChannel {
   /// Android 走 Activity.moveTaskToBack(true)；返回是否成功。
   Future<bool> moveToBack() async {
     return await _channel.invokeMethod<bool>('moveToBack') ?? false;
+  }
+
+  /// 推送计时配置给原生监控层。
+  ///
+  /// 仅 iOS 使用：Android 的配置走 `core` 通道（[TimeCore.configure]），
+  /// Dart 仅在 `timeCore == null && monitor != null`（即 iOS 接线）时调用；
+  /// iOS 原生据此持久化并调整 Screen Time 阈值事件与休息窗口时长。
+  /// 其他平台未实现该方法，调用方需容忍 PlatformException。
+  Future<void> configure(AppSettings settings) {
+    return _channel.invokeMethod<void>('configure', <String, dynamic>{
+      'quizSeconds': settings.quizInterval.inSeconds,
+      'restSeconds': settings.restDuration.inSeconds,
+      'dailyLimit': settings.dailyExemptionLimit,
+      'restEnabled': settings.restEnabled,
+    });
   }
 
   /// 查询安装包构建信息（版本号 + 产品风味 free / pro）。

@@ -185,6 +185,13 @@ class SZh extends S {
       '部分国产 ROM（MIUI、EMUI、ColorOS、OriginOS 等）需允许自启动，开机后才能自动恢复监控。';
 
   @override
+  String get permScreenTimeTitle => '屏幕使用时间授权（Family Controls）';
+
+  @override
+  String get permScreenTimeDesc =>
+      'iOS 无法监听全局亮屏，只能监控你选定的应用。点击完成授权并选择要限制的应用；到点后这些应用将被全屏屏蔽，答题豁免后方可继续使用。';
+
+  @override
   String get settingsTitle => '计时设置';
 
   @override

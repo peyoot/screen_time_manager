@@ -190,6 +190,13 @@ class SJa extends S {
       'MIUI・EMUI・ColorOS・OriginOS などの ROM では自動起動を許可しないと、再起動後に監視が再開されません。';
 
   @override
+  String get permScreenTimeTitle => 'スクリーンタイム認証（Family Controls）';
+
+  @override
+  String get permScreenTimeDesc =>
+      'iOS では画面点灯を全局監視できず、選択したアプリのみ監視できます。タップして認証し、制限するアプリを選択してください。時間到達後、それらのアプリは全屏シールドで遮断され、クイズ免除で解除できます。';
+
+  @override
   String get settingsTitle => 'タイミング設定';
 
   @override

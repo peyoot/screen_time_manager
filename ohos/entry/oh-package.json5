@@ -1,0 +1,13 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "屏幕时间管理入口模块（Flutter Ability）",
+  "main": "",
+  "author": "keekey",
+  "license": "",
+  "dependencies": {
+    // Flutter OH 引擎插件包：构建 hap 需切换到 Flutter-OH SDK，
+    // 该依赖由 flutter_tools 在 `flutter pub get` / 构建时注入本地路径。
+    "@ohos/flutter_ohos": "file:../har/flutter.har"
+  }
+}

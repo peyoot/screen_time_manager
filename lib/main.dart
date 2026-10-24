@@ -166,6 +166,17 @@ Future<void> main() async {
     } catch (e) {
       debugPrint('推送原生计时核心配置失败，跳过: $e');
     }
+  } else {
+    // iOS（无原生计时核心但有 monitor 通道）：把计时配置推给原生
+    // Screen Time 监控层；Android 走上面的 core 通道，桌面/Web 跳过。
+    final monitorChannel = platformMonitoring.monitor;
+    if (monitorChannel != null) {
+      try {
+        await monitorChannel.configure(machine.settings);
+      } catch (e) {
+        debugPrint('推送原生监控配置失败，跳过: $e');
+      }
+    }
   }
 
   runApp(ScreenTimeManagerApp(controller: controller));

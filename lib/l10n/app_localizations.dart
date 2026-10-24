@@ -419,6 +419,18 @@ abstract class S {
   /// **'部分国产 ROM（MIUI、EMUI、ColorOS、OriginOS 等）需允许自启动，开机后才能自动恢复监控。'**
   String get permAutoStartDesc;
 
+  /// No description provided for @permScreenTimeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'屏幕使用时间授权（Family Controls）'**
+  String get permScreenTimeTitle;
+
+  /// No description provided for @permScreenTimeDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'iOS 无法监听全局亮屏，只能监控你选定的应用。点击完成授权并选择要限制的应用；到点后这些应用将被全屏屏蔽，答题豁免后方可继续使用。'**
+  String get permScreenTimeDesc;
+
   /// No description provided for @settingsTitle.
   ///
   /// In zh, this message translates to:

@@ -69,6 +69,8 @@
   "permDeviceAdminDesc": "許可すると、休憩ページで 10 秒間クイズ操作がない場合に自動で画面がオフになります。未許可の場合は休憩ページが点灯したまま秒表として使えます。",
   "permAutoStartTitle": "自動起動（OEM）",
   "permAutoStartDesc": "MIUI・EMUI・ColorOS・OriginOS などの ROM では自動起動を許可しないと、再起動後に監視が再開されません。",
+  "permScreenTimeTitle": "スクリーンタイム認証（Family Controls）",
+  "permScreenTimeDesc": "iOS では画面点灯を全局監視できず、選択したアプリのみ監視できます。タップして認証し、制限するアプリを選択してください。時間到達後、それらのアプリは全屏シールドで遮断され、クイズ免除で解除できます。",
 
   "settingsTitle": "タイミング設定",
   "settingsQuizMinutes": "休憩までの画面点灯時間",

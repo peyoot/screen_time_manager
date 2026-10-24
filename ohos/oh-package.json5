@@ -1,0 +1,12 @@
+{
+  "name": "screen_time_manager",
+  "version": "1.0.0",
+  "description": "屏幕时间管理 · 自律助手（HarmonyOS）",
+  "main": "",
+  "author": "keekey",
+  "license": "",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hypium": "1.0.6"
+  }
+}

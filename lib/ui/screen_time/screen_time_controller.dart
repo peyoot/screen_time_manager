@@ -653,6 +653,14 @@ class ScreenTimeController extends ChangeNotifier {
     final core = timeCore;
     if (core != null) {
       unawaited(core.configure(machine.settings).catchError((_) {}));
+    } else {
+      // iOS（无原生计时核心但有 monitor 通道）：同步配置给原生
+      // Screen Time 监控（阈值事件 / 休息窗口时长）。Android 走上面的
+      // core 通道；桌面/Web monitor 为 null，跳过。
+      final monitorChannel = monitor;
+      if (monitorChannel != null) {
+        unawaited(monitorChannel.configure(machine.settings).catchError((_) {}));
+      }
     }
   }
 

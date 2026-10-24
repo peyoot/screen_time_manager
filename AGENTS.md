@@ -185,8 +185,48 @@ Dart 侧镜像与接线：
 
 ### 本地端之后（顺序待定）
 1. 本地统计查询与按天聚合页（数据层实现顺序第 2 步）。
-2. iOS（Family Controls / DeviceActivity）与 HarmonyOS（长时任务）平台层。
+2. ✅ iOS（Family Controls / DeviceActivity）与 HarmonyOS（长时任务）平台层代码已编写（见下文两节；⚠️ 本机无 Xcode/DevEco，均未编译验证，需对应 IDE + 真机验收）。
 3. 同步引擎 + Supabase、家长控制（纯后端能力，不阻塞本地端）。
+
+## iOS 平台层（✅ 代码已编写，⚠️ 未编译验证）
+
+**平台约束（硬性）**：iOS 无法监听全局亮灭屏，应用退后台即被系统挂起。因此 iOS 语义与 Android"全局亮屏计时"不同：经 Screen Time API 监控**用户选定的应用**的累计使用时长，到点屏蔽这些应用。
+
+**架构决策**：
+- `PlatformMonitoring`（`lib/platform_channel/platform_monitoring_native.dart`）iOS 分支：仅 `monitor` + `intervention` 通道，**无 screenOnEvents、timeCore 为 null**——应用前台时由 Dart Timer 驱动状态机（与桌面一致）；后台区间的"选定应用计时 + 屏蔽"完全交给原生 Screen Time API（不依赖本应用进程存活）。
+- 计时配置下发：Dart 在 `timeCore == null && monitor != null`（即 iOS 接线）时经 `monitor` 通道 `configure` 推送 quizSeconds/restSeconds/dailyLimit/restEnabled（`MonitorChannel.configure`；`main.dart` 启动时与 `ScreenTimeController.updateTiming` 运行时各一次）。Android 的 `monitor` 通道不实现该方法但 Dart 永不调用（Android 走 `core` 通道）。
+
+**文件**：
+- `ios/Runner/FamilyControlsManager.swift`：Family Controls 授权（`.individual`）、`FamilyActivitySelection` 经 App Group UserDefaults 持久化（JSON 编码）、`DeviceActivityCenter` 整日重复调度（00:00~23:59, repeats=true）+ 阈值事件（quizSec）、`ManagedSettingsStore` 屏蔽施加/撤销、一次性"休息窗口"调度（restSec 后区间结束撤盾）、`FamilyActivityPicker` 经 UIHostingController 从最顶层 VC 弹出。启动监控时**选择项为空不主动弹选择器**（避免每次冷启动打断用户）；用户经权限引导页点击条目才弹出。
+- `ios/Runner/ScreenMonitorChannels.swift`：`monitor` 通道（startMonitoring/stopMonitoring/isMonitoring/getPermissions→仅 `screenTime` 键/openPermissionSettings/configure/getAppInfo→flavor 恒 "free"/moveToBack→false）；`intervention` 通道（request(resting)→立即屏蔽+启动休息窗口；dismiss→撤盾；lockScreen/isDeviceAdminEnabled/screenPinning 恒 false——iOS 无熄屏/屏幕固定公开 API）。
+- `ios/Shared/ScreenTimeSharedConfig.swift`：主 App 与扩展共享常量（App Group `group.com.keekey.screentime`、ManagedSettings 命名存储、DeviceActivity 命名、配置键与默认值 900/180/2、选择项读写、屏蔽与休息窗口的共用实现）。**必须同时加入 Runner 与扩展两个 target 的 Target Membership**。
+- `ios/ScreenTimeMonitorExtension/`（DeviceActivityMonitor 扩展源码三件套）：`ScreenTimeMonitorExtension.swift`（eventDidReachThreshold→屏蔽+启动休息窗口；intervalDidEnd→撤盾，休息窗口结束与整日调度 23:59 结束双兜底）、`Info.plist`（NSExtensionPointIdentifier `com.apple.deviceactivity.monitor-extension`）、同名 entitlements。
+- `ios/Runner/Runner.entitlements`：`com.apple.developer.family-controls` + App Groups。
+- `ios/Runner/AppDelegate.swift`：在 `didInitializeImplicitFlutterEngine` 内经 `engineBridge.pluginRegistry.registrar(forPlugin:)` 取 messenger 注册通道。
+- pbxproj 已改：Runner/RunnerTests bundle ID → `com.keekey.screentimemanager[.RunnerTests]`（iOS bundle ID 不允许下划线）；Runner 三个构建配置加 `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;`；工程级 `IPHONEOS_DEPLOYMENT_TARGET` 15.0 → **16.0**（DeviceActivity 最低要求）。
+- 权限引导页（`lib/ui/permissions/permission_guide_page.dart`）：iOS 条目集仅一项"屏幕使用时间"（`MonitorPermission.screenTime`，条目集由 `getPermissions` 返回键判定，避免 Web 可达代码用 `dart:io`）；四语 l10n 已加 `permScreenTimeTitle/Desc`。
+
+**macOS/Xcode 侧必须手工完成的步骤（本仓库无法脚本化）**：
+1. 打开 `ios/Runner.xcworkspace`，Signing & Capabilities 为 Runner 选择开发团队，确认 Family Controls + App Groups（`group.com.keekey.screentime`）已生效（App Group 需在 Developer Portal 注册）。
+2. File → New → Target → **Device Activity Monitor Extension**，命名 `ScreenTimeMonitorExtension`（bundle ID 建议 `com.keekey.screentimemanager.monitor`），用 `ios/ScreenTimeMonitorExtension/` 下三个文件替换模板产物；把 `ios/Shared/ScreenTimeSharedConfig.swift` 的 Target Membership 勾上扩展。
+3. 为扩展 target 同样开启 Family Controls + App Groups 能力。
+4. **分发限制**：Family Controls 能力对外分发（TestFlight/App Store）需向 Apple 提交申请获批；个人开发签名真机调试可直接使用。
+5. 真机验收：授权弹窗 → 选择器选定应用 → 使用选定应用达阈值后系统级屏蔽出现 → 休息窗口结束自动解除。
+
+## HarmonyOS 平台层（✅ 代码已编写，⚠️ 未编译验证）
+
+**平台约束（硬性）**：无系统悬浮窗权限；无法强制拉前台/锁屏；`COMMON_EVENT_SCREEN_ON/OFF` 仅系统应用可订阅；应用退后台即冻结。因此：亮灭屏检测改为**每秒轮询 `display.isScreenOn()`**；保活靠**长时任务**（backgroundTaskManager，backgroundModes=dataTransfer + `ohos.permission.KEEP_BACKGROUND_RUNNING`）；到点干预只能靠**通知 + wantAgent**（点击拉起 EntryAbility）。
+
+**架构**：与 Android 第 6 步同构——ArkTS 原生权威计时核心 + Dart 镜像。`PlatformMonitoring` 新增 `Platform.operatingSystem == 'ohos'` 分支，全量接线（screenOnEvents + monitor + interventionBridge + timeCore）。
+
+**文件**（`ohos/` 骨架手工新建，`flutter build hap` 需切换到 Flutter-OH SDK）：
+- `ohos/AppScope/app.json5`（bundleName `com.keekey.screen_time_manager`）+ 资源；`ohos/build-profile.json5`、`ohos/oh-package.json5`；`ohos/entry/`（build-profile/oh-package，依赖 `@ohos/flutter_ohos`）。
+- `ohos/entry/src/main/module.json5`：EntryAbility + backgroundModes(dataTransfer) + 请求 KEEP_BACKGROUND_RUNNING 与 NOTIFICATION_CONTROLLER 权限。
+- `ohos/entry/src/main/ets/entryability/EntryAbility.ets`：extends FlutterAbility，`configureFlutterEngine` 注册 GeneratedPluginRegistrant（flutter_tools 生成）+ 全部通道。
+- `ohos/entry/src/main/ets/screen_monitor/ScreenTimeCore.ets`：**ScreenTimeCore.kt 的忠实 ArkTS 移植**（CoreClock/CoreStore/CoreEffect/CoreSnapshot 同名同语义；持久化键与快照 Map 键完全对齐 Android；realtimeMs 无 elapsedRealtime 等价物，同取 Date.now() 靠 MAX_DELTA_MS 钳制，已注释说明）。
+- `ohos/entry/src/main/ets/screen_monitor/ScreenMonitorChannels.ets`：TimeCoreHost（preferences 持久化 + 每秒轮询 display.isScreenOn 喂 setScreenState + tick + applyEffect）+ 长时任务启停 + 休息通知（wantAgent 拉 EntryAbility）+ 四个通道注册。`monitor.getPermissions` 返回空表（权限引导页在 HarmonyOS 显示不可用）；lockScreen/screenPinning 恒 false。
+- ⚠️ 需 DevEco 验证的 API 点已在代码注释标注：`display.isScreenOn()` 同步行为（API 12）、`startBackgroundRunning` 签名（新旧重载）、`wantAgent`/`notificationManager` 用法、flutter_ohos 的 MethodChannel/EventChannel 构造与 StreamHandler 签名、`EntryAbility.context` 可用时机。
+- **验收路径**：DevEco Studio 打开 `ohos/` → 签名 → 真机运行 → 验证后台保活（长时任务）、到点通知、点击通知回休息页、跨天重置。
 
 ## Backend
 
@@ -271,4 +311,5 @@ Dart 侧镜像与接线：
   4. ✅ 权限引导（主页 AppBar → 权限引导页，7 项含 Device Admin 与 OEM 自启动跳转）与开机自启（BootReceiver + user_started 标记）。
   5. ✅ 原生权威计时核心（开机即完整监控：Kotlin 计时 + Dart 镜像；见"第 6 步"）。
   6. ⏳ 真机验收（前台/后台/锁屏三种状态拦截、重启自启、划卡重启、当日数据延续）。
-- **后置**：本地统计聚合页、iOS / HarmonyOS 平台层、Supabase 同步引擎与家长控制（均不阻塞本地闭环）。
+- **iOS / HarmonyOS 平台层代码已编写**（见上文对应两节；均未在本机编译验证）：iOS 走 Screen Time API（Family Controls + DeviceActivity 调度 + ManagedSettings 屏蔽 + DeviceActivityMonitor 扩展源码 + entitlements/pbxproj 已就位，扩展 target 需在 Xcode 手工添加）；HarmonyOS 新建 `ohos/` 骨架（EntryAbility + module.json5 + ArkTS 版 ScreenTimeCore 忠实移植 + 长时任务轮询保活 + 通知干预），Dart 侧 `Platform.operatingSystem == 'ohos'` 分支全量接线；iOS 配置下发新增 `MonitorChannel.configure`（Dart 在 `timeCore == null && monitor != null` 时调用）。
+- **后置**：本地统计聚合页、Supabase 同步引擎与家长控制（均不阻塞本地闭环）。

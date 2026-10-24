@@ -192,6 +192,14 @@ class SEn extends S {
       'Some ROMs (MIUI, EMUI, ColorOS, OriginOS, etc.) require allowing auto-start so monitoring resumes after reboot.';
 
   @override
+  String get permScreenTimeTitle =>
+      'Screen Time authorization (Family Controls)';
+
+  @override
+  String get permScreenTimeDesc =>
+      'iOS cannot observe global screen-on time; it can only monitor apps you select. Tap to authorize and choose the apps to limit; when time is up those apps are shielded until you pass a quiz exemption.';
+
+  @override
   String get settingsTitle => 'Timing settings';
 
   @override

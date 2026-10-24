@@ -12,5 +12,10 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // 注册 Screen Time 监控通道（monitor / intervention）。
+    // registrar(forPlugin:) 的参数仅用于取回 messenger，无实际插件同名要求。
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ScreenMonitorChannels") {
+      ScreenMonitorChannels.register(messenger: registrar.messenger())
+    }
   }
 }

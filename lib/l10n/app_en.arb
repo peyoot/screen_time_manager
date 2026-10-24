@@ -69,6 +69,8 @@
   "permDeviceAdminDesc": "When granted, the screen turns off after 10 seconds without quiz interaction on the rest page; otherwise the rest page stays on as a stopwatch.",
   "permAutoStartTitle": "Auto-start (OEM)",
   "permAutoStartDesc": "Some ROMs (MIUI, EMUI, ColorOS, OriginOS, etc.) require allowing auto-start so monitoring resumes after reboot.",
+  "permScreenTimeTitle": "Screen Time authorization (Family Controls)",
+  "permScreenTimeDesc": "iOS cannot observe global screen-on time; it can only monitor apps you select. Tap to authorize and choose the apps to limit; when time is up those apps are shielded until you pass a quiz exemption.",
 
   "settingsTitle": "Timing settings",
   "settingsQuizMinutes": "Screen time before break",

@@ -1,0 +1,60 @@
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "EntryAbility",
+    "deviceTypes": [
+      "phone",
+      "tablet"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "description": "$string:EntryAbility_desc",
+        "icon": "$media:app_icon",
+        "label": "$string:EntryAbility_label",
+        "startWindowIcon": "$media:app_icon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        // 长时任务类型：DATA_TRANSFER 保活进程，供轮询屏幕状态与
+        // 原生权威计时核心持续运行（HarmonyOS 无全局亮灭屏广播可用，
+        // 且应用退后台即冻结，必须依赖长时任务）。
+        "backgroundModes": [
+          "dataTransfer"
+        ],
+        "skills": [
+          {
+            "entities": ["entity.system.home"],
+            "actions": ["action.system.home"]
+          }
+        ]
+      }
+    ],
+    "requestPermissions": [
+      {
+        // 长时任务权限：保持后台运行（亮屏轮询 + 计时核心）。
+        "name": "ohos.permission.KEEP_BACKGROUND_RUNNING",
+        "reason": "$string:perm_keep_background_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
+      },
+      {
+        // 通知权限：到点休息干预通过通知 + wantAgent 实现
+        // （HarmonyOS 无悬浮窗权限，无法强制拉前台）。
+        "name": "ohos.permission.NOTIFICATION_CONTROLLER",
+        "reason": "$string:perm_notification_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
+      }
+    ]
+  }
+}
