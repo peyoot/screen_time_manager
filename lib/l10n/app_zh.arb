@@ -111,6 +111,7 @@
   "settingsRestMinutes": "强制休息时长",
   "settingsRestEnabled": "强制休息",
   "settingsRestEnabledHint": "关闭后只统计亮屏时长，不再触发或手动进入休息",
+  "settingsMore": "更多设置",
   "settingsRestTimerRefresh": "休息秒表刷新间隔",
   "settingsMinutesUnit": "分钟",
   "settingsInvalid": "请输入 1-99 的整数",

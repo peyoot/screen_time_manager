@@ -256,6 +256,9 @@ class SJa extends S {
   String get settingsRestEnabledHint => 'オフにすると画面点灯時間のみを記録し、休憩は発生しません';
 
   @override
+  String get settingsMore => 'その他の設定';
+
+  @override
   String get settingsRestTimerRefresh => '休憩ストップウォッチ更新間隔';
 
   @override

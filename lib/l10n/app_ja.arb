@@ -91,6 +91,7 @@
   "settingsRestMinutes": "強制休憩時間",
   "settingsRestEnabled": "強制休憩",
   "settingsRestEnabledHint": "オフにすると画面点灯時間のみを記録し、休憩は発生しません",
+  "settingsMore": "その他の設定",
   "settingsRestTimerRefresh": "休憩ストップウォッチ更新間隔",
   "settingsMinutesUnit": "分",
   "settingsInvalid": "1〜99 の整数を入力してください",

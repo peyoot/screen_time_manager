@@ -91,6 +91,7 @@
   "settingsRestMinutes": "Mandatory break duration",
   "settingsRestEnabled": "Forced rest",
   "settingsRestEnabledHint": "When off, only screen time is tracked; no forced or manual rest",
+  "settingsMore": "More settings",
   "settingsRestTimerRefresh": "Rest stopwatch refresh interval",
   "settingsMinutesUnit": "min",
   "settingsInvalid": "Please enter an integer between 1 and 99",

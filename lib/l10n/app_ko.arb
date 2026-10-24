@@ -91,6 +91,7 @@
   "settingsRestMinutes": "강제 휴식 시간",
   "settingsRestEnabled": "강제 휴식",
   "settingsRestEnabledHint": "끄면 화면 사용 시간만 기록하고 휴식이 시작되지 않습니다",
+  "settingsMore": "추가 설정",
   "settingsRestTimerRefresh": "휴식 스톱워치 새로고침 간격",
   "settingsMinutesUnit": "분",
   "settingsInvalid": "1부터 99 사이의 정수를 입력하세요",

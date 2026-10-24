@@ -261,6 +261,9 @@ class SEn extends S {
       'When off, only screen time is tracked; no forced or manual rest';
 
   @override
+  String get settingsMore => 'More settings';
+
+  @override
   String get settingsRestTimerRefresh => 'Rest stopwatch refresh interval';
 
   @override

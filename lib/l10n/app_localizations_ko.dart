@@ -256,6 +256,9 @@ class SKo extends S {
   String get settingsRestEnabledHint => '끄면 화면 사용 시간만 기록하고 휴식이 시작되지 않습니다';
 
   @override
+  String get settingsMore => '추가 설정';
+
+  @override
   String get settingsRestTimerRefresh => '휴식 스톱워치 새로고침 간격';
 
   @override

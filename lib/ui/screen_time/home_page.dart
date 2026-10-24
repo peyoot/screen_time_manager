@@ -454,9 +454,6 @@ class _TimingSettingsDialog extends StatefulWidget {
 }
 
 class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
-  /// 休息页秒表刷新间隔的可选值（毫秒）。
-  static const List<int> _refreshOptions = [1, 7, 13, 17, 31, 57];
-
   late final TextEditingController _quizController;
   late final TextEditingController _restController;
   late int _refreshMs;
@@ -499,6 +496,16 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
           i == index ? window : _exemptWindows[i],
       ];
     });
+  }
+
+  /// 打开"更多设置"子对话框，返回后仅更新本地值，随主对话框保存提交。
+  Future<void> _openMoreSettings() async {
+    final refreshMs = await showDialog<int>(
+      context: context,
+      builder: (context) => _MoreSettingsDialog(initialRefreshMs: _refreshMs),
+    );
+    if (refreshMs == null) return;
+    setState(() => _refreshMs = refreshMs);
   }
 
   @override
@@ -584,28 +591,8 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            // 休息秒表刷新间隔：默认 17ms，可调低提高刷新率或调高降低功耗。
-            // InputBorder.none 去掉输入装饰自带的下划线（删除提示词后残留）。
-            DropdownButtonFormField<int>(
-              initialValue: _refreshMs,
-              decoration: InputDecoration(
-                labelText: l10n.settingsRestTimerRefresh,
-                border: InputBorder.none,
-              ),
-              items: [
-                for (final ms in _refreshOptions)
-                  DropdownMenuItem<int>(
-                    value: ms,
-                    child: Text('$ms ms'),
-                  ),
-              ],
-              onChanged: (value) {
-                if (value != null) setState(() => _refreshMs = value);
-              },
-            ),
-            const SizedBox(height: 12),
-            // 豁免时间段：仅强制休息开启时展示。落在任一时间段内时按
-            // "强制休息已关闭"处理（只统计亮屏、阈值冻结、不触发休息）。
+            // 豁免时间段：仅强制休息开启时展示，紧随时长设置。落在任一
+            // 时间段内时按"强制休息已关闭"处理（只统计亮屏、阈值冻结）。
             if (_restEnabled) ...[
               const Divider(height: 24),
               Row(
@@ -676,6 +663,19 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
                     ),
                   ),
             ],
+            // 进阶选项统一收纳在"更多设置"，便于后续继续添加。
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(l10n.settingsMore),
+              subtitle: Text(
+                '${l10n.settingsRestTimerRefresh} · $_refreshMs ms',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _openMoreSettings,
+            ),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -728,6 +728,67 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
           child: Text(l10n.bankCancel),
         ),
         FilledButton(onPressed: _save, child: Text(l10n.settingsSave)),
+      ],
+    );
+  }
+}
+
+/// "更多设置"子对话框：收纳不常用的进阶选项（当前为休息秒表刷新间隔）。
+///
+/// 返回所选刷新间隔（毫秒），取消返回 null；由主对话框统一保存。
+class _MoreSettingsDialog extends StatefulWidget {
+  final int initialRefreshMs;
+
+  const _MoreSettingsDialog({required this.initialRefreshMs});
+
+  @override
+  State<_MoreSettingsDialog> createState() => _MoreSettingsDialogState();
+}
+
+class _MoreSettingsDialogState extends State<_MoreSettingsDialog> {
+  /// 休息页秒表刷新间隔的可选值（毫秒）。
+  static const List<int> _refreshOptions = [1, 7, 13, 17, 31, 57];
+
+  late int _refreshMs;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshMs = widget.initialRefreshMs;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = S.of(context);
+    return AlertDialog(
+      title: Text(l10n.settingsMore),
+      content: DropdownButtonFormField<int>(
+        initialValue: _refreshMs,
+        // InputBorder.none 去掉输入装饰自带的下划线（删除提示词后残留）。
+        decoration: InputDecoration(
+          labelText: l10n.settingsRestTimerRefresh,
+          border: InputBorder.none,
+        ),
+        items: [
+          for (final ms in _refreshOptions)
+            DropdownMenuItem<int>(
+              value: ms,
+              child: Text('$ms ms'),
+            ),
+        ],
+        onChanged: (value) {
+          if (value != null) setState(() => _refreshMs = value);
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.bankCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_refreshMs),
+          child: Text(l10n.settingsSave),
+        ),
       ],
     );
   }

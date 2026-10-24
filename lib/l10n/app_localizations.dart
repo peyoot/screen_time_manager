@@ -545,6 +545,12 @@ abstract class S {
   /// **'关闭后只统计亮屏时长，不再触发或手动进入休息'**
   String get settingsRestEnabledHint;
 
+  /// No description provided for @settingsMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'更多设置'**
+  String get settingsMore;
+
   /// No description provided for @settingsRestTimerRefresh.
   ///
   /// In zh, this message translates to:

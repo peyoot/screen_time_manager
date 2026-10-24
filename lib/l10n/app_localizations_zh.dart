@@ -251,6 +251,9 @@ class SZh extends S {
   String get settingsRestEnabledHint => '关闭后只统计亮屏时长，不再触发或手动进入休息';
 
   @override
+  String get settingsMore => '更多设置';
+
+  @override
   String get settingsRestTimerRefresh => '休息秒表刷新间隔';
 
   @override
