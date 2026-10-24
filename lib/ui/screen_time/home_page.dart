@@ -594,7 +594,6 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
             // 豁免时间段：仅强制休息开启时展示，紧随时长设置。落在任一
             // 时间段内时按"强制休息已关闭"处理（只统计亮屏、阈值冻结）。
             if (_restEnabled) ...[
-              const Divider(height: 24),
               Row(
                 children: [
                   const Icon(Icons.event_available_outlined, size: 20),
@@ -663,18 +662,27 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
                     ),
                   ),
             ],
-            // 进阶选项统一收纳在"更多设置"，便于后续继续添加。
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              title: Text(l10n.settingsMore),
-              subtitle: Text(
-                '${l10n.settingsRestTimerRefresh} · $_refreshMs ms',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(Icons.chevron_right),
+            // 进阶选项统一收纳在"更多设置"子对话框，便于后续继续添加；
+            // 纯入口样式（图标 + 标题 + 箭头）与上方豁免时间段标题行一致。
+            const Divider(height: 24),
+            InkWell(
               onTap: _openMoreSettings,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.tune, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.settingsMore,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, size: 20),
+                  ],
+                ),
+              ),
             ),
             if (_error != null)
               Padding(
