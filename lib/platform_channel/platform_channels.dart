@@ -138,6 +138,9 @@ class MonitorChannel {
       'restSeconds': settings.restDuration.inSeconds,
       'dailyLimit': settings.dailyExemptionLimit,
       'restEnabled': settings.restEnabled,
+      'exemptWindows': [
+        for (final window in settings.exemptionWindows) window.toJson(),
+      ],
     });
   }
 
@@ -357,7 +360,8 @@ abstract class TimeCore {
   /// 读取当前权威快照。
   Future<TimeCoreSnapshot> snapshot();
 
-  /// 推送配置（阈值 / 休息时长 / 每日豁免上限），原生持久化。
+  /// 推送配置（阈值 / 休息时长 / 每日豁免上限 / 强制休息开关 /
+  /// 豁免时间段），原生持久化。
   Future<void> configure(AppSettings settings);
 
   /// 手动触发休息（计时页"立即休息"）。
@@ -397,6 +401,9 @@ class ChannelTimeCore implements TimeCore {
       'restSeconds': settings.restDuration.inSeconds,
       'dailyLimit': settings.dailyExemptionLimit,
       'restEnabled': settings.restEnabled,
+      'exemptWindows': [
+        for (final window in settings.exemptionWindows) window.toJson(),
+      ],
     });
   }
 

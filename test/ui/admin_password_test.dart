@@ -9,6 +9,7 @@ import 'package:screen_time_manager/data/database.dart';
 import 'package:screen_time_manager/data/repositories/app_settings_repository.dart';
 import 'package:screen_time_manager/data/schema.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
+import 'package:screen_time_manager/models/exemption_window.dart';
 import 'package:screen_time_manager/question_bank/question_bank_service.dart';
 import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
 import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
@@ -71,6 +72,43 @@ void main() {
       controller.machine.settings.adminPasswordHash,
     );
     expect(reloaded.quizInterval, const Duration(minutes: 20));
+  });
+
+  test('updateTiming 写入豁免时间段并持久化；控制器暴露当前豁免状态', () async {
+    final db = await openTestDb();
+    final repo = AppSettingsRepository(db);
+    await repo.loadOrInit();
+    final controller = _buildController(repo: repo);
+    addTearDown(controller.dispose);
+
+    // 全天 + 每天重复：任意时刻都处于豁免时间段，判定不依赖当前时钟。
+    final window = ExemptionWindow(
+      startMinute: 0,
+      endMinute: 1440,
+      weekdays: {for (var d = 1; d <= 7; d++) d},
+    );
+    controller.updateTiming(
+      quizMinutes: 20,
+      restMinutes: 5,
+      exemptionWindows: [window],
+    );
+    await repo.flush();
+
+    final reloaded = await repo.loadOrInit();
+    expect(reloaded.exemptionWindows, [window]);
+    expect(controller.isRestExemptNow, isTrue);
+    expect(controller.restActiveNow, isFalse);
+
+    // 清空后恢复为"强制休息生效"。
+    controller.updateTiming(
+      quizMinutes: 20,
+      restMinutes: 5,
+      exemptionWindows: const [],
+    );
+    await repo.flush();
+    expect(controller.isRestExemptNow, isFalse);
+    expect(controller.restActiveNow, isTrue);
+    expect((await repo.loadOrInit()).exemptionWindows, isEmpty);
   });
 
   test('V1 旧库迁移到 V2 后支持管理密码列', () async {

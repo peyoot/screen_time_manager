@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
+import 'package:screen_time_manager/models/exemption_window.dart';
 
 void main() {
   test('默认配置取值合理', () {
@@ -34,6 +35,43 @@ void main() {
       // 旧版 JSON 无该字段：按默认启用处理。
       final legacy = AppSettings.defaults.toJson()..remove('restEnabled');
       expect(AppSettings.fromJson(legacy).restEnabled, isTrue);
+    });
+
+    test('豁免时间段可序列化往返，缺失字段回退为空', () {
+      final window = ExemptionWindow(
+        startMinute: 12 * 60,
+        endMinute: 13 * 60,
+        weekdays: {DateTime.monday, DateTime.friday},
+      );
+      final settings = AppSettings.defaults.copyWith(
+        exemptionWindows: [window],
+      );
+      final decoded = AppSettings.fromJson(settings.toJson());
+      expect(decoded.exemptionWindows, [window]);
+
+      // 旧版 JSON 无该字段：按无豁免时间段处理。
+      final legacy = AppSettings.defaults.toJson()..remove('exemptionWindows');
+      expect(AppSettings.fromJson(legacy).exemptionWindows, isEmpty);
+    });
+
+    test('单条豁免时间段损坏时跳过，其余保留', () {
+      final settings = AppSettings.defaults.copyWith(
+        exemptionWindows: [
+          ExemptionWindow(
+            startMinute: 12 * 60,
+            endMinute: 13 * 60,
+            weekdays: {DateTime.monday},
+          ),
+        ],
+      );
+      final json = settings.toJson();
+      (json['exemptionWindows'] as List).add({
+        'startMinute': 'bad',
+        'endMinute': 60,
+        'weekdays': [1],
+      });
+      final decoded = AppSettings.fromJson(json);
+      expect(decoded.exemptionWindows, hasLength(1));
     });
 
     test('字段类型错误抛出 FormatException', () {
@@ -119,6 +157,33 @@ void main() {
         () => s.copyWith(requiredCorrectCount: 5),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('豁免时间段生效判定', () {
+    final window = ExemptionWindow(
+      startMinute: 12 * 60,
+      endMinute: 13 * 60,
+      weekdays: {for (var d = 1; d <= 7; d++) d},
+    );
+    final settings = AppSettings.defaults.copyWith(
+      exemptionWindows: [window],
+    );
+    // 2026-10-07 是周三。
+    final inside = DateTime(2026, 10, 7, 12, 30);
+    final outside = DateTime(2026, 10, 7, 13, 30);
+
+    test('时间段内按强制休息关闭处理', () {
+      expect(settings.isRestExemptAt(inside), isTrue);
+      expect(settings.restActiveAt(inside), isFalse);
+      expect(settings.isRestExemptAt(outside), isFalse);
+      expect(settings.restActiveAt(outside), isTrue);
+    });
+
+    test('总开关关闭时任何时刻都不生效', () {
+      final disabled = settings.copyWith(restEnabled: false);
+      expect(disabled.restActiveAt(outside), isFalse);
+      expect(disabled.isRestExemptAt(inside), isTrue);
     });
   });
 }

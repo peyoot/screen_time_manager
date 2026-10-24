@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
+import 'package:screen_time_manager/models/exemption_window.dart';
 import 'package:screen_time_manager/models/question.dart';
 import 'package:screen_time_manager/models/question_bank.dart';
 import 'package:screen_time_manager/state_machine/app_phase.dart';
@@ -186,6 +187,62 @@ void main() {
       expect(m.state.phase, AppPhase.tracking);
       advance(m, const Duration(minutes: 10));
       expect(m.state.phase, AppPhase.resting);
+    });
+  });
+
+  group('强制休息豁免时间段', () {
+    // 起始时钟 2026-10-07 08:00 是周三，窗口覆盖周三 08:00–09:00。
+    final exemptSettings = testSettings.copyWith(
+      exemptionWindows: [
+        ExemptionWindow(
+          startMinute: 8 * 60,
+          endMinute: 9 * 60,
+          weekdays: {DateTime.wednesday},
+        ),
+      ],
+    );
+
+    test('豁免时间段内达到阈值不进入休息，亮屏照常累计、阈值进度冻结', () {
+      final m = buildMachine(settings: exemptSettings);
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.tracking);
+      expect(m.state.usedToday, const Duration(minutes: 30));
+      expect(m.state.sinceLastGrant, Duration.zero);
+    });
+
+    test('豁免时间段内手动触发休息抛出 StateError', () {
+      final m = buildMachine(settings: exemptSettings);
+      expect(m.restNow, throwsStateError);
+      expect(m.state.phase, AppPhase.tracking);
+    });
+
+    test('离开豁免时间段后恢复正常阈值判定', () {
+      final m = buildMachine(settings: exemptSettings);
+      // 窗口内累计 30 分钟（进度冻结）。
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.sinceLastGrant, Duration.zero);
+
+      // 09:00 起窗口结束：继续亮屏累计到阈值即进入休息。
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
+      expect(m.state.usedToday, const Duration(minutes: 60));
+    });
+
+    test('非配置星期不豁免', () {
+      // 周二同一时刻不在窗口内。
+      clock = DateTime(2026, 10, 6, 8, 0);
+      final m = buildMachine(settings: exemptSettings);
+      advance(m, const Duration(minutes: 30));
+      expect(m.state.phase, AppPhase.resting);
+    });
+
+    test('豁免时间段内缩短阈值低于既有进度也不触发休息', () {
+      final m = buildMachine();
+      advance(m, const Duration(minutes: 20));
+      m.updateSettings(exemptSettings.copyWith(
+        quizInterval: const Duration(minutes: 10),
+      ));
+      expect(m.state.phase, AppPhase.tracking);
     });
   });
 

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 原生计时核心宿主。
@@ -93,5 +94,13 @@ private class SystemCoreClock : CoreClock {
     override fun dayKey(): String {
         val now = LocalDate.now()
         return String.format("%04d-%02d-%02d", now.year, now.monthValue, now.dayOfMonth)
+    }
+
+    /** `DayOfWeek.value` 即周一=1 … 周日=7，与 Dart 口径一致。 */
+    override fun localWeekday(): Int = LocalDateTime.now().dayOfWeek.value
+
+    override fun localMinuteOfDay(): Int {
+        val now = LocalDateTime.now()
+        return now.hour * 60 + now.minute
     }
 }

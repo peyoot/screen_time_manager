@@ -47,6 +47,50 @@ class SKo extends S {
   String get homeRestDisabled => '강제 휴식이 비활성화됨';
 
   @override
+  String get homeRestExemptWindow => '면제 시간대';
+
+  @override
+  String get settingsExemptWindows => '면제 시간대';
+
+  @override
+  String get settingsExemptAdd => '추가';
+
+  @override
+  String get settingsExemptHint => '이 시간대에는 강제 휴식을 끈 것으로 처리하며 화면 시간만 기록합니다';
+
+  @override
+  String get settingsExemptNone => '설정된 면제 시간대 없음';
+
+  @override
+  String get exemptDialogAddTitle => '면제 시간대 추가';
+
+  @override
+  String get exemptDialogEditTitle => '면제 시간대 편집';
+
+  @override
+  String get exemptStart => '시작';
+
+  @override
+  String get exemptEnd => '종료';
+
+  @override
+  String exemptTimeRange(String label, String time) {
+    return '$label $time';
+  }
+
+  @override
+  String get exemptEveryDay => '매일';
+
+  @override
+  String get exemptWeekdays => '요일';
+
+  @override
+  String get exemptInvalidRange => '시작과 종료 시간이 같을 수 없습니다';
+
+  @override
+  String get exemptInvalidWeekdays => '요일을 하나 이상 선택하세요';
+
+  @override
   String get adminPasswordTitle => '관리자 비밀번호';
 
   @override

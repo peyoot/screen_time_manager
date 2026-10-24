@@ -1,6 +1,8 @@
 /// 应用配置模型，决定核心状态机的触发阈值与答题规则。
 library;
 
+import 'exemption_window.dart';
+
 /// 屏幕时间自我管理的用户配置。
 ///
 /// 不可变值对象，可序列化为 JSON 持久化到本地。所有取值在构造时
@@ -45,6 +47,13 @@ class AppSettings {
   /// 不会发生任何强制或手动的休息/锁屏行为。
   final bool restEnabled;
 
+  /// 强制休息豁免时间段（可每天重复，也可限定一周中的特定几天）。
+  ///
+  /// 仅在 [restEnabled] 为 true 时有意义：落在任一时间段内时，
+  /// 状态机与原生计时核心都按"强制休息已关闭"处理——只累计亮屏时长、
+  /// 阈值进度冻结、不触发休息、不允许手动休息。
+  final List<ExemptionWindow> exemptionWindows;
+
   /// 创建配置并立即校验全部不变量，非法取值抛出 [ArgumentError]。
   AppSettings({
     required this.quizInterval,
@@ -55,7 +64,8 @@ class AppSettings {
     this.adminPasswordHash,
     this.restTimerRefreshMs = 17,
     this.restEnabled = true,
-  }) {
+    List<ExemptionWindow> exemptionWindows = const [],
+  }) : exemptionWindows = List.unmodifiable(exemptionWindows) {
     if (quizInterval <= Duration.zero) {
       throw ArgumentError.value(quizInterval, 'quizInterval', '必须大于 0');
     }
@@ -109,6 +119,22 @@ class AppSettings {
     dailyExemptionLimit: 2,
   );
 
+  /// [now] 时刻是否处于某个豁免时间段内。
+  bool isRestExemptAt(DateTime now) {
+    for (final window in exemptionWindows) {
+      if (window.isActiveAt(now)) return true;
+    }
+    return false;
+  }
+
+  /// [now] 时刻是否按"强制休息生效"处理：
+  /// 总开关开启且不在任何豁免时间段内。
+  ///
+  /// 豁免时间段内与 [restEnabled] 为 false 完全等价：只累计亮屏时长、
+  /// 阈值进度冻结、不触发也不允许手动休息。
+  bool restActiveAt(DateTime now) =>
+      restEnabled && !isRestExemptAt(now);
+
   /// 从 JSON 构造配置。
   ///
   /// 字段类型非法时抛出 [FormatException]；取值不合法时抛出
@@ -137,6 +163,20 @@ class AppSettings {
       throw const FormatException('dailyExemptionLimit 必须是非负整数');
     }
 
+    // 豁免时间段逐条解析：单条损坏只跳过该条，不拖垮整份配置。
+    final windows = <ExemptionWindow>[];
+    final rawWindows = json['exemptionWindows'];
+    if (rawWindows is List) {
+      for (final raw in rawWindows) {
+        if (raw is! Map) continue;
+        try {
+          windows.add(ExemptionWindow.fromJson(Map<String, dynamic>.from(raw)));
+        } on FormatException {
+          continue;
+        }
+      }
+    }
+
     return AppSettings(
       quizInterval: Duration(seconds: quizIntervalSeconds.toInt()),
       questionsPerQuiz: questionsPerQuiz,
@@ -146,6 +186,7 @@ class AppSettings {
       adminPasswordHash: json['adminPasswordHash'] as String?,
       restTimerRefreshMs: (json['restTimerRefreshMs'] as num?)?.toInt() ?? 17,
       restEnabled: json['restEnabled'] as bool? ?? true,
+      exemptionWindows: windows,
     );
   }
 
@@ -159,6 +200,9 @@ class AppSettings {
         'adminPasswordHash': adminPasswordHash,
         'restTimerRefreshMs': restTimerRefreshMs,
         'restEnabled': restEnabled,
+        'exemptionWindows': [
+          for (final window in exemptionWindows) window.toJson(),
+        ],
       };
 
   AppSettings copyWith({
@@ -169,6 +213,7 @@ class AppSettings {
     int? dailyExemptionLimit,
     int? restTimerRefreshMs,
     bool? restEnabled,
+    List<ExemptionWindow>? exemptionWindows,
     Object? adminPasswordHash = _sentinel,
   }) {
     return AppSettings(
@@ -180,6 +225,7 @@ class AppSettings {
       dailyExemptionLimit: dailyExemptionLimit ?? this.dailyExemptionLimit,
       restTimerRefreshMs: restTimerRefreshMs ?? this.restTimerRefreshMs,
       restEnabled: restEnabled ?? this.restEnabled,
+      exemptionWindows: exemptionWindows ?? this.exemptionWindows,
       adminPasswordHash: adminPasswordHash == _sentinel
           ? this.adminPasswordHash
           : adminPasswordHash as String?,
@@ -196,18 +242,21 @@ class AppSettings {
       other.dailyExemptionLimit == dailyExemptionLimit &&
       other.adminPasswordHash == adminPasswordHash &&
       other.restTimerRefreshMs == restTimerRefreshMs &&
-      other.restEnabled == restEnabled;
+      other.restEnabled == restEnabled &&
+      _windowsEqual(other.exemptionWindows, exemptionWindows);
 
   @override
   int get hashCode => Object.hash(
-      quizInterval,
-      questionsPerQuiz,
-      requiredCorrectCount,
-      restDuration,
-      dailyExemptionLimit,
-      adminPasswordHash,
-      restTimerRefreshMs,
-      restEnabled);
+        quizInterval,
+        questionsPerQuiz,
+        requiredCorrectCount,
+        restDuration,
+        dailyExemptionLimit,
+        adminPasswordHash,
+        restTimerRefreshMs,
+        restEnabled,
+        Object.hashAll(exemptionWindows),
+      );
 
   @override
   String toString() => 'AppSettings(quizInterval: $quizInterval, '
@@ -216,7 +265,19 @@ class AppSettings {
       'restDuration: $restDuration, '
       'dailyExemptionLimit: $dailyExemptionLimit, '
       'restTimerRefreshMs: $restTimerRefreshMs, '
+      'restEnabled: $restEnabled, '
+      'exemptionWindows: ${exemptionWindows.length}, '
       'adminPasswordSet: ${adminPasswordHash != null})';
+}
+
+/// 豁免时间段列表的逐项比较（[ExemptionWindow] 自带值相等）。
+bool _windowsEqual(List<ExemptionWindow> a, List<ExemptionWindow> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 /// 用于 [AppSettings.copyWith] 区分"未传参"与"显式传 null"（清除密码）。

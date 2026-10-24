@@ -1,4 +1,4 @@
-/// day_snapshot 表：repo 读写 + V2→V3 / V3→V4 迁移测试。
+/// day_snapshot 表：repo 读写 + V2→V3 / V3→V4 / V5→V6 迁移测试。
 library;
 
 import 'dart:io';
@@ -11,6 +11,7 @@ import 'package:screen_time_manager/data/repositories/day_snapshot_repository.da
 import 'package:screen_time_manager/data/schema.dart';
 import 'package:screen_time_manager/models/app_settings.dart';
 import 'package:screen_time_manager/models/day_snapshot.dart';
+import 'package:screen_time_manager/models/exemption_window.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '_helpers.dart';
@@ -188,5 +189,53 @@ void main() {
     );
     await repo.flush();
     expect((await repo.loadOrInit()).restEnabled, isFalse);
+  });
+
+  test('V5 旧库打开后自动迁移出 exemption_windows 列', () async {
+    // 手工构造 V5 结构的旧库（含一行 app_settings），经 openAppDatabase
+    // 升级到 V6 后新增列默认 '[]'（无豁免时间段），写入后可正常往返。
+    final dir = await Directory.systemTemp.createTemp('stm_v5_');
+    final oldPath = p.join(dir.path, 'old.db');
+    final old = await openDatabase(
+      oldPath,
+      version: 5,
+      onCreate: (db, _) async {
+        await applySchemaV1(db);
+        await applySchemaV2(db);
+        await applySchemaV3(db);
+        await applySchemaV4(db);
+        await applySchemaV5(db);
+        await db.insert('app_settings', {
+          'id': 1,
+          'quiz_interval_seconds': 900,
+          'questions_per_quiz': 1,
+          'required_correct_count': 1,
+          'rest_duration_seconds': 600,
+          'daily_exemption_limit': 2,
+          'created_at': '2026-10-17T00:00:00.000Z',
+          'updated_at': '2026-10-17T00:00:00.000Z',
+          'deleted': 0,
+        });
+      },
+    );
+    await old.close();
+
+    final upgraded = await openAppDatabase(dbPath: oldPath);
+    final rows = await upgraded.query('app_settings');
+    expect(rows.single['exemption_windows'], '[]');
+
+    final repo = AppSettingsRepository(upgraded);
+    expect((await repo.loadOrInit()).exemptionWindows, isEmpty);
+
+    final window = ExemptionWindow(
+      startMinute: 12 * 60,
+      endMinute: 13 * 60,
+      weekdays: {DateTime.monday, DateTime.wednesday},
+    );
+    await repo.upsert(
+      AppSettings.defaults.copyWith(exemptionWindows: [window]),
+    );
+    await repo.flush();
+    expect((await repo.loadOrInit()).exemptionWindows, [window]);
   });
 }

@@ -22,6 +22,7 @@ import '../../data/repositories/rest_session_repository.dart';
 import '../../data/repositories/screen_session_repository.dart';
 import '../../data/repositories/snooze_record_repository.dart';
 import '../../models/day_snapshot.dart';
+import '../../models/exemption_window.dart';
 import '../../models/rest_session.dart';
 import '../../models/screen_session.dart';
 import '../../models/snooze_record.dart';
@@ -388,6 +389,14 @@ class ScreenTimeController extends ChangeNotifier {
     return total < Duration.zero ? Duration.zero : total;
   }
 
+  /// 当前时刻是否按"强制休息生效"处理（总开关开启且不在豁免时间段内）。
+  /// 主页据此显示状态文案并决定是否展示"立即休息"入口。
+  bool get restActiveNow => machine.settings.restActiveAt(_clock());
+
+  /// 当前时刻是否处于某个豁免时间段内（总开关是否开启均可能为 true，
+  /// 页面需结合 [AppSettings.restEnabled] 判断文案）。
+  bool get isRestExemptNow => machine.settings.isRestExemptAt(_clock());
+
   /// 当日"帮你远离手机"时长：已完结片段累计 + 进行中片段的实时部分。
   ///
   /// 片段从每次强制休息起点算起：休息结束时屏幕亮 → 立即完结计入；
@@ -605,10 +614,11 @@ class ScreenTimeController extends ChangeNotifier {
     }
   }
 
-  /// 主计时页"手动触发休息"。强制休息功能关闭时静默忽略（UI 已隐藏入口）。
+  /// 主计时页"手动触发休息"。强制休息关闭或处于豁免时间段时静默忽略
+  /// （UI 已隐藏入口）。
   void manualRest() {
     if (phase != AppPhase.tracking) return;
-    if (!machine.settings.restEnabled) return;
+    if (!machine.settings.restActiveAt(_clock())) return;
     final core = timeCore;
     if (core == null) {
       machine.restNow();
@@ -639,6 +649,7 @@ class ScreenTimeController extends ChangeNotifier {
     required int restMinutes,
     int? restTimerRefreshMs,
     bool? restEnabled,
+    List<ExemptionWindow>? exemptionWindows,
   }) {
     machine.updateSettings(
       machine.settings.copyWith(
@@ -646,6 +657,7 @@ class ScreenTimeController extends ChangeNotifier {
         restDuration: Duration(minutes: restMinutes),
         restTimerRefreshMs: restTimerRefreshMs,
         restEnabled: restEnabled,
+        exemptionWindows: exemptionWindows,
       ),
     );
     appSettingsRepo?.upsert(machine.settings).catchError((_) {});

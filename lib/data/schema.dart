@@ -7,7 +7,7 @@ library;
 import 'package:sqflite/sqflite.dart';
 
 /// 当前 schema 版本号。
-const int kSchemaVersion = 5;
+const int kSchemaVersion = 6;
 
 /// V1 建表语句：按外键依赖顺序排列。
 const List<String> kSchemaV1Statements = [
@@ -201,6 +201,23 @@ const List<String> kSchemaV5Statements = [
 Future<void> applySchemaV5(Database db) async {
   final batch = db.batch();
   for (final stmt in kSchemaV5Statements) {
+    batch.execute(stmt);
+  }
+  await batch.commit();
+}
+
+/// V6 迁移：app_settings 增加 `exemption_windows`（强制休息豁免时间段）。
+///
+/// 以 JSON 数组 TEXT 存储（每项 `{startMinute,endMinute,weekdays}`）；
+/// 默认 `'[]'` 表示未设置任何豁免时间段。
+const List<String> kSchemaV6Statements = [
+  "ALTER TABLE app_settings ADD COLUMN exemption_windows TEXT NOT NULL DEFAULT '[]'",
+];
+
+/// 在指定数据库上执行 V6 迁移。
+Future<void> applySchemaV6(Database db) async {
+  final batch = db.batch();
+  for (final stmt in kSchemaV6Statements) {
     batch.execute(stmt);
   }
   await batch.commit();

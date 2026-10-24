@@ -76,6 +76,28 @@ object ScreenMonitorChannels {
     }
 
     /**
+     * 解析 Dart 下发的豁免时间段列表（`[{startMinute, endMinute, weekdays}]`）。
+     *
+     * 非法条目静默跳过：配置下发不应因单条脏数据整体失败。
+     */
+    private fun parseExemptWindows(
+        raw: List<Map<String, Any?>>?,
+    ): List<ExemptionWindow> {
+        if (raw.isNullOrEmpty()) return emptyList()
+        return raw.mapNotNull { item ->
+            val start = (item["startMinute"] as? Number)?.toInt()
+            val end = (item["endMinute"] as? Number)?.toInt()
+            val days = (item["weekdays"] as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toInt() }
+                ?.toSet()
+            if (start == null || end == null || days == null) return@mapNotNull null
+            if (start !in 0..1439 || end !in 0..1440 || start == end) return@mapNotNull null
+            if (days.isEmpty() || days.any { it !in 1..7 }) return@mapNotNull null
+            ExemptionWindow(start, end, days)
+        }
+    }
+
+    /**
      * `core` 通道：原生权威计时核心（[ScreenTimeCore]）的读写口。
      *
      * - `snapshot`：Dart 每秒读取权威状态镜像显示；
@@ -98,6 +120,9 @@ object ScreenMonitorChannels {
                             dailyLimit = call.argument<Number>("dailyLimit")
                                 ?.toInt() ?: ScreenTimeCore.DEFAULT_DAILY_LIMIT,
                             restEnabled = call.argument<Boolean>("restEnabled") ?: true,
+                            exemptWindows = parseExemptWindows(
+                                call.argument<List<Map<String, Any?>>>("exemptWindows"),
+                            ),
                         )
                         result.success(null)
                     }

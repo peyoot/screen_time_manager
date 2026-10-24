@@ -24,6 +24,30 @@
   },
   "homeManualRest": "手动触发休息",
   "homeRestDisabled": "强制休息未启用",
+  "homeRestExemptWindow": "豁免时间段内",
+  "settingsExemptWindows": "豁免时间段",
+  "settingsExemptAdd": "添加",
+  "settingsExemptHint": "在这些时间段内按关闭强制休息处理：只统计亮屏时长，不会触发休息",
+  "settingsExemptNone": "未设置豁免时间段",
+  "exemptDialogAddTitle": "添加豁免时间段",
+  "exemptDialogEditTitle": "编辑豁免时间段",
+  "exemptStart": "开始",
+  "exemptEnd": "结束",
+  "exemptTimeRange": "{label} {time}",
+  "@exemptTimeRange": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "exemptEveryDay": "每天",
+  "exemptWeekdays": "生效星期",
+  "exemptInvalidRange": "开始与结束时间不能相同",
+  "exemptInvalidWeekdays": "请至少选择一天",
   "adminPasswordTitle": "管理密码",
   "adminPasswordStatusSet": "已设置",
   "adminPasswordStatusNotSet": "未设置",

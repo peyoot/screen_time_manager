@@ -47,6 +47,50 @@ class SJa extends S {
   String get homeRestDisabled => '強制休憩は無効です';
 
   @override
+  String get homeRestExemptWindow => '免除時間帯';
+
+  @override
+  String get settingsExemptWindows => '免除時間帯';
+
+  @override
+  String get settingsExemptAdd => '追加';
+
+  @override
+  String get settingsExemptHint => 'この時間帯は強制休憩をオフとして扱い、画面時間のみ記録します';
+
+  @override
+  String get settingsExemptNone => '免除時間帯は未設定';
+
+  @override
+  String get exemptDialogAddTitle => '免除時間帯を追加';
+
+  @override
+  String get exemptDialogEditTitle => '免除時間帯を編集';
+
+  @override
+  String get exemptStart => '開始';
+
+  @override
+  String get exemptEnd => '終了';
+
+  @override
+  String exemptTimeRange(String label, String time) {
+    return '$label $time';
+  }
+
+  @override
+  String get exemptEveryDay => '毎日';
+
+  @override
+  String get exemptWeekdays => '曜日';
+
+  @override
+  String get exemptInvalidRange => '開始と終了を同じにできません';
+
+  @override
+  String get exemptInvalidWeekdays => '曜日を1つ以上選択してください';
+
+  @override
   String get adminPasswordTitle => '管理パスワード';
 
   @override

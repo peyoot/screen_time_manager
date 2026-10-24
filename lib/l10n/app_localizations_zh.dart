@@ -47,6 +47,50 @@ class SZh extends S {
   String get homeRestDisabled => '强制休息未启用';
 
   @override
+  String get homeRestExemptWindow => '豁免时间段内';
+
+  @override
+  String get settingsExemptWindows => '豁免时间段';
+
+  @override
+  String get settingsExemptAdd => '添加';
+
+  @override
+  String get settingsExemptHint => '在这些时间段内按关闭强制休息处理：只统计亮屏时长，不会触发休息';
+
+  @override
+  String get settingsExemptNone => '未设置豁免时间段';
+
+  @override
+  String get exemptDialogAddTitle => '添加豁免时间段';
+
+  @override
+  String get exemptDialogEditTitle => '编辑豁免时间段';
+
+  @override
+  String get exemptStart => '开始';
+
+  @override
+  String get exemptEnd => '结束';
+
+  @override
+  String exemptTimeRange(String label, String time) {
+    return '$label $time';
+  }
+
+  @override
+  String get exemptEveryDay => '每天';
+
+  @override
+  String get exemptWeekdays => '生效星期';
+
+  @override
+  String get exemptInvalidRange => '开始与结束时间不能相同';
+
+  @override
+  String get exemptInvalidWeekdays => '请至少选择一天';
+
+  @override
   String get adminPasswordTitle => '管理密码';
 
   @override

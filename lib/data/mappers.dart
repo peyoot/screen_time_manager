@@ -3,8 +3,11 @@
 /// 所有时间戳以 ISO-8601 TEXT（UTC）存取；Duration 在 DB 以秒整数表示。
 library;
 
+import 'dart:convert';
+
 import '../models/app_settings.dart';
 import '../models/day_snapshot.dart';
+import '../models/exemption_window.dart';
 import '../models/screen_session.dart';
 import '../models/rest_session.dart';
 import '../models/snooze_record.dart';
@@ -41,6 +44,9 @@ Map<String, Object?> appSettingsToRow(
     'admin_password_hash': s.adminPasswordHash,
     'rest_timer_refresh_ms': s.restTimerRefreshMs,
     'rest_enabled': s.restEnabled ? 1 : 0,
+    'exemption_windows': jsonEncode([
+      for (final window in s.exemptionWindows) window.toJson(),
+    ]),
     'created_at': toTimestamp(createdAt ?? now),
     'updated_at': ts,
     'deleted': 0,
@@ -61,7 +67,30 @@ AppSettings appSettingsFromRow(Map<String, Object?> row) {
         : _asInt(row['rest_timer_refresh_ms']),
     restEnabled:
         row['rest_enabled'] == null || _asInt(row['rest_enabled']) != 0,
+    exemptionWindows: _windowsFromRow(row['exemption_windows']),
   );
+}
+
+/// 解析 `exemption_windows` 列的 JSON；空值/损坏数据退化为空列表。
+List<ExemptionWindow> _windowsFromRow(Object? raw) {
+  if (raw is! String || raw.isEmpty) return const [];
+  Object? decoded;
+  try {
+    decoded = jsonDecode(raw);
+  } on FormatException {
+    return const [];
+  }
+  if (decoded is! List) return const [];
+  final windows = <ExemptionWindow>[];
+  for (final item in decoded) {
+    if (item is! Map) continue;
+    try {
+      windows.add(ExemptionWindow.fromJson(Map<String, dynamic>.from(item)));
+    } on FormatException {
+      continue;
+    }
+  }
+  return windows;
 }
 
 // ---------------------------------------------------------------------------

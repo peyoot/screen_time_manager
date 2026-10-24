@@ -35,6 +35,7 @@ import {
   DEFAULT_DAILY_LIMIT,
   DEFAULT_QUIZ_SEC,
   DEFAULT_REST_SEC,
+  ExemptionWindow,
   ScreenTimeCore,
 } from './ScreenTimeCore';
 
@@ -65,6 +66,17 @@ class SystemCoreClock implements CoreClock {
     const m = (d.getMonth() + 1).toString().padStart(2, '0');
     const day = d.getDate().toString().padStart(2, '0');
     return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  /** getDay() 为 0=周日 … 6=周六，转换为 1=周一 … 7=周日。 */
+  localWeekday(): number {
+    const d: number = new Date().getDay();
+    return d === 0 ? 7 : d;
+  }
+
+  localMinuteOfDay(): number {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
   }
 }
 
@@ -304,7 +316,7 @@ export class ScreenMonitorChannels {
     channel.setMethodCallHandler({
       onMethodCall(call: MethodCall, result: MethodResult): void {
         const host = TimeCoreHost.get(context);
-        const args = call.arguments as Record<string, number | string | boolean> | null;
+        const args = call.arguments as Record<string, Object> | null;
         switch (call.method) {
           case 'snapshot': {
             const snap: CoreSnapshot = host.core.snapshot();
@@ -317,6 +329,9 @@ export class ScreenMonitorChannels {
               ScreenMonitorChannels.numArg(args, 'restSeconds', DEFAULT_REST_SEC),
               ScreenMonitorChannels.numArg(args, 'dailyLimit', DEFAULT_DAILY_LIMIT),
               ScreenMonitorChannels.boolArg(args, 'restEnabled', true),
+              ScreenMonitorChannels.parseExemptWindows(
+                args !== null ? args['exemptWindows'] : undefined,
+              ),
             );
             result.success(null);
             break;
@@ -439,7 +454,7 @@ export class ScreenMonitorChannels {
   }
 
   private static numArg(
-    args: Record<string, number | string | boolean> | null,
+    args: Record<string, Object> | null,
     key: string,
     def: number,
   ): number {
@@ -448,11 +463,49 @@ export class ScreenMonitorChannels {
   }
 
   private static boolArg(
-    args: Record<string, number | string | boolean> | null,
+    args: Record<string, Object> | null,
     key: string,
     def: boolean,
   ): boolean {
     const v = args !== null ? args[key] : undefined;
     return typeof v === 'boolean' ? v : def;
   }
+
+  /** 解析 Dart 下发的豁免时间段列表；非法条目跳过，整体非法退化为空。 */
+  private static parseExemptWindows(raw: Object | undefined): ExemptionWindow[] {
+    if (!Array.isArray(raw)) return [];
+    const parsed: ExemptionWindow[] = [];
+    for (const item of raw) {
+      const arg = item as ExemptWindowArg;
+      if (arg === null || arg === undefined) continue;
+      const start = arg.startMinute;
+      const end = arg.endMinute;
+      const days = arg.weekdays;
+      if (typeof start !== 'number' || typeof end !== 'number' || !Array.isArray(days)) {
+        continue;
+      }
+      if (start < 0 || start > 1439 || end < 0 || end > 1440 || start === end) {
+        continue;
+      }
+      const weekdays: number[] = [];
+      let valid = true;
+      for (const d of days) {
+        if (typeof d !== 'number' || d < 1 || d > 7) {
+          valid = false;
+          break;
+        }
+        weekdays.push(d);
+      }
+      if (!valid || weekdays.length === 0) continue;
+      parsed.push(new ExemptionWindow(start, end, weekdays));
+    }
+    return parsed;
+  }
+}
+
+/** Dart `ExemptionWindow.toJson()` 的通道侧结构。 */
+interface ExemptWindowArg {
+  startMinute: number;
+  endMinute: number;
+  weekdays: number[];
 }

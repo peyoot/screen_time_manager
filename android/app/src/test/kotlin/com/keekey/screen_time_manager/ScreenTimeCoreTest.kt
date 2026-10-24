@@ -18,9 +18,17 @@ class ScreenTimeCoreTest {
         var rt: Long = 0L
         var day: String = "2026-01-01"
 
+        /** 当地星期几（1=周一 … 7=周日），默认周三。 */
+        var weekday: Int = 3
+
+        /** 当地一天内分钟数，默认 10:00。 */
+        var minuteOfDay: Int = 600
+
         override fun wallMs(): Long = wall
         override fun realtimeMs(): Long = rt
         override fun dayKey(): String = day
+        override fun localWeekday(): Int = weekday
+        override fun localMinuteOfDay(): Int = minuteOfDay
     }
 
     private class MemoryStore : CoreStore {
@@ -387,5 +395,101 @@ class ScreenTimeCoreTest {
         clock.rt += 20_000
         assertEquals(CoreEffect.ENTER_REST, core.tick())
         assertTrue(core.snapshot().resting)
+    }
+
+    @Test
+    fun exemptWindowFreezesThresholdButKeepsScreenTime() {
+        val clock = FakeClock()
+        val core = ScreenTimeCore(clock, MemoryStore())
+        // 周三 09:00–12:00（FakeClock 默认周三 10:00）。
+        core.configure(
+            60, 30, 2, true,
+            listOf(ExemptionWindow(540, 720, setOf(3))),
+        )
+        core.prepareForTakeover()
+
+        core.setScreenState(true)
+        clock.rt += 120_000 // 远超 60s 阈值
+
+        assertEquals(CoreEffect.NONE, core.tick())
+        val snap = core.snapshot()
+        assertEquals(120L, snap.screenTimeSec)
+        assertEquals(0L, snap.thresholdSec)
+        assertFalse(snap.resting)
+    }
+
+    @Test
+    fun exemptWindowOnlyAppliesOnConfiguredWeekdays() {
+        val clock = FakeClock()
+        val core = ScreenTimeCore(clock, MemoryStore())
+        // 只豁免周三；把时钟拨到周四，阈值应正常触发休息。
+        core.configure(
+            60, 30, 2, true,
+            listOf(ExemptionWindow(540, 720, setOf(3))),
+        )
+        clock.weekday = 4
+        core.prepareForTakeover()
+
+        core.setScreenState(true)
+        clock.rt += 60_000
+        assertEquals(CoreEffect.ENTER_REST, core.tick())
+    }
+
+    @Test
+    fun manualRestRejectedInsideExemptWindow() {
+        val clock = FakeClock()
+        val core = ScreenTimeCore(clock, MemoryStore())
+        core.configure(
+            60, 30, 2, true,
+            listOf(ExemptionWindow(540, 720, setOf(3))),
+        )
+        core.prepareForTakeover()
+
+        assertEquals(CoreEffect.NONE, core.manualRest())
+        assertFalse(core.snapshot().resting)
+    }
+
+    @Test
+    fun exemptWindowsPersistAcrossRecreation() {
+        val clock = FakeClock()
+        val store = MemoryStore()
+        val core = ScreenTimeCore(clock, store)
+        core.configure(
+            60, 30, 2, true,
+            listOf(ExemptionWindow(540, 720, setOf(1, 3, 5))),
+        )
+
+        // 模拟进程重启：配置（含豁免时间段）从存储恢复。
+        val revived = ScreenTimeCore(clock, store)
+        revived.prepareForTakeover()
+        assertEquals(CoreEffect.NONE, revived.manualRest())
+    }
+
+    @Test
+    fun acrossMidnightWindowBelongsToStartDay() {
+        // 周五 23:00 – 周六 07:00。
+        val window = ExemptionWindow(1380, 420, setOf(5))
+        assertTrue(window.isActiveAt(5, 1380))
+        assertTrue(window.isActiveAt(5, 1439))
+        assertTrue(window.isActiveAt(6, 0))
+        assertTrue(window.isActiveAt(6, 419))
+        assertFalse(window.isActiveAt(6, 420))
+        assertFalse(window.isActiveAt(5, 600))
+        // 周六晚上 23:30 不属于该窗口（周六未选中）。
+        assertFalse(window.isActiveAt(6, 1410))
+    }
+
+    @Test
+    fun exemptionWindowEncodingRoundTripsAndSkipsBadEntries() {
+        val windows = listOf(
+            ExemptionWindow(540, 720, setOf(1, 2, 3, 4, 5)),
+            ExemptionWindow(1380, 420, setOf(6, 7)),
+        )
+        val encoded = ExemptionWindow.encodeAll(windows)
+        assertEquals(windows, ExemptionWindow.decodeAll(encoded))
+
+        // 混入损坏条目：仅跳过该条，其余正常解析。
+        val decoded = ExemptionWindow.decodeAll("$encoded;9999-1:3;540-540:1")
+        assertEquals(windows, decoded)
     }
 }

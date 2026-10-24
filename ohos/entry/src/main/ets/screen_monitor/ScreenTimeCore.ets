@@ -32,6 +32,8 @@ const KEY_CONFIG_QUIZ_SEC: string = 'config_quiz_sec';
 const KEY_CONFIG_REST_SEC: string = 'config_rest_sec';
 const KEY_CONFIG_DAILY_LIMIT: string = 'config_daily_limit';
 const KEY_CONFIG_REST_ENABLED: string = 'config_rest_enabled';
+/** 强制休息豁免时间段（编码串，见 [ExemptionWindow.encode]）。 */
+const KEY_CONFIG_EXEMPT_WINDOWS: string = 'config_exempt_windows';
 const KEY_IS_SCREEN_ON: string = 'is_screen_on';
 const KEY_LAST_UPDATE_RT: string = 'last_update_realtime_ms';
 
@@ -61,6 +63,12 @@ export interface CoreClock {
 
   /** 当地时区自然日键 `yyyy-MM-dd`。 */
   dayKey(): string;
+
+  /** 当地时区星期几（周一=1 … 周日=7，与 Dart `DateTime.weekday` 对齐）。 */
+  localWeekday(): number;
+
+  /** 当地时区一天内的分钟数（0..1439）。 */
+  localMinuteOfDay(): number;
 }
 
 /** 计时核心的外部依赖注入接口：持久化。 */
@@ -82,6 +90,96 @@ export enum CoreEffect {
   ENTER_REST,
   /** 休息结束：需撤销干预。 */
   EXIT_REST,
+}
+
+/**
+ * 强制休息豁免时间段（与 Dart `ExemptionWindow` / Android Kotlin 版语义一致）。
+ *
+ * - `[startMinute, endMinute)`，`endMinute` 可取 1440 表示 24:00；
+ * - `endMinute < startMinute` 表示跨零点，归属起点那一天；
+ * - `weekdays` 取值 1..7（周一..周日）。
+ *
+ * 持久化编码：多段以 `;` 分隔，每段 `start-end:星期数字串`，
+ * 例 `540-720:12345;1380-420:67`（与 Android 完全相同）。
+ */
+export class ExemptionWindow {
+  startMinute: number;
+  endMinute: number;
+  weekdays: number[];
+
+  constructor(startMinute: number, endMinute: number, weekdays: number[]) {
+    this.startMinute = startMinute;
+    this.endMinute = endMinute;
+    this.weekdays = weekdays;
+  }
+
+  /** [weekday] / [minuteOfDay] 时刻本时间段是否生效。 */
+  isActiveAt(weekday: number, minuteOfDay: number): boolean {
+    if (this.startMinute === this.endMinute) return false;
+    if (this.startMinute < this.endMinute) {
+      return this.weekdays.indexOf(weekday) >= 0 &&
+        minuteOfDay >= this.startMinute &&
+        minuteOfDay < this.endMinute;
+    }
+    // 跨零点：归属起点那一天。
+    if (minuteOfDay >= this.startMinute) {
+      return this.weekdays.indexOf(weekday) >= 0;
+    }
+    if (minuteOfDay < this.endMinute) {
+      const previousDay: number = weekday === 1 ? 7 : weekday - 1;
+      return this.weekdays.indexOf(previousDay) >= 0;
+    }
+    return false;
+  }
+
+  /** 编码为持久化串。 */
+  encode(): string {
+    const days: number[] = this.weekdays.slice().sort((a: number, b: number) => a - b);
+    return `${this.startMinute}-${this.endMinute}:${days.join('')}`;
+  }
+
+  /** 解析持久化串；null/空串/任一段损坏只跳过该段。 */
+  static decodeAll(raw: string | null): ExemptionWindow[] {
+    const result: ExemptionWindow[] = [];
+    if (raw === null || raw.length === 0) return result;
+    const entries: string[] = raw.split(';');
+    for (const entry of entries) {
+      try {
+        const parts: string[] = entry.split(':');
+        if (parts.length < 2) continue;
+        const range: string[] = parts[0].split('-');
+        if (range.length < 2) continue;
+        const start: number = Number.parseInt(range[0]);
+        const end: number = Number.parseInt(range[1]);
+        const days: number[] = [];
+        for (const ch of parts[1]) {
+          const day: number = Number.parseInt(ch);
+          if (!Number.isNaN(day)) days.push(day);
+        }
+        if (Number.isNaN(start) || Number.isNaN(end)) continue;
+        if (start < 0 || start > 1439 || end < 0 || end > 1440) continue;
+        if (start === end || days.length === 0) continue;
+        let valid: boolean = true;
+        for (const day of days) {
+          if (day < 1 || day > 7) valid = false;
+        }
+        if (!valid) continue;
+        result.push(new ExemptionWindow(start, end, days));
+      } catch (e) {
+        // 单段损坏：跳过。
+      }
+    }
+    return result;
+  }
+
+  /** 批量编码；空数组返回空串。 */
+  static encodeAll(windows: ExemptionWindow[]): string {
+    const parts: string[] = [];
+    for (const window of windows) {
+      parts.push(window.encode());
+    }
+    return parts.join(';');
+  }
 }
 
 /** 计时核心对外快照（`core` 通道序列化用，键与 Android 版一致）。 */
@@ -163,6 +261,9 @@ export class ScreenTimeCore {
   /** 强制休息功能总开关：关闭时只累计亮屏时长，阈值进度冻结。 */
   private configRestEnabled: boolean;
 
+  /** 强制休息豁免时间段：落在任一时间段内时按"强制休息已关闭"处理。 */
+  private configExemptWindows: ExemptionWindow[];
+
   private isScreenOn: boolean;
   private lastUpdateRtMs: number;
   private day: string;
@@ -192,6 +293,8 @@ export class ScreenTimeCore {
     this.configRestSec = store.getLong(KEY_CONFIG_REST_SEC, DEFAULT_REST_SEC);
     this.configDailyLimit = store.getInt(KEY_CONFIG_DAILY_LIMIT, DEFAULT_DAILY_LIMIT);
     this.configRestEnabled = store.getBoolean(KEY_CONFIG_REST_ENABLED, true);
+    this.configExemptWindows =
+      ExemptionWindow.decodeAll(store.getString(KEY_CONFIG_EXEMPT_WINDOWS, null));
     this.isScreenOn = store.getBoolean(KEY_IS_SCREEN_ON, false);
     this.lastUpdateRtMs = store.getLong(KEY_LAST_UPDATE_RT, 0);
   }
@@ -205,11 +308,18 @@ export class ScreenTimeCore {
   }
 
   /** 更新配置（由 Dart 推送 settings，原生持久化供后台重启复用）。 */
-  configure(quizSec: number, restSec: number, dailyLimit: number, restEnabled: boolean = true): void {
+  configure(
+    quizSec: number,
+    restSec: number,
+    dailyLimit: number,
+    restEnabled: boolean = true,
+    exemptWindows: ExemptionWindow[] = [],
+  ): void {
     this.configQuizSec = quizSec > 0 ? quizSec : DEFAULT_QUIZ_SEC;
     this.configRestSec = restSec > 0 ? restSec : DEFAULT_REST_SEC;
     this.configDailyLimit = dailyLimit >= 0 ? dailyLimit : DEFAULT_DAILY_LIMIT;
     this.configRestEnabled = restEnabled;
+    this.configExemptWindows = exemptWindows;
     this.persist(true);
   }
 
@@ -246,10 +356,10 @@ export class ScreenTimeCore {
     return effect;
   }
 
-  /** 手动触发休息（UI 计时页"立即休息"）；强制休息关闭时拒绝。 */
+  /** 手动触发休息（UI 计时页"立即休息"）；强制休息关闭或处于豁免时间段时拒绝。 */
   manualRest(): CoreEffect {
     this.rolloverDayIfNeeded();
-    if (this.resting || !this.configRestEnabled) return CoreEffect.NONE;
+    if (this.resting || !this.isRestActiveNow()) return CoreEffect.NONE;
     this.enterRest(this.clock.wallMs());
     this.lastUpdateRtMs = this.clock.realtimeMs();
     this.persist(true);
@@ -337,7 +447,8 @@ export class ScreenTimeCore {
   // -----------------------------------------------------------------
 
   /** 亮屏累计 + 阈值判定。仅在计时阶段且屏幕点亮时生效。
-   *  强制休息关闭时只累计当日亮屏时长，阈值进度冻结，永不进入休息。 */
+   *  强制休息关闭或处于豁免时间段时只累计当日亮屏时长，阈值进度冻结，
+   *  永不进入休息。 */
   private accumulate(): CoreEffect {
     if (this.resting || !this.isScreenOn) return CoreEffect.NONE;
     let delta: number = this.clock.realtimeMs() - this.lastUpdateRtMs;
@@ -345,13 +456,25 @@ export class ScreenTimeCore {
     if (delta > MAX_DELTA_MS) delta = MAX_DELTA_MS;
     if (delta <= 0) return CoreEffect.NONE;
     this.screenMs += delta;
-    if (!this.configRestEnabled) return CoreEffect.NONE;
+    if (!this.isRestActiveNow()) return CoreEffect.NONE;
     this.thresholdMs += delta;
     if (this.thresholdMs >= this.configQuizSec * 1000) {
       this.enterRest(this.clock.wallMs());
       return CoreEffect.ENTER_REST;
     }
     return CoreEffect.NONE;
+  }
+
+  /** 当前时刻是否按"强制休息生效"处理：总开关开启且不在豁免时间段内。 */
+  private isRestActiveNow(): boolean {
+    if (!this.configRestEnabled) return false;
+    if (this.configExemptWindows.length === 0) return true;
+    const weekday: number = this.clock.localWeekday();
+    const minute: number = this.clock.localMinuteOfDay();
+    for (const window of this.configExemptWindows) {
+      if (window.isActiveAt(weekday, minute)) return false;
+    }
+    return true;
   }
 
   /** 进入休息：设置截止与起点、当日次数 +1。 */
@@ -439,6 +562,7 @@ export class ScreenTimeCore {
     values.set(KEY_CONFIG_REST_SEC, this.configRestSec);
     values.set(KEY_CONFIG_DAILY_LIMIT, this.configDailyLimit);
     values.set(KEY_CONFIG_REST_ENABLED, this.configRestEnabled);
+    values.set(KEY_CONFIG_EXEMPT_WINDOWS, ExemptionWindow.encodeAll(this.configExemptWindows));
     values.set(KEY_IS_SCREEN_ON, this.isScreenOn);
     values.set(KEY_LAST_UPDATE_RT, this.lastUpdateRtMs);
     this.store.put(values);

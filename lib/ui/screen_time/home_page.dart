@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/exemption_window.dart';
 
 import '../../state_machine/app_phase.dart';
 import '../../state_machine/screen_time_state.dart';
@@ -12,6 +13,7 @@ import '../question_bank/group_list_page.dart';
 import '../about/about_page.dart';
 import '../permissions/permission_guide_page.dart';
 import 'admin_password_dialogs.dart';
+import 'exemption_window_dialogs.dart';
 import 'reminder_page.dart';
 import 'rest_page.dart';
 import 'screen_time_controller.dart';
@@ -204,6 +206,8 @@ class _TimingViewState extends State<_TimingView>
                       state: state,
                       restEnabled:
                           widget.controller.machine.settings.restEnabled,
+                      restExempt:
+                          widget.controller.isRestExemptNow,
                     ),
                     const SizedBox(height: 24),
                     _StatRow(
@@ -213,8 +217,9 @@ class _TimingViewState extends State<_TimingView>
                       away: widget.controller.todayAwayDuration,
                     ),
                     const Spacer(),
-                    // 强制休息关闭时不提供手动休息入口（无任何休息/锁屏行为）。
-                    if (widget.controller.machine.settings.restEnabled)
+                    // 强制休息关闭或处于豁免时间段时不提供手动休息入口
+                    // （按"强制休息已关闭"处理，无任何休息/锁屏行为）。
+                    if (widget.controller.restActiveNow)
                       FilledButton.icon(
                         onPressed: widget.controller.manualRest,
                         icon: const Icon(Icons.bedtime_outlined),
@@ -301,7 +306,14 @@ class _TimeCard extends StatelessWidget {
   /// 强制休息是否启用：关闭时第二行显示"强制休息未启用"。
   final bool restEnabled;
 
-  const _TimeCard({required this.state, required this.restEnabled});
+  /// 当前是否处于豁免时间段内：与关闭强制休息等价，第二行显示专属提示。
+  final bool restExempt;
+
+  const _TimeCard({
+    required this.state,
+    required this.restEnabled,
+    required this.restExempt,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -324,10 +336,12 @@ class _TimeCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              restEnabled
-                  ? l10n.homeNextQuizIn(
-                      _formatDuration(state.remainingToQuiz))
-                  : l10n.homeRestDisabled,
+              !restEnabled
+                  ? l10n.homeRestDisabled
+                  : restExempt
+                      ? l10n.homeRestExemptWindow
+                      : l10n.homeNextQuizIn(
+                          _formatDuration(state.remainingToQuiz)),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -447,6 +461,9 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   late final TextEditingController _restController;
   late int _refreshMs;
   late bool _restEnabled;
+
+  /// 豁免时间段本地副本：保存时才随其他配置一起提交。
+  late List<ExemptionWindow> _exemptWindows;
   String? _error;
 
   @override
@@ -459,6 +476,29 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
         TextEditingController(text: '${settings.restDuration.inMinutes}');
     _refreshMs = settings.restTimerRefreshMs;
     _restEnabled = settings.restEnabled;
+    _exemptWindows = [...settings.exemptionWindows];
+  }
+
+  /// 新增豁免时间段。
+  Future<void> _addExemptWindow() async {
+    final window = await showExemptionWindowEditor(context);
+    if (window == null) return;
+    setState(() => _exemptWindows = [..._exemptWindows, window]);
+  }
+
+  /// 编辑指定豁免时间段。
+  Future<void> _editExemptWindow(int index) async {
+    final window = await showExemptionWindowEditor(
+      context,
+      initial: _exemptWindows[index],
+    );
+    if (window == null) return;
+    setState(() {
+      _exemptWindows = [
+        for (var i = 0; i < _exemptWindows.length; i++)
+          i == index ? window : _exemptWindows[i],
+      ];
+    });
   }
 
   @override
@@ -485,6 +525,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
       restMinutes: restMinutes,
       restTimerRefreshMs: _refreshMs,
       restEnabled: _restEnabled,
+      exemptionWindows: _exemptWindows,
     );
     Navigator.of(context).pop();
   }
@@ -562,6 +603,79 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
                 if (value != null) setState(() => _refreshMs = value);
               },
             ),
+            const SizedBox(height: 12),
+            // 豁免时间段：仅强制休息开启时展示。落在任一时间段内时按
+            // "强制休息已关闭"处理（只统计亮屏、阈值冻结、不触发休息）。
+            if (_restEnabled) ...[
+              const Divider(height: 24),
+              Row(
+                children: [
+                  const Icon(Icons.event_available_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.settingsExemptWindows,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _addExemptWindow,
+                    child: Text(l10n.settingsExemptAdd),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.settingsExemptHint,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+              if (_exemptWindows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      l10n.settingsExemptNone,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                )
+              else
+                for (var i = 0; i < _exemptWindows.length; i++)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    title: Text(
+                      formatExemptionWindow(context, _exemptWindows[i]),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: () => _editExemptWindow(i),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          onPressed: () => setState(
+                            () => _exemptWindows = [
+                              for (var j = 0; j < _exemptWindows.length; j++)
+                                if (j != i) _exemptWindows[j],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            ],
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),

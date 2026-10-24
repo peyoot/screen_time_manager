@@ -47,6 +47,51 @@ class SEn extends S {
   String get homeRestDisabled => 'Forced rest disabled';
 
   @override
+  String get homeRestExemptWindow => 'In exemption window';
+
+  @override
+  String get settingsExemptWindows => 'Exemption windows';
+
+  @override
+  String get settingsExemptAdd => 'Add';
+
+  @override
+  String get settingsExemptHint =>
+      'During these windows forced rest is treated as off: screen time is still tracked but rest is never triggered';
+
+  @override
+  String get settingsExemptNone => 'No exemption windows';
+
+  @override
+  String get exemptDialogAddTitle => 'Add exemption window';
+
+  @override
+  String get exemptDialogEditTitle => 'Edit exemption window';
+
+  @override
+  String get exemptStart => 'From';
+
+  @override
+  String get exemptEnd => 'To';
+
+  @override
+  String exemptTimeRange(String label, String time) {
+    return '$label $time';
+  }
+
+  @override
+  String get exemptEveryDay => 'Every day';
+
+  @override
+  String get exemptWeekdays => 'Days';
+
+  @override
+  String get exemptInvalidRange => 'Start and end time must differ';
+
+  @override
+  String get exemptInvalidWeekdays => 'Select at least one day';
+
+  @override
   String get adminPasswordTitle => 'Admin password';
 
   @override

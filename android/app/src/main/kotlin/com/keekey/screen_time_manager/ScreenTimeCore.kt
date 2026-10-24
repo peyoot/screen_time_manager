@@ -39,6 +39,8 @@ class ScreenTimeCore(
         private const val KEY_CONFIG_REST_SEC = "config_rest_sec"
         private const val KEY_CONFIG_DAILY_LIMIT = "config_daily_limit"
         private const val KEY_CONFIG_REST_ENABLED = "config_rest_enabled"
+        /** 强制休息豁免时间段（编码串，见 [ExemptionWindow.encode]）。 */
+        private const val KEY_CONFIG_EXEMPT_WINDOWS = "config_exempt_windows"
         private const val KEY_IS_SCREEN_ON = "is_screen_on"
         private const val KEY_LAST_UPDATE_RT = "last_update_realtime_ms"
         private const val KEY_AWAY_MS = "away_ms"
@@ -99,6 +101,9 @@ class ScreenTimeCore(
     /** 强制休息功能总开关：关闭时只累计亮屏时长，阈值进度冻结，永不触发休息。 */
     private var configRestEnabled: Boolean
 
+    /** 强制休息豁免时间段：落在任一时间段内时按"强制休息已关闭"处理。 */
+    private var configExemptWindows: List<ExemptionWindow>
+
     private var isScreenOn: Boolean
     private var lastUpdateRtMs: Long
     private var day: String
@@ -127,6 +132,8 @@ class ScreenTimeCore(
         configRestSec = store.getLong(KEY_CONFIG_REST_SEC, DEFAULT_REST_SEC)
         configDailyLimit = store.getInt(KEY_CONFIG_DAILY_LIMIT, DEFAULT_DAILY_LIMIT)
         configRestEnabled = store.getBoolean(KEY_CONFIG_REST_ENABLED, true)
+        configExemptWindows =
+            ExemptionWindow.decodeAll(store.getString(KEY_CONFIG_EXEMPT_WINDOWS, null))
         isScreenOn = store.getBoolean(KEY_IS_SCREEN_ON, false)
         lastUpdateRtMs = store.getLong(KEY_LAST_UPDATE_RT, 0)
     }
@@ -142,11 +149,18 @@ class ScreenTimeCore(
     }
 
     /** 更新配置（由 Dart 推送 settings，原生持久化供后台重启复用）。 */
-    fun configure(quizSec: Long, restSec: Long, dailyLimit: Int, restEnabled: Boolean = true) {
+    fun configure(
+        quizSec: Long,
+        restSec: Long,
+        dailyLimit: Int,
+        restEnabled: Boolean = true,
+        exemptWindows: List<ExemptionWindow> = emptyList(),
+    ) {
         configQuizSec = if (quizSec > 0) quizSec else DEFAULT_QUIZ_SEC
         configRestSec = if (restSec > 0) restSec else DEFAULT_REST_SEC
         configDailyLimit = if (dailyLimit >= 0) dailyLimit else DEFAULT_DAILY_LIMIT
         configRestEnabled = restEnabled
+        configExemptWindows = exemptWindows
         persist(force = true)
     }
 
@@ -187,10 +201,10 @@ class ScreenTimeCore(
         return effect
     }
 
-    /** 手动触发休息（UI 计时页"立即休息"）；强制休息关闭时拒绝。 */
+    /** 手动触发休息（UI 计时页"立即休息"）；强制休息关闭或处于豁免时间段时拒绝。 */
     fun manualRest(): CoreEffect {
         rolloverDayIfNeeded()
-        if (resting || !configRestEnabled) return CoreEffect.NONE
+        if (resting || !isRestActiveNow()) return CoreEffect.NONE
         enterRest(clock.wallMs())
         lastUpdateRtMs = clock.realtimeMs()
         persist(force = true)
@@ -266,8 +280,9 @@ class ScreenTimeCore(
 
     /** 亮屏累计 + 阈值判定。仅在计时阶段且屏幕点亮时生效。
      *
-     * 强制休息关闭（[configRestEnabled] = false）时只累计当日亮屏时长，
-     * 阈值进度冻结（重新启用后从冻结值继续），永不进入休息。 */
+     * 强制休息关闭（[configRestEnabled] = false）或当前处于豁免时间段内时，
+     * 只累计当日亮屏时长，阈值进度冻结（重新启用/走出时间段后从冻结值继续），
+     * 永不进入休息。 */
     private fun accumulate(): CoreEffect {
         if (resting || !isScreenOn) return CoreEffect.NONE
         var delta = clock.realtimeMs() - lastUpdateRtMs
@@ -275,13 +290,22 @@ class ScreenTimeCore(
         if (delta > MAX_DELTA_MS) delta = MAX_DELTA_MS
         if (delta <= 0) return CoreEffect.NONE
         screenMs += delta
-        if (!configRestEnabled) return CoreEffect.NONE
+        if (!isRestActiveNow()) return CoreEffect.NONE
         thresholdMs += delta
         if (thresholdMs >= configQuizSec * 1000) {
             enterRest(clock.wallMs())
             return CoreEffect.ENTER_REST
         }
         return CoreEffect.NONE
+    }
+
+    /** 当前时刻是否按"强制休息生效"处理：总开关开启且不在豁免时间段内。 */
+    private fun isRestActiveNow(): Boolean {
+        if (!configRestEnabled) return false
+        if (configExemptWindows.isEmpty()) return true
+        val weekday = clock.localWeekday()
+        val minute = clock.localMinuteOfDay()
+        return configExemptWindows.none { it.isActiveAt(weekday, minute) }
     }
 
     /** 进入休息：设置截止与起点、当日次数 +1。 */
@@ -372,6 +396,8 @@ class ScreenTimeCore(
                 KEY_CONFIG_REST_SEC to configRestSec,
                 KEY_CONFIG_DAILY_LIMIT to configDailyLimit,
                 KEY_CONFIG_REST_ENABLED to configRestEnabled,
+                KEY_CONFIG_EXEMPT_WINDOWS to
+                    ExemptionWindow.encodeAll(configExemptWindows),
                 KEY_IS_SCREEN_ON to isScreenOn,
                 KEY_LAST_UPDATE_RT to lastUpdateRtMs,
             ),
@@ -389,6 +415,78 @@ interface CoreClock {
 
     /** 当地时区自然日键 `yyyy-MM-dd`。 */
     fun dayKey(): String
+
+    /** 当地时区星期几（周一=1 … 周日=7，与 Dart `DateTime.weekday` 对齐）。 */
+    fun localWeekday(): Int
+
+    /** 当地时区一天内的分钟数（0..1439）。 */
+    fun localMinuteOfDay(): Int
+}
+
+/**
+ * 强制休息豁免时间段（与 Dart `ExemptionWindow` 语义一致）。
+ *
+ * - `[startMinute, endMinute)`，`endMinute` 可取 1440 表示 24:00；
+ * - `endMinute < startMinute` 表示跨零点，归属起点那一天；
+ * - [weekdays] 取值 1..7（周一..周日）。
+ *
+ * 编码格式（持久化到 SharedPreferences，避免在纯 Kotlin 单元测试里依赖
+ * org.json —— Android 本地单测的 org.json 是桩实现）：
+ * 多个时间段以 `;` 分隔，每段 `start-end:星期数字串`，例如
+ * `540-720:12345;1380-420:67`。
+ */
+data class ExemptionWindow(
+    val startMinute: Int,
+    val endMinute: Int,
+    val weekdays: Set<Int>,
+) {
+    /** [weekday] / [minuteOfDay] 时刻本时间段是否生效。 */
+    fun isActiveAt(weekday: Int, minuteOfDay: Int): Boolean {
+        if (startMinute == endMinute) return false
+        if (startMinute < endMinute) {
+            return weekday in weekdays &&
+                minuteOfDay >= startMinute &&
+                minuteOfDay < endMinute
+        }
+        // 跨零点：归属起点那一天。
+        if (minuteOfDay >= startMinute) return weekday in weekdays
+        if (minuteOfDay < endMinute) {
+            val previousDay = if (weekday == 1) 7 else weekday - 1
+            return previousDay in weekdays
+        }
+        return false
+    }
+
+    /** 编码为持久化串（见类注释的格式说明）。 */
+    fun encode(): String =
+        "$startMinute-$endMinute:${weekdays.sorted().joinToString("")}"
+
+    companion object {
+        /** 解析持久化串；null/空串/任一段损坏只跳过该段。 */
+        fun decodeAll(raw: String?): List<ExemptionWindow> {
+            if (raw.isNullOrBlank()) return emptyList()
+            return raw.split(";").mapNotNull { entry ->
+                runCatching {
+                    val (range, days) = entry.split(":", limit = 2)
+                    val (startText, endText) = range.split("-", limit = 2)
+                    val start = startText.toInt()
+                    val end = endText.toInt()
+                    val weekdays = days.map { it - '0' }.toSet()
+                    require(start in 0..1439) { "startMinute 越界" }
+                    require(end in 0..1440) { "endMinute 越界" }
+                    require(start != end) { "起止相同" }
+                    require(weekdays.isNotEmpty() && weekdays.all { it in 1..7 }) {
+                        "weekdays 非法"
+                    }
+                    ExemptionWindow(start, end, weekdays)
+                }.getOrNull()
+            }
+        }
+
+        /** 批量编码；空列表返回空串。 */
+        fun encodeAll(windows: List<ExemptionWindow>): String =
+            windows.joinToString(";") { it.encode() }
+    }
 }
 
 /** 原生计时核心的外部依赖注入接口：持久化。 */

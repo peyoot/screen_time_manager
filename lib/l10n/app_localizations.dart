@@ -155,6 +155,90 @@ abstract class S {
   /// **'强制休息未启用'**
   String get homeRestDisabled;
 
+  /// No description provided for @homeRestExemptWindow.
+  ///
+  /// In zh, this message translates to:
+  /// **'豁免时间段内'**
+  String get homeRestExemptWindow;
+
+  /// No description provided for @settingsExemptWindows.
+  ///
+  /// In zh, this message translates to:
+  /// **'豁免时间段'**
+  String get settingsExemptWindows;
+
+  /// No description provided for @settingsExemptAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加'**
+  String get settingsExemptAdd;
+
+  /// No description provided for @settingsExemptHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在这些时间段内按关闭强制休息处理：只统计亮屏时长，不会触发休息'**
+  String get settingsExemptHint;
+
+  /// No description provided for @settingsExemptNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设置豁免时间段'**
+  String get settingsExemptNone;
+
+  /// No description provided for @exemptDialogAddTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加豁免时间段'**
+  String get exemptDialogAddTitle;
+
+  /// No description provided for @exemptDialogEditTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑豁免时间段'**
+  String get exemptDialogEditTitle;
+
+  /// No description provided for @exemptStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get exemptStart;
+
+  /// No description provided for @exemptEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束'**
+  String get exemptEnd;
+
+  /// No description provided for @exemptTimeRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{label} {time}'**
+  String exemptTimeRange(String label, String time);
+
+  /// No description provided for @exemptEveryDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天'**
+  String get exemptEveryDay;
+
+  /// No description provided for @exemptWeekdays.
+  ///
+  /// In zh, this message translates to:
+  /// **'生效星期'**
+  String get exemptWeekdays;
+
+  /// No description provided for @exemptInvalidRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始与结束时间不能相同'**
+  String get exemptInvalidRange;
+
+  /// No description provided for @exemptInvalidWeekdays.
+  ///
+  /// In zh, this message translates to:
+  /// **'请至少选择一天'**
+  String get exemptInvalidWeekdays;
+
   /// No description provided for @adminPasswordTitle.
   ///
   /// In zh, this message translates to:
