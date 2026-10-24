@@ -10,10 +10,10 @@ import 'screen_time_controller.dart';
 
 /// 全屏休息页。
 ///
-/// 展示毫秒级秒表（刷新间隔可在设置中调整，默认 16ms），
-/// 支持正计时/倒计时切换：
-/// - 正计时：从 0 开始累计，表示已休息时长；
-/// - 倒计时：从目标时长递减，表示剩余休息时间。
+/// 展示毫秒级秒表（刷新间隔可在设置中调整，默认 17ms），
+/// 默认以倒计时展示剩余休息时间；用户可主动切换为正计时：
+/// - 倒计时：从目标时长递减，表示剩余休息时间；
+/// - 正计时：从 0 开始累计，表示已休息时长。
 /// 休息结束后状态机自动回到计时阶段，本页随之消失。
 ///
 /// 进入休息时由控制器/原生优先尝试熄屏（Device Admin）；
@@ -31,7 +31,8 @@ class _RestPageState extends State<RestPage> {
   Timer? _timer;
   Duration _elapsed = Duration.zero;
   late final DateTime _restStart;
-  bool _countDown = false;
+  /// 默认倒计时；用户点击切换按钮后才改为正计时。
+  bool _countDown = true;
 
   /// 秒表刷新是否暂停：点击秒表切换；暂停时实际计时仍在进行，
   /// 只是界面不刷新，方便用户当作秒表记录时间。

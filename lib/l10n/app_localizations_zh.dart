@@ -10,7 +10,7 @@ class SZh extends S {
   SZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => '屏幕时间管理';
+  String get appTitle => '屏幕时间管理 · 自律助手';
 
   @override
   String get homeTodayScreenTime => '今日累计亮屏';
@@ -466,9 +466,6 @@ class SZh extends S {
   }
 
   @override
-  String get aboutEditionFree => '免费版';
-
-  @override
   String get aboutEditionPro => '专业版';
 
   @override
@@ -487,20 +484,34 @@ class SZh extends S {
   String get aboutHelpSubtitle => '主要功能与操作步骤';
 
   @override
-  String get aboutLimitsTitle => '当前版本配额';
+  String get aboutFeedback => '建议 / 加群';
 
   @override
-  String aboutLimitsText(int groups, int questions) {
-    return '最多 $groups 个分组，每组最多 $questions 题';
-  }
+  String get aboutFeedbackSubtitle => '反馈建议或加入交流群';
 
   @override
-  String aboutProHint(int proGroups, int proQuestions) {
-    return '升级到 Pro 版可解锁最多 $proGroups 个分组、每组 $proQuestions 题。';
-  }
+  String get feedbackTitle => '建议 / 加群';
 
   @override
-  String get aboutCopyright => '© 2026 keekey.com 保留所有权利。';
+  String get feedbackIntro => '欢迎反馈使用建议与问题，或加入交流群一起交流。';
+
+  @override
+  String get feedbackWechatLabel => '微信号';
+
+  @override
+  String get feedbackWechatId => 'peyoot';
+
+  @override
+  String get feedbackGroupHint => '添加微信时请备注“加群”，我会拉你进群。';
+
+  @override
+  String get feedbackCopy => '复制微信号';
+
+  @override
+  String get feedbackCopied => '微信号已复制';
+
+  @override
+  String get feedbackClose => '关闭';
 
   @override
   String get licenseTitle => '许可与免责声明';
@@ -517,20 +528,7 @@ class SZh extends S {
 
   @override
   String get helpBody =>
-      '主要功能\n• 亮屏计时：仅在屏幕点亮时累计，灭屏自动暂停。\n• 到点强制休息：亮屏累计达到设定阈值后自动进入全屏休息页并固定屏幕。\n• 答题豁免：休息期间可申请回答一道题，答对即可提前结束休息；每日默认 2 次，自然完成整段休息后重置。\n• 自动熄屏：休息页展示后 10 秒内无答题操作将自动熄屏（需授权设备管理器）；再次亮屏后休息页常亮，可作为秒表使用。\n• 题库管理：支持 CSV / JSON 导入、手动添加与编辑，并按答错次数加权抽题。\n• 强制休息开关：可在计时设置中关闭强制休息，仅统计亮屏时长。\n• 权限引导：集中跳转悬浮窗、通知、全屏 intent、电池优化、精确闹钟、无障碍与设备管理器设置。\n• 后台运行：退到后台后计时与监控继续；国产 ROM 请开启自启动与电池白名单。\n• 紧急退出：休息页快速交替按音量+ → 音量- → 音量+，再连续按 5 次音量-（默认密码）。\n• 多语言：跟随系统语言，可在主页切换中文、英文、日文、韩文。\n\n使用步骤\n1. 首次启动后进入“权限与保活”页，逐项完成授权，确保到点拦截与后台存活。\n2. 在“计时设置”中调整亮屏阈值、休息时长与秒表刷新间隔；建议设置管理密码，防止他人修改。\n3. 正常使用手机，达到阈值后按休息页提示完成休息；需要提前结束时申请答题豁免。\n4. 在“题库管理”中导入或编辑题目；Free 版有配额限制，升级 Pro 版可扩容。\n\n数据说明\n设置、题库与统计默认仅保存在本机。卸载应用或清除数据会导致数据丢失，请自行备份。';
-
-  @override
-  String get helpLimitsTitle => 'Free 版与 Pro 版';
-
-  @override
-  String helpLimitsText(
-    int freeGroups,
-    int freeQuestions,
-    int proGroups,
-    int proQuestions,
-  ) {
-    return 'Free 版：最多 $freeGroups 个分组，每组最多 $freeQuestions 题。\nPro 版：最多 $proGroups 个分组，每组最多 $proQuestions 题。';
-  }
+      '主要功能\n• 亮屏计时：仅在屏幕点亮时累计，灭屏自动暂停。\n• 到点强制休息：亮屏累计达到设定阈值后自动进入全屏休息页并固定屏幕。\n• 答题豁免：休息期间可申请回答一道题，答对即可提前结束休息；每日默认 2 次，自然完成整段休息后重置。\n• 自动熄屏：休息页展示后 10 秒内无答题操作将自动熄屏（需授权设备管理器）；再次亮屏后休息页常亮，可作为秒表使用。\n• 题库管理：支持 CSV / JSON 导入、手动添加与编辑，并按答错次数加权抽题。\n• 强制休息开关：可在计时设置中关闭强制休息，仅统计亮屏时长。\n• 权限引导：集中跳转悬浮窗、通知、全屏 intent、电池优化、精确闹钟、无障碍与设备管理器设置。\n• 后台运行：退到后台后计时与监控继续；国产 ROM 请开启自启动与电池白名单。\n• 紧急退出：休息页快速交替按音量+ → 音量- → 音量+，再连续按 5 次音量-（默认密码）。\n• 多语言：跟随系统语言，可在主页切换中文、英文、日文、韩文。\n\n使用步骤\n1. 首次启动后进入“权限与保活”页，逐项完成授权，确保到点拦截与后台存活。\n2. 在“计时设置”中调整亮屏阈值、休息时长与秒表刷新间隔；建议设置管理密码，防止他人修改。\n3. 正常使用手机，达到阈值后按休息页提示完成休息；需要提前结束时申请答题豁免。\n4. 在“题库管理”中导入或编辑题目。\n\n数据说明\n设置、题库与统计默认仅保存在本机。卸载应用或清除数据会导致数据丢失，请自行备份。';
 
   @override
   String get limitGroupsTitle => '已达到分组数量上限';

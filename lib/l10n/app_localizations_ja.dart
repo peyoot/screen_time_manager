@@ -10,7 +10,7 @@ class SJa extends S {
   SJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appTitle => 'スクリーンタイム管理';
+  String get appTitle => 'スクリーンタイム管理 · 自律アシスタント';
 
   @override
   String get homeTodayScreenTime => '今日の累計画面点灯';
@@ -471,9 +471,6 @@ class SJa extends S {
   }
 
   @override
-  String get aboutEditionFree => '無料版';
-
-  @override
   String get aboutEditionPro => 'プロ版';
 
   @override
@@ -493,20 +490,34 @@ class SJa extends S {
   String get aboutHelpSubtitle => '主な機能と操作手順';
 
   @override
-  String get aboutLimitsTitle => '現在の版の上限';
+  String get aboutFeedback => 'ご意見・グループ参加';
 
   @override
-  String aboutLimitsText(int groups, int questions) {
-    return '最大 $groups グループ、各グループ最大 $questions 問';
-  }
+  String get aboutFeedbackSubtitle => 'ご意見の送信や交流グループへの参加';
 
   @override
-  String aboutProHint(int proGroups, int proQuestions) {
-    return 'プロ版にアップグレードすると、最大 $proGroups グループ、各グループ $proQuestions 問まで利用できます。';
-  }
+  String get feedbackTitle => 'ご意見・グループ参加';
 
   @override
-  String get aboutCopyright => '© 2026 keekey.com All rights reserved.';
+  String get feedbackIntro => 'ご意見や不具合の報告、交流グループへの参加を歓迎します。';
+
+  @override
+  String get feedbackWechatLabel => 'WeChat ID';
+
+  @override
+  String get feedbackWechatId => 'peyoot';
+
+  @override
+  String get feedbackGroupHint => 'WeChat 追加時に「グループ参加」とご記入ください。招待します。';
+
+  @override
+  String get feedbackCopy => 'WeChat ID をコピー';
+
+  @override
+  String get feedbackCopied => 'WeChat ID をコピーしました';
+
+  @override
+  String get feedbackClose => '閉じる';
 
   @override
   String get licenseTitle => 'ライセンスと免責事項';
@@ -523,20 +534,7 @@ class SJa extends S {
 
   @override
   String get helpBody =>
-      '主な機能\n• 画面点灯タイマー：画面が点灯している間のみ計測し、消灯時は自動的に停止します。\n• 時間到達時の強制休憩：画面点灯時間が設定したしきい値に達すると、全画面の休憩ページが開き、画面が固定されます。\n• クイズ免除：休憩中に問題を1問リクエストでき、正解すると休憩を早く終了できます。既定で1日2回、自然に最後まで休憩するとリセットされます。\n• 自動スクリーンオフ：休憩ページ表示後10秒以内にクイズ操作がないと画面が自動で消えます（デバイス管理者の許可が必要）。再度点灯させると休憩ページは常時点灯のストップウォッチとして使えます。\n• 問題バンク：CSV / JSON インポート、手動追加・編集に対応し、誤答回数に応じた重み付き抽選を行います。\n• 強制休憩スイッチ：タイミング設定で強制休憩を無効にし、画面点灯時間のみを記録できます。\n• 権限ガイド：オーバーレイ、通知、全画面インテント、電池最適化、正確なアラーム、ユーザー補助、デバイス管理者の設定へまとめて移動できます。\n• バックグラウンド実行：バックグラウンドに移行しても計測と監視は継続します。中国系 ROM では自動起動と電池最適化の除外を有効にしてください。\n• 緊急終了：休憩ページで音量+ → 音量- → 音量+ を素早く交互に押し、続けて音量- を5回押します（既定のパスワード）。\n• 多言語：システム言語に追従し、ホームページで中国語・英語・日本語・韓国語を切り替えられます。\n\n使用手順\n1. 初回起動後、「権限とバックグラウンド動作」ページで各項目を許可し、時間到達時の介入とバックグラウンド生存を確保します。\n2. 「タイミング設定」で画面点灯のしきい値、休憩時間、ストップウォッチの更新間隔を調整します。管理パスワードの設定を推奨します。\n3. 通常どおりスマートフォンを使用し、しきい値に達したら休憩ページの案内に従って休憩します。早めに終えたい場合はクイズ免除を申請します。\n4. 「問題バンク」で問題をインポートまたは編集します。Free 版には上限があり、Pro 版で拡張できます。\n\nデータについて\n設定、問題バンク、統計は既定で本機にのみ保存されます。アプリのアンインストールやデータ消去により失われるため、ご自身でバックアップしてください。';
-
-  @override
-  String get helpLimitsTitle => 'Free 版と Pro 版';
-
-  @override
-  String helpLimitsText(
-    int freeGroups,
-    int freeQuestions,
-    int proGroups,
-    int proQuestions,
-  ) {
-    return 'Free 版：最大 $freeGroups グループ、各グループ最大 $freeQuestions 問。\nPro 版：最大 $proGroups グループ、各グループ最大 $proQuestions 問。';
-  }
+      '主な機能\n• 画面点灯タイマー：画面が点灯している間のみ計測し、消灯時は自動的に停止します。\n• 時間到達時の強制休憩：画面点灯時間が設定したしきい値に達すると、全画面の休憩ページが開き、画面が固定されます。\n• クイズ免除：休憩中に問題を1問リクエストでき、正解すると休憩を早く終了できます。既定で1日2回、自然に最後まで休憩するとリセットされます。\n• 自動スクリーンオフ：休憩ページ表示後10秒以内にクイズ操作がないと画面が自動で消えます（デバイス管理者の許可が必要）。再度点灯させると休憩ページは常時点灯のストップウォッチとして使えます。\n• 問題バンク：CSV / JSON インポート、手動追加・編集に対応し、誤答回数に応じた重み付き抽選を行います。\n• 強制休憩スイッチ：タイミング設定で強制休憩を無効にし、画面点灯時間のみを記録できます。\n• 権限ガイド：オーバーレイ、通知、全画面インテント、電池最適化、正確なアラーム、ユーザー補助、デバイス管理者の設定へまとめて移動できます。\n• バックグラウンド実行：バックグラウンドに移行しても計測と監視は継続します。中国系 ROM では自動起動と電池最適化の除外を有効にしてください。\n• 緊急終了：休憩ページで音量+ → 音量- → 音量+ を素早く交互に押し、続けて音量- を5回押します（既定のパスワード）。\n• 多言語：システム言語に追従し、ホームページで中国語・英語・日本語・韓国語を切り替えられます。\n\n使用手順\n1. 初回起動後、「権限とバックグラウンド動作」ページで各項目を許可し、時間到達時の介入とバックグラウンド生存を確保します。\n2. 「タイミング設定」で画面点灯のしきい値、休憩時間、ストップウォッチの更新間隔を調整します。管理パスワードの設定を推奨します。\n3. 通常どおりスマートフォンを使用し、しきい値に達したら休憩ページの案内に従って休憩します。早めに終えたい場合はクイズ免除を申請します。\n4. 「問題バンク」で問題をインポートまたは編集します。\n\nデータについて\n設定、問題バンク、統計は既定で本機にのみ保存されます。アプリのアンインストールやデータ消去により失われるため、ご自身でバックアップしてください。';
 
   @override
   String get limitGroupsTitle => 'グループ数の上限に達しました';

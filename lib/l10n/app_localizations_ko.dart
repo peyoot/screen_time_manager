@@ -10,7 +10,7 @@ class SKo extends S {
   SKo([String locale = 'ko']) : super(locale);
 
   @override
-  String get appTitle => '스크린 타임 관리';
+  String get appTitle => '스크린 타임 관리 · 자기 관리 도우미';
 
   @override
   String get homeTodayScreenTime => '오늘 누적 화면 사용';
@@ -472,9 +472,6 @@ class SKo extends S {
   }
 
   @override
-  String get aboutEditionFree => '무료판';
-
-  @override
   String get aboutEditionPro => '프로판';
 
   @override
@@ -494,20 +491,34 @@ class SKo extends S {
   String get aboutHelpSubtitle => '주요 기능과 사용 단계';
 
   @override
-  String get aboutLimitsTitle => '현재 판의 한도';
+  String get aboutFeedback => '의견 / 그룹 참여';
 
   @override
-  String aboutLimitsText(int groups, int questions) {
-    return '최대 $groups개 그룹, 그룹당 최대 $questions문항';
-  }
+  String get aboutFeedbackSubtitle => '의견 보내기 또는 교류 그룹 참여';
 
   @override
-  String aboutProHint(int proGroups, int proQuestions) {
-    return '프로판으로 업그레이드하면 최대 $proGroups개 그룹, 그룹당 $proQuestions문항까지 사용할 수 있습니다.';
-  }
+  String get feedbackTitle => '의견 / 그룹 참여';
 
   @override
-  String get aboutCopyright => '© 2026 keekey.com All rights reserved.';
+  String get feedbackIntro => '사용 의견이나 문제를 보내 주시거나 교류 그룹에 참여해 주세요.';
+
+  @override
+  String get feedbackWechatLabel => 'WeChat ID';
+
+  @override
+  String get feedbackWechatId => 'peyoot';
+
+  @override
+  String get feedbackGroupHint => 'WeChat 추가 시 \"그룹 참여\"라고 적어 주세요. 초대해 드립니다.';
+
+  @override
+  String get feedbackCopy => 'WeChat ID 복사';
+
+  @override
+  String get feedbackCopied => 'WeChat ID를 복사했습니다';
+
+  @override
+  String get feedbackClose => '닫기';
 
   @override
   String get licenseTitle => '라이선스 및 면책 조항';
@@ -524,20 +535,7 @@ class SKo extends S {
 
   @override
   String get helpBody =>
-      '주요 기능\n• 화면 켜짐 타이머: 화면이 켜져 있는 동안에만 측정하며, 꺼지면 자동으로 일시정지됩니다.\n• 시간 도달 시 강제 휴식: 화면 켜짐 시간이 설정한 임계값에 도달하면 전체 화면 휴식 페이지가 열리고 화면이 고정됩니다.\n• 퀴즈 면제: 휴식 중 문제를 한 개 요청할 수 있고, 정답을 맞히면 휴식을 일찍 끝낼 수 있습니다. 기본적으로 하루 2회이며, 휴식을 처음부터 끝까지 자연스럽게 마치면 초기화됩니다.\n• 자동 화면 끄기: 휴식 페이지 표시 후 10초 이내에 퀴즈 조작이 없으면 화면이 자동으로 꺼집니다(기기 관리자 승인 필요). 다시 켜면 휴식 페이지가 스톱워치처럼 계속 켜져 있습니다.\n• 문제 은행: CSV / JSON 가져오기, 수동 추가 및 편집을 지원하며, 오답 횟수에 따라 가중 추첨합니다.\n• 강제 휴식 스위치: 타이밍 설정에서 강제 휴식을 끄고 화면 켜짐 시간만 기록할 수 있습니다.\n• 권한 안내: 오버레이, 알림, 전체 화면 인텐트, 배터리 최적화, 정확한 알람, 접근성, 기기 관리자 설정으로 한곳에서 이동할 수 있습니다.\n• 백그라운드 실행: 백그라운드로 전환해도 측정과 모니터링이 계속됩니다. 중국계 ROM에서는 자동 실행과 배터리 최적화 제외를 켜세요.\n• 긴급 종료: 휴식 페이지에서 볼륨+ → 볼륨- → 볼륨+를 빠르게 번갈아 누른 뒤 볼륨-를 5회 누릅니다(기본 비밀번호).\n• 다국어: 시스템 언어를 따르며 홈페이지에서 중국어, 영어, 일본어, 한국어를 전환할 수 있습니다.\n\n사용 단계\n1. 첫 실행 후 \'권한 및 백그라운드 설정\' 페이지에서 각 항목을 허용하여 시간 도달 시 개입과 백그라운드 유지를 확보합니다.\n2. \'타이밍 설정\'에서 화면 켜짐 임계값, 휴식 시간, 스톱워치 새로고침 간격을 조정합니다. 관리자 비밀번호 설정을 권장합니다.\n3. 평소처럼 휴대폰을 사용하고, 임계값에 도달하면 휴식 페이지 안내에 따라 휴식합니다. 일찍 끝내려면 퀴즈 면제를 신청합니다.\n4. \'문제 은행\'에서 문제를 가져오거나 편집합니다. Free 판에는 한도가 있으며 Pro 판으로 확장할 수 있습니다.\n\n데이터 안내\n설정, 문제 은행, 통계는 기본적으로 이 기기에만 저장됩니다. 앱을 삭제하거나 데이터를 초기화하면 사라지므로 직접 백업하세요.';
-
-  @override
-  String get helpLimitsTitle => 'Free 판과 Pro 판';
-
-  @override
-  String helpLimitsText(
-    int freeGroups,
-    int freeQuestions,
-    int proGroups,
-    int proQuestions,
-  ) {
-    return 'Free 판: 최대 $freeGroups개 그룹, 그룹당 최대 $freeQuestions문항.\nPro 판: 최대 $proGroups개 그룹, 그룹당 최대 $proQuestions문항.';
-  }
+      '주요 기능\n• 화면 켜짐 타이머: 화면이 켜져 있는 동안에만 측정하며, 꺼지면 자동으로 일시정지됩니다.\n• 시간 도달 시 강제 휴식: 화면 켜짐 시간이 설정한 임계값에 도달하면 전체 화면 휴식 페이지가 열리고 화면이 고정됩니다.\n• 퀴즈 면제: 휴식 중 문제를 한 개 요청할 수 있고, 정답을 맞히면 휴식을 일찍 끝낼 수 있습니다. 기본적으로 하루 2회이며, 휴식을 처음부터 끝까지 자연스럽게 마치면 초기화됩니다.\n• 자동 화면 끄기: 휴식 페이지 표시 후 10초 이내에 퀴즈 조작이 없으면 화면이 자동으로 꺼집니다(기기 관리자 승인 필요). 다시 켜면 휴식 페이지가 스톱워치처럼 계속 켜져 있습니다.\n• 문제 은행: CSV / JSON 가져오기, 수동 추가 및 편집을 지원하며, 오답 횟수에 따라 가중 추첨합니다.\n• 강제 휴식 스위치: 타이밍 설정에서 강제 휴식을 끄고 화면 켜짐 시간만 기록할 수 있습니다.\n• 권한 안내: 오버레이, 알림, 전체 화면 인텐트, 배터리 최적화, 정확한 알람, 접근성, 기기 관리자 설정으로 한곳에서 이동할 수 있습니다.\n• 백그라운드 실행: 백그라운드로 전환해도 측정과 모니터링이 계속됩니다. 중국계 ROM에서는 자동 실행과 배터리 최적화 제외를 켜세요.\n• 긴급 종료: 휴식 페이지에서 볼륨+ → 볼륨- → 볼륨+를 빠르게 번갈아 누른 뒤 볼륨-를 5회 누릅니다(기본 비밀번호).\n• 다국어: 시스템 언어를 따르며 홈페이지에서 중국어, 영어, 일본어, 한국어를 전환할 수 있습니다.\n\n사용 단계\n1. 첫 실행 후 \'권한 및 백그라운드 설정\' 페이지에서 각 항목을 허용하여 시간 도달 시 개입과 백그라운드 유지를 확보합니다.\n2. \'타이밍 설정\'에서 화면 켜짐 임계값, 휴식 시간, 스톱워치 새로고침 간격을 조정합니다. 관리자 비밀번호 설정을 권장합니다.\n3. 평소처럼 휴대폰을 사용하고, 임계값에 도달하면 휴식 페이지 안내에 따라 휴식합니다. 일찍 끝내려면 퀴즈 면제를 신청합니다.\n4. \'문제 은행\'에서 문제를 가져오거나 편집합니다.\n\n데이터 안내\n설정, 문제 은행, 통계는 기본적으로 이 기기에만 저장됩니다. 앱을 삭제하거나 데이터를 초기화하면 사라지므로 직접 백업하세요.';
 
   @override
   String get limitGroupsTitle => '그룹 수 한도에 도달했습니다';

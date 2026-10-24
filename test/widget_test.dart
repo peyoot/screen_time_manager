@@ -76,7 +76,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // 主计时页的核心元素（测试环境默认 locale 为 en）。
-    expect(find.text('Screen Time Manager'), findsOneWidget);
+    expect(
+      find.text('Screen Time Manager · Self-Discipline Assistant'),
+      findsOneWidget,
+    );
     expect(find.text('Screen time today'), findsOneWidget);
     expect(find.text('Take a break now'), findsOneWidget);
     // 默认每日 2 次豁免，初始剩余 2 次；当日尚未豁免休息。
@@ -113,23 +116,29 @@ void main() {
     await tester.pumpAndSettle();
 
     // 测试环境默认 locale 为英文。
-    expect(find.text('Screen Time Manager'), findsOneWidget);
+    expect(
+      find.text('Screen Time Manager · Self-Discipline Assistant'),
+      findsOneWidget,
+    );
 
     // 切换到中文。
     controller.localeController.setLocale(const Locale('zh'));
     await tester.pumpAndSettle();
-    expect(find.text('屏幕时间管理'), findsOneWidget);
+    expect(find.text('屏幕时间管理 · 自律助手'), findsOneWidget);
     expect(find.text('今日累计亮屏'), findsOneWidget);
 
     // 切换到日文。
     controller.localeController.setLocale(const Locale('ja'));
     await tester.pumpAndSettle();
-    expect(find.text('スクリーンタイム管理'), findsOneWidget);
+    expect(find.text('スクリーンタイム管理 · 自律アシスタント'), findsOneWidget);
 
     // 恢复系统语言（null 表示跟随系统，测试环境默认 en）。
     controller.localeController.setLocale(null);
     await tester.pumpAndSettle();
-    expect(find.text('Screen Time Manager'), findsOneWidget);
+    expect(
+      find.text('Screen Time Manager · Self-Discipline Assistant'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('休息页豁免：答错显示正确答案可重试，答对提前结束休息', (tester) async {
@@ -148,6 +157,9 @@ void main() {
     await tester.tap(find.text('手动触发休息'));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('休息中'), findsOneWidget);
+    // 默认倒计时，切换按钮显示"正计时"。
+    expect(find.text('正计时'), findsOneWidget);
+    expect(find.text('倒计时'), findsNothing);
 
     // 申请豁免：随机抽出一道题。
     await tester.tap(find.text('申请豁免'));
@@ -226,7 +238,8 @@ void main() {
     expect(find.text('今日豁免次数已用完，请等待休息结束'), findsOneWidget);
   });
 
-  testWidgets('右上角关于按钮：展示版本号、当前版本配额与 License/帮助入口', (tester) async {
+  testWidgets('右上角关于按钮：展示版本号、建议加群与 License/帮助入口',
+      (tester) async {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -241,14 +254,23 @@ void main() {
     await tester.tap(button);
     await tester.pumpAndSettle();
 
-    // 关于页：版本号与 Free 版标识，配额文案来自 AppLimits.free。
+    // 关于页：版本号；免费版不显示版本标识，也不展示配额与版权。
     expect(find.text('About'), findsWidgets);
     expect(find.text('Version 1.0.0'), findsOneWidget);
-    expect(find.text('Free edition'), findsOneWidget);
+    expect(find.text('Free edition'), findsNothing);
     expect(
       find.text('Up to 5 groups, with up to 10 questions per group'),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.textContaining('All rights reserved'), findsNothing);
+
+    // 建议 / 加群入口：展示微信号，并提供复制操作。
+    await tester.tap(find.text('Suggestions / Join Group'));
+    await tester.pumpAndSettle();
+    expect(find.text('peyoot'), findsOneWidget);
+    expect(find.byTooltip('Copy WeChat ID'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
 
     // 进入许可与免责声明页。
     await tester.tap(find.text('License & Disclaimer'));
@@ -261,22 +283,12 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    // 进入帮助页，末段展示 Free / Pro 配额对比。
+    // 帮助页：保留主要功能与用法，不再展示 Free / Pro 配额说明。
     await tester.tap(find.text('Help & Usage'));
     await tester.pumpAndSettle();
     expect(find.text('Help & Usage'), findsWidgets);
-    // 帮助正文较长，配额对比在列表末尾，需滚动到可见。
-    await tester.scrollUntilVisible(
-      find.text('Free vs Pro'),
-      300,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Free vs Pro'), findsOneWidget);
-    expect(
-      find.textContaining('Free: up to 5 groups, 10 questions per group'),
-      findsOneWidget,
-    );
+    expect(find.text('Free vs Pro'), findsNothing);
+    expect(find.textContaining('Free: up to'), findsNothing);
   });
 
   testWidgets('设置管理密码后：权限入口需先验证，错误不放行、正确才进入',

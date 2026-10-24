@@ -22,7 +22,7 @@ class ScreenTimeCore(
 
     companion object {
         const val DEFAULT_QUIZ_SEC = 900L
-        const val DEFAULT_REST_SEC = 600L
+        const val DEFAULT_REST_SEC = 180L
         const val DEFAULT_DAILY_LIMIT = 2
 
         private const val KEY_DAY = "day"

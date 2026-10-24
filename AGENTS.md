@@ -87,7 +87,7 @@
   | `quiz_interval_seconds` | INTEGER | 900（15分钟） | 亮屏累计达此阈值触发答题 |
   | `questions_per_quiz` | INTEGER | 1 | 每轮答题数量 |
   | `required_correct_count` | INTEGER | 1 | 答对几题算豁免通过 |
-  | `rest_duration_seconds` | INTEGER | 600（10分钟） | 强制休息时长 |
+  | `rest_duration_seconds` | INTEGER | 180（3分钟） | 强制休息时长 |
   | `daily_exemption_limit` | INTEGER | 2 | 每日可用答题豁免次数上限，自然完成完整休息后重置 |
   | `admin_password_hash` | TEXT | NULL（schema V2 新增） | 本机管理密码的加盐哈希（FNV-1a 64 位，不落明文）；NULL 表示未设置 |
   | `rest_timer_refresh_ms` | INTEGER | 17（schema V4 新增） | 休息页秒表刷新间隔（毫秒），主页设置对话框可配（1/7/13/17/31/57），调大可降低低端机处理器负荷与功耗 |
@@ -234,13 +234,14 @@ Dart 侧镜像与接线：
 
 ## Current Status
 - 项目已初始化，完成首次 Git 提交。
-- **共享层**：已实现数据模型、核心状态机（亮屏计时→**到点直接全屏休息**（无提醒/答题中间态）→休息页内答题豁免，含每日豁免额度上限与自然完成重置）、题库模块（分组 CRUD + 加权抽题 + 编辑）、核心 UI 页面（主页计时、休息秒表）。状态机的 quiz 阶段已不可达（`answerCurrentQuestion`/`giveUpQuiz` 保留但调用即抛 StateError），豁免答题走控制器 `requestRestExemption`/`submitRestAnswer`（题库服务输入式题目）。
+- **共享层**：已实现数据模型、核心状态机（亮屏计时→**到点直接全屏休息**（无提醒/答题中间态）→休息页内答题豁免，含每日豁免额度上限与自然完成重置）、题库模块（分组 CRUD + 加权抽题 + 编辑）、核心 UI 页面（主页计时、休息页默认倒计时/可切正计时）。状态机的 quiz 阶段已不可达（`answerCurrentQuestion`/`giveUpQuiz` 保留但调用即抛 StateError），豁免答题走控制器 `requestRestExemption`/`submitRestAnswer`（题库服务输入式题目）。
 - **国际化**：支持中/英/日/韩，跟随系统语言，主页可切换；扩展只需在 `lib/l10n/` 新建 `app_xx.arb` 并 `flutter gen-l10n`。
 - **本地数据层（SQLite）**：已实现建表 + CRUD + 接线（`lib/data/`）；`app_settings` 启动加载、`question_group`/`question` cache-aside 持久化、`screen_session`/`rest_session`/`snooze_record` 在控制器阶段切换时落库。`sync_queue` 仅建表 + 入队。
 - **默认题库**：纯英文，不做多语种翻译（用户自行导入所需题库）——`Missing Piece`（谚语填空）、`Curious Mind`（科普问答）；中文系统环境额外加载"文化常识"古诗文飞花令分组。
 - **管理密码（本机）**：可在设置对话框内设置/修改/清除（最短 4 位）；设置后进入设置对话框、题库管理页与**权限引导页**均需先输密码验证（`openWithAdminGate` 门禁，`lib/ui/screen_time/admin_password_dialogs.dart`）。只存 FNV-1a 64 位加盐哈希不落明文（`AppSettings.adminPasswordHash` ↔ `app_settings.admin_password_hash`，schema V2 阶梯迁移，V1 库升级走 `applySchemaV2` 增量 ALTER）。`AppSettingsRepository` 带 `_lastWrite` 写入门串行化 upsert 并提供 `flush()`（测试断言 DB 前必等），与 QuestionBankService 约定一致。
 - **默认全屏 + 后台运行**：应用默认沉浸全屏（`SystemUiMode.immersiveSticky` 隐藏状态栏/导航栏），`main()` 启动即声明，`ScreenTimeManagerApp` 的 WidgetsBindingObserver 在每次 `resumed` 时重新声明（从后台/系统设置返回、强制休息被原生拉到前台都自动恢复全屏，休息页无需单独处理）。主页 AppBar 最右为**关于按钮**（`Icons.info_outline` → `AboutPage`）；"退到后台"能力保留为计时页正文的显眼按钮：点击经 `monitor` 通道 `moveToBack` → `Activity.moveTaskToBack(true)` 退到后台但不销毁进程，监控/计时不中断；桌面/Web/测试（monitor 为 null）静默 no-op。**计时页显眼"退到后台"按钮**：位于手动休息按钮下方，点击立即退到后台；按钮显示 15 秒倒计时，期间无操作则自动退到后台（点击页面任意处重置倒计时，对话框/子页面打开时不触发自动退后台）；从后台回到前台时倒计时重置。该机制作为部分国产 ROM（如 ZUXOS）划掉应用无法自动重启的兜底替代。
-- **关于 / 许可 / 帮助页**：`lib/ui/about/` 下 `about_page.dart`（版本号、Free/Pro 标识、当前配额、版权，入口跳转许可与帮助）、`license_page.dart`（`LicenseDisclaimerPage`，避开 Flutter 自带 `LicensePage` 命名；免责声明按空行分段渲染）、`help_page.dart`（主要功能、使用步骤、数据说明、Free/Pro 配额对比）、`upgrade_prompt.dart`（超限升级提示，可跳转关于页）。四语 l10n 文案齐全。
+- **关于 / 许可 / 帮助页**：`lib/ui/about/` 下 `about_page.dart`（版本号；仅 Pro 版显示 Pro 标识，Free 版不显示任何版本 Chip；不展示配额与版权；入口为许可、帮助、建议/加群）、`license_page.dart`（`LicenseDisclaimerPage`，避开 Flutter 自带 `LicensePage` 命名；免责声明按空行分段渲染）、`help_page.dart`（主要功能、使用步骤、数据说明；不展示 Free/Pro 说明）、`upgrade_prompt.dart`（超限升级提示，可跳转关于页）。"建议 / 加群"对话框展示微信号 **peyoot** 并支持一键复制（提示备注“加群”拉群，不展示二维码图片）。四语 l10n 文案齐全。
+- **应用名与休息页展示**：主页 AppBar 标题为 `appTitle`（中文“屏幕时间管理 · 自律助手”，英/日/韩同步翻译），窄屏经 `FittedBox` 自动缩放避免被右侧按钮截断；休息页**默认倒计时**（剩余时间），用户点击切换按钮后才改为正计时（已休息时长）。`AppSettings.defaults.restDuration` 与原生 `ScreenTimeCore.DEFAULT_REST_SEC` 的默认强制休息时长均为 **3 分钟（180s）**。
 - **紧急退出（音量键）超时缩短为 5 秒**：`EmergencyKeyController.INPUT_WINDOW_MS` 由 10s 改为 5s；超时回到 IDLE 态后可重新用 音量+→-→+ 交替序列触发。
 - **测试**：199 个 Dart 测试全过——状态机含 restoreDay/applyNativeSnapshot / 题库（含 Free/Pro 配额边界）/ widget 含关于页导航与权限引导页精确闹钟条目 / 数据层含 day_snapshot 与 V2→V3、V3→V4、V4→V5 迁移 / 会话记录 / 平台通道接线 / 当日休息统计 / 管理密码与 V1→V2 迁移 / 权限门禁与后台按钮 / 当日快照恢复 / 原生计时核心镜像 / away 统计；另有 18 个 Kotlin JUnit 测试（`ScreenTimeCoreTest` 含 away 统计 5 例 + restEnabled 4 例，`./gradlew :app:testFreeDebugUnitTest`）。
 - **版本 / 版本风味 / 配额已完成**：`lib/config/app_info.dart` 为单一数据源（`AppVersion=1.0.0`、`AppLimits.free/pro`、`LimitExceededException`）；Gradle 定义 `free`/`pro` flavor（共用 applicationId，`buildFeatures.buildConfig=true`）；`monitor` 通道 `getAppInfo` 回传 `BuildConfig.FLAVOR` 与 versionName，`main.dart` 据此构造 `QuestionBankService(limits: AppInfo.limits)`；Free 5 组/每组 10 题、Pro 100 组/每组 10000 题，服务层强制 + UI（分组列表/导入面板/分组详情）预检查并弹升级提示。两个 flavor `flutter build apk --debug --flavor free|pro` 均通过。

@@ -7,7 +7,7 @@ void main() {
     expect(s.quizInterval, const Duration(minutes: 15));
     expect(s.questionsPerQuiz, 1);
     expect(s.requiredCorrectCount, 1);
-    expect(s.restDuration, const Duration(minutes: 10));
+    expect(s.restDuration, const Duration(minutes: 3));
     expect(s.dailyExemptionLimit, 2);
   });
 

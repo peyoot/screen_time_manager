@@ -104,7 +104,7 @@ abstract class S {
   /// No description provided for @appTitle.
   ///
   /// In zh, this message translates to:
-  /// **'屏幕时间管理'**
+  /// **'屏幕时间管理 · 自律助手'**
   String get appTitle;
 
   /// No description provided for @homeTodayScreenTime.
@@ -923,12 +923,6 @@ abstract class S {
   /// **'版本 {version}'**
   String aboutVersion(String version);
 
-  /// No description provided for @aboutEditionFree.
-  ///
-  /// In zh, this message translates to:
-  /// **'免费版'**
-  String get aboutEditionFree;
-
   /// No description provided for @aboutEditionPro.
   ///
   /// In zh, this message translates to:
@@ -965,29 +959,65 @@ abstract class S {
   /// **'主要功能与操作步骤'**
   String get aboutHelpSubtitle;
 
-  /// No description provided for @aboutLimitsTitle.
+  /// No description provided for @aboutFeedback.
   ///
   /// In zh, this message translates to:
-  /// **'当前版本配额'**
-  String get aboutLimitsTitle;
+  /// **'建议 / 加群'**
+  String get aboutFeedback;
 
-  /// No description provided for @aboutLimitsText.
+  /// No description provided for @aboutFeedbackSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'最多 {groups} 个分组，每组最多 {questions} 题'**
-  String aboutLimitsText(int groups, int questions);
+  /// **'反馈建议或加入交流群'**
+  String get aboutFeedbackSubtitle;
 
-  /// No description provided for @aboutProHint.
+  /// No description provided for @feedbackTitle.
   ///
   /// In zh, this message translates to:
-  /// **'升级到 Pro 版可解锁最多 {proGroups} 个分组、每组 {proQuestions} 题。'**
-  String aboutProHint(int proGroups, int proQuestions);
+  /// **'建议 / 加群'**
+  String get feedbackTitle;
 
-  /// No description provided for @aboutCopyright.
+  /// No description provided for @feedbackIntro.
   ///
   /// In zh, this message translates to:
-  /// **'© 2026 keekey.com 保留所有权利。'**
-  String get aboutCopyright;
+  /// **'欢迎反馈使用建议与问题，或加入交流群一起交流。'**
+  String get feedbackIntro;
+
+  /// No description provided for @feedbackWechatLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'微信号'**
+  String get feedbackWechatLabel;
+
+  /// No description provided for @feedbackWechatId.
+  ///
+  /// In zh, this message translates to:
+  /// **'peyoot'**
+  String get feedbackWechatId;
+
+  /// No description provided for @feedbackGroupHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加微信时请备注“加群”，我会拉你进群。'**
+  String get feedbackGroupHint;
+
+  /// No description provided for @feedbackCopy.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制微信号'**
+  String get feedbackCopy;
+
+  /// No description provided for @feedbackCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'微信号已复制'**
+  String get feedbackCopied;
+
+  /// No description provided for @feedbackClose.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭'**
+  String get feedbackClose;
 
   /// No description provided for @licenseTitle.
   ///
@@ -1016,25 +1046,8 @@ abstract class S {
   /// No description provided for @helpBody.
   ///
   /// In zh, this message translates to:
-  /// **'主要功能\n• 亮屏计时：仅在屏幕点亮时累计，灭屏自动暂停。\n• 到点强制休息：亮屏累计达到设定阈值后自动进入全屏休息页并固定屏幕。\n• 答题豁免：休息期间可申请回答一道题，答对即可提前结束休息；每日默认 2 次，自然完成整段休息后重置。\n• 自动熄屏：休息页展示后 10 秒内无答题操作将自动熄屏（需授权设备管理器）；再次亮屏后休息页常亮，可作为秒表使用。\n• 题库管理：支持 CSV / JSON 导入、手动添加与编辑，并按答错次数加权抽题。\n• 强制休息开关：可在计时设置中关闭强制休息，仅统计亮屏时长。\n• 权限引导：集中跳转悬浮窗、通知、全屏 intent、电池优化、精确闹钟、无障碍与设备管理器设置。\n• 后台运行：退到后台后计时与监控继续；国产 ROM 请开启自启动与电池白名单。\n• 紧急退出：休息页快速交替按音量+ → 音量- → 音量+，再连续按 5 次音量-（默认密码）。\n• 多语言：跟随系统语言，可在主页切换中文、英文、日文、韩文。\n\n使用步骤\n1. 首次启动后进入“权限与保活”页，逐项完成授权，确保到点拦截与后台存活。\n2. 在“计时设置”中调整亮屏阈值、休息时长与秒表刷新间隔；建议设置管理密码，防止他人修改。\n3. 正常使用手机，达到阈值后按休息页提示完成休息；需要提前结束时申请答题豁免。\n4. 在“题库管理”中导入或编辑题目；Free 版有配额限制，升级 Pro 版可扩容。\n\n数据说明\n设置、题库与统计默认仅保存在本机。卸载应用或清除数据会导致数据丢失，请自行备份。'**
+  /// **'主要功能\n• 亮屏计时：仅在屏幕点亮时累计，灭屏自动暂停。\n• 到点强制休息：亮屏累计达到设定阈值后自动进入全屏休息页并固定屏幕。\n• 答题豁免：休息期间可申请回答一道题，答对即可提前结束休息；每日默认 2 次，自然完成整段休息后重置。\n• 自动熄屏：休息页展示后 10 秒内无答题操作将自动熄屏（需授权设备管理器）；再次亮屏后休息页常亮，可作为秒表使用。\n• 题库管理：支持 CSV / JSON 导入、手动添加与编辑，并按答错次数加权抽题。\n• 强制休息开关：可在计时设置中关闭强制休息，仅统计亮屏时长。\n• 权限引导：集中跳转悬浮窗、通知、全屏 intent、电池优化、精确闹钟、无障碍与设备管理器设置。\n• 后台运行：退到后台后计时与监控继续；国产 ROM 请开启自启动与电池白名单。\n• 紧急退出：休息页快速交替按音量+ → 音量- → 音量+，再连续按 5 次音量-（默认密码）。\n• 多语言：跟随系统语言，可在主页切换中文、英文、日文、韩文。\n\n使用步骤\n1. 首次启动后进入“权限与保活”页，逐项完成授权，确保到点拦截与后台存活。\n2. 在“计时设置”中调整亮屏阈值、休息时长与秒表刷新间隔；建议设置管理密码，防止他人修改。\n3. 正常使用手机，达到阈值后按休息页提示完成休息；需要提前结束时申请答题豁免。\n4. 在“题库管理”中导入或编辑题目。\n\n数据说明\n设置、题库与统计默认仅保存在本机。卸载应用或清除数据会导致数据丢失，请自行备份。'**
   String get helpBody;
-
-  /// No description provided for @helpLimitsTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'Free 版与 Pro 版'**
-  String get helpLimitsTitle;
-
-  /// No description provided for @helpLimitsText.
-  ///
-  /// In zh, this message translates to:
-  /// **'Free 版：最多 {freeGroups} 个分组，每组最多 {freeQuestions} 题。\nPro 版：最多 {proGroups} 个分组，每组最多 {proQuestions} 题。'**
-  String helpLimitsText(
-    int freeGroups,
-    int freeQuestions,
-    int proGroups,
-    int proQuestions,
-  );
 
   /// No description provided for @limitGroupsTitle.
   ///

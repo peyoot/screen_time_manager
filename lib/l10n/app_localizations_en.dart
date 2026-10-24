@@ -10,7 +10,7 @@ class SEn extends S {
   SEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Screen Time Manager';
+  String get appTitle => 'Screen Time Manager · Self-Discipline Assistant';
 
   @override
   String get homeTodayScreenTime => 'Screen time today';
@@ -478,9 +478,6 @@ class SEn extends S {
   }
 
   @override
-  String get aboutEditionFree => 'Free edition';
-
-  @override
   String get aboutEditionPro => 'Pro edition';
 
   @override
@@ -500,20 +497,37 @@ class SEn extends S {
   String get aboutHelpSubtitle => 'Main features and step-by-step usage';
 
   @override
-  String get aboutLimitsTitle => 'Edition limits';
+  String get aboutFeedback => 'Suggestions / Join Group';
 
   @override
-  String aboutLimitsText(int groups, int questions) {
-    return 'Up to $groups groups, with up to $questions questions per group';
-  }
+  String get aboutFeedbackSubtitle =>
+      'Send feedback or join the community group';
 
   @override
-  String aboutProHint(int proGroups, int proQuestions) {
-    return 'Upgrade to Pro to unlock up to $proGroups groups and $proQuestions questions per group.';
-  }
+  String get feedbackTitle => 'Suggestions / Join Group';
 
   @override
-  String get aboutCopyright => '© 2026 keekey.com All rights reserved.';
+  String get feedbackIntro =>
+      'Feel free to share suggestions or issues, or join the community group for discussion.';
+
+  @override
+  String get feedbackWechatLabel => 'WeChat ID';
+
+  @override
+  String get feedbackWechatId => 'peyoot';
+
+  @override
+  String get feedbackGroupHint =>
+      'Add me on WeChat with the note \"Join group\" and I will invite you in.';
+
+  @override
+  String get feedbackCopy => 'Copy WeChat ID';
+
+  @override
+  String get feedbackCopied => 'WeChat ID copied';
+
+  @override
+  String get feedbackClose => 'Close';
 
   @override
   String get licenseTitle => 'License & Disclaimer';
@@ -531,20 +545,7 @@ class SEn extends S {
 
   @override
   String get helpBody =>
-      'Main features\n• Screen-on timer: counts only while the screen is on and pauses automatically when off.\n• Forced rest: when screen-on time reaches the threshold, the full-screen rest page opens and the app is pinned.\n• Quiz exemption: during rest you may request one question; a correct answer ends the rest early. Two exemptions per day by default, reset after a full natural rest.\n• Auto screen-off: if no quiz action occurs within 10 seconds on the rest page, the screen turns off (requires Device Admin); after you turn it back on, the rest page stays on as a stopwatch.\n• Question bank: import CSV/JSON, add or edit questions manually, and weighted drawing based on wrong-answer counts.\n• Rest switch: disable forced rest in timing settings to only track screen-on time.\n• Permission guide: shortcuts to overlay, notification, full-screen intent, battery optimization, exact alarm, accessibility and device admin settings.\n• Background running: monitoring and timing continue in the background; on some Chinese ROMs enable auto-start and battery whitelist.\n• Emergency exit: on the rest page press volume up → down → up quickly, then volume down five times (default password).\n• Languages: follows the system language; Chinese, English, Japanese and Korean can be switched on the home page.\n\nGetting started\n1. After first launch, open \"Permissions & Reliability\" and grant each item to ensure intervention and background survival.\n2. Adjust the screen-on threshold, rest duration and stopwatch refresh interval in \"Timing settings\"; set an admin password to prevent changes.\n3. Use your phone normally; when the threshold is reached, follow the rest page. Request a quiz exemption to end the rest early.\n4. Import or edit questions in \"Question bank\". The Free edition has quotas; upgrade to Pro for more capacity.\n\nData\nSettings, question banks and statistics are stored only on this device by default. Uninstalling the app or clearing data will delete them; please back up important data yourself.';
-
-  @override
-  String get helpLimitsTitle => 'Free vs Pro';
-
-  @override
-  String helpLimitsText(
-    int freeGroups,
-    int freeQuestions,
-    int proGroups,
-    int proQuestions,
-  ) {
-    return 'Free: up to $freeGroups groups, $freeQuestions questions per group.\nPro: up to $proGroups groups, $proQuestions questions per group.';
-  }
+      'Main features\n• Screen-on timer: counts only while the screen is on and pauses automatically when off.\n• Forced rest: when screen-on time reaches the threshold, the full-screen rest page opens and the app is pinned.\n• Quiz exemption: during rest you may request one question; a correct answer ends the rest early. Two exemptions per day by default, reset after a full natural rest.\n• Auto screen-off: if no quiz action occurs within 10 seconds on the rest page, the screen turns off (requires Device Admin); after you turn it back on, the rest page stays on as a stopwatch.\n• Question bank: import CSV/JSON, add or edit questions manually, and weighted drawing based on wrong-answer counts.\n• Rest switch: disable forced rest in timing settings to only track screen-on time.\n• Permission guide: shortcuts to overlay, notification, full-screen intent, battery optimization, exact alarm, accessibility and device admin settings.\n• Background running: monitoring and timing continue in the background; on some Chinese ROMs enable auto-start and battery whitelist.\n• Emergency exit: on the rest page press volume up → down → up quickly, then volume down five times (default password).\n• Languages: follows the system language; Chinese, English, Japanese and Korean can be switched on the home page.\n\nGetting started\n1. After first launch, open \"Permissions & Reliability\" and grant each item to ensure intervention and background survival.\n2. Adjust the screen-on threshold, rest duration and stopwatch refresh interval in \"Timing settings\"; set an admin password to prevent changes.\n3. Use your phone normally; when the threshold is reached, follow the rest page. Request a quiz exemption to end the rest early.\n4. Import or edit questions in \"Question bank\".\n\nData\nSettings, question banks and statistics are stored only on this device by default. Uninstalling the app or clearing data will delete them; please back up important data yourself.';
 
   @override
   String get limitGroupsTitle => 'Group limit reached';

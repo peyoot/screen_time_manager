@@ -127,7 +127,12 @@ class _TimingViewState extends State<_TimingView>
       onPointerDown: (_) => _resetCountdown(),
       child: Scaffold(
         appBar: AppBar(
-          title: Text(l10n.appTitle),
+          // 窄屏时自动缩小字号，保证完整应用名不被右侧按钮截断。
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(l10n.appTitle),
+          ),
           actions: [
             IconButton(
               tooltip: l10n.homePermissionsTooltip,

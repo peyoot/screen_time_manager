@@ -1,9 +1,8 @@
-/// 帮助与使用说明页：主要功能、使用步骤、Free / Pro 配额与数据说明。
+/// 帮助与使用说明页：主要功能、使用步骤与数据说明。
 library;
 
 import 'package:flutter/material.dart';
 
-import '../../config/app_info.dart';
 import '../../l10n/app_localizations.dart';
 
 /// 帮助页。
@@ -30,22 +29,6 @@ class HelpPage extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
               ),
             ),
-          const Divider(),
-          const SizedBox(height: 8),
-          Text(
-            l10n.helpLimitsTitle,
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.helpLimitsText(
-              AppLimits.free.maxGroups,
-              AppLimits.free.maxQuestionsPerGroup,
-              AppLimits.pro.maxGroups,
-              AppLimits.pro.maxQuestionsPerGroup,
-            ),
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-          ),
         ],
       ),
     );
