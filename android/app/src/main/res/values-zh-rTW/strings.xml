@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 繁体中文（台湾）环境下的安装应用名。 -->
+    <string name="app_name">自律助手</string>
+</resources>

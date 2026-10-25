@@ -8,7 +8,7 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:screen_time_manager/data/database.dart';
+import 'package:screen_tempo/data/database.dart';
 import 'package:sqflite/sqflite.dart';
 
 int _counter = 0;

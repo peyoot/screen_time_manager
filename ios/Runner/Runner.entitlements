@@ -9,7 +9,7 @@
 	<!-- 主 App 与 DeviceActivityMonitor 扩展共享选择项/配置的 App Group。 -->
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.keekey.screentime</string>
+		<string>group.com.keekey.screentempo</string>
 	</array>
 </dict>
 </plist>

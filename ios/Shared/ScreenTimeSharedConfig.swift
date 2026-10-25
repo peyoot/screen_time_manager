@@ -12,7 +12,7 @@ import ManagedSettings
 /// App Group UserDefaults 交换数据（受限应用选择项、计时配置）。
 enum ScreenTimeSharedConfig {
     /// App Group ID（两个 target 的 entitlements 必须声明同一个）。
-    static let appGroupId = "group.com.keekey.screentime"
+    static let appGroupId = "group.com.keekey.screentempo"
 
     /// ManagedSettings 命名存储：主 App 与扩展必须用同一个，屏蔽才一致。
     static let shieldStore = ManagedSettingsStore.Name("screen-time-manager")
@@ -40,14 +40,14 @@ enum ScreenTimeSharedConfig {
     // MARK: - DeviceActivity 命名
 
     /// 整日重复调度（选定应用使用计时）。
-    static let dailyActivity = DeviceActivityName("com.keekey.screen_time_manager.daily")
+    static let dailyActivity = DeviceActivityName("com.keekey.screentempo.daily")
 
     /// 休息窗口调度（一次性，窗口结束撤盾）。
-    static let restActivity = DeviceActivityName("com.keekey.screen_time_manager.rest")
+    static let restActivity = DeviceActivityName("com.keekey.screentempo.rest")
 
     /// 阈值事件（当日累计使用达 quizSec 触发）。
     static let thresholdEvent =
-        DeviceActivityEvent.Name("com.keekey.screen_time_manager.threshold")
+        DeviceActivityEvent.Name("com.keekey.screentempo.threshold")
 
     // MARK: - 默认值（与 Android ScreenTimeCore / AppSettings.defaults 对齐）
 

@@ -10,7 +10,7 @@ class SZh extends S {
   SZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => '屏幕时间管理 · 自律助手';
+  String get appTitle => '自律助手';
 
   @override
   String get homeTodayScreenTime => '今日累计亮屏';

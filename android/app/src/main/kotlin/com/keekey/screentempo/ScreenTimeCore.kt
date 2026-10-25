@@ -1,4 +1,4 @@
-package com.keekey.screen_time_manager
+package com.keekey.screentempo
 
 /**
  * 原生权威计时核心（纯 Kotlin 逻辑，无 Android 依赖，可 JUnit 测试）。

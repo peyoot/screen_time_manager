@@ -1,4 +1,4 @@
-package com.keekey.screen_time_manager
+package com.keekey.screentempo
 
 import android.app.Activity
 import android.app.ActivityManager
@@ -28,7 +28,7 @@ import android.os.PowerManager
  *
  * Device Owner 通过一次性 ADB 命令设置：
  *   adb shell dpm set-device-owner \
- *     com.keekey.screen_time_manager/.ScreenMonitorDeviceAdmin
+ *     com.keekey.screentempo/.ScreenMonitorDeviceAdmin
  * 设置前设备上不能有任何账号；这是个人自管应用获得 Kiosk 能力的官方路径。
  */
 object RestGuard {

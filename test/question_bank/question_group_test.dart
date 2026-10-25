@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/question_bank/bank_question.dart';
-import 'package:screen_time_manager/question_bank/question_group.dart';
+import 'package:screen_tempo/question_bank/bank_question.dart';
+import 'package:screen_tempo/question_bank/question_group.dart';
 
 void main() {
   const validJson = '''

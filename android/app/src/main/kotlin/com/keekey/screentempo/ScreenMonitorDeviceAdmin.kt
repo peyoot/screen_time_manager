@@ -1,4 +1,4 @@
-package com.keekey.screen_time_manager
+package com.keekey.screentempo
 
 import android.app.admin.DeviceAdminReceiver
 import android.content.Context

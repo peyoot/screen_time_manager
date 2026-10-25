@@ -1,4 +1,4 @@
-package com.keekey.screen_time_manager
+package com.keekey.screentempo
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -19,7 +19,7 @@ import java.time.LocalDateTime
  */
 object TimeCoreHost {
 
-    private const val PREFS_NAME = "screen_time_core"
+    private const val PREFS_NAME = "screen_tempo_core"
 
     @Volatile
     private var instance: ScreenTimeCore? = null

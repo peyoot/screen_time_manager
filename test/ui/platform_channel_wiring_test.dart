@@ -6,13 +6,13 @@ library;
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/platform_channel/platform_channels.dart';
-import 'package:screen_time_manager/question_bank/bank_question.dart';
-import 'package:screen_time_manager/question_bank/question_bank_service.dart';
-import 'package:screen_time_manager/state_machine/app_phase.dart';
-import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
-import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/platform_channel/platform_channels.dart';
+import 'package:screen_tempo/question_bank/bank_question.dart';
+import 'package:screen_tempo/question_bank/question_bank_service.dart';
+import 'package:screen_tempo/state_machine/app_phase.dart';
+import 'package:screen_tempo/state_machine/screen_time_machine.dart';
+import 'package:screen_tempo/ui/screen_time/screen_time_controller.dart';
 
 /// 记录调用的假干预桥。
 class _RecordingInterventionBridge implements InterventionBridge {

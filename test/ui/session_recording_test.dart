@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/data/repositories/question_repository.dart';
-import 'package:screen_time_manager/data/repositories/rest_session_repository.dart';
-import 'package:screen_time_manager/data/repositories/screen_session_repository.dart';
-import 'package:screen_time_manager/data/repositories/snooze_record_repository.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/question_bank/bank_question.dart';
-import 'package:screen_time_manager/question_bank/question_bank_service.dart';
-import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
-import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
+import 'package:screen_tempo/data/repositories/question_repository.dart';
+import 'package:screen_tempo/data/repositories/rest_session_repository.dart';
+import 'package:screen_tempo/data/repositories/screen_session_repository.dart';
+import 'package:screen_tempo/data/repositories/snooze_record_repository.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/question_bank/bank_question.dart';
+import 'package:screen_tempo/question_bank/question_bank_service.dart';
+import 'package:screen_tempo/state_machine/screen_time_machine.dart';
+import 'package:screen_tempo/ui/screen_time/screen_time_controller.dart';
 
 import '../data/_helpers.dart';
 

@@ -15,7 +15,7 @@ import UIKit
 ///
 /// 需要的能力（Xcode Signing & Capabilities）：
 /// - Family Controls（Development 可直接勾选；对外分发需 Apple 审核批准）；
-/// - App Groups：`group.com.keekey.screentime`。
+/// - App Groups：`group.com.keekey.screentempo`。
 @MainActor
 final class FamilyControlsManager {
     static let shared = FamilyControlsManager()

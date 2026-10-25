@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/question_bank/csv_question_parser.dart';
+import 'package:screen_tempo/question_bank/csv_question_parser.dart';
 
 void main() {
   group('parseCsvQuestions', () {

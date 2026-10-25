@@ -104,7 +104,7 @@ abstract class S {
   /// No description provided for @appTitle.
   ///
   /// In zh, this message translates to:
-  /// **'屏幕时间管理 · 自律助手'**
+  /// **'自律助手'**
   String get appTitle;
 
   /// No description provided for @homeTodayScreenTime.

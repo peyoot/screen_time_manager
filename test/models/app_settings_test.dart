@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/exemption_window.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/models/exemption_window.dart';
 
 void main() {
   test('默认配置取值合理', () {

@@ -10,7 +10,7 @@ class SJa extends S {
   SJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appTitle => 'スクリーンタイム管理 · 自律アシスタント';
+  String get appTitle => 'ScreenTempo';
 
   @override
   String get homeTodayScreenTime => '今日の累計画面点灯';

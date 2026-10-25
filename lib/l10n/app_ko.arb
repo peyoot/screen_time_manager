@@ -1,6 +1,6 @@
 {
   "@@locale": "ko",
-  "appTitle": "스크린 타임 관리 · 자기 관리 도우미",
+  "appTitle": "ScreenTempo",
   "homeTodayScreenTime": "오늘 누적 화면 사용",
   "homeNextQuizIn": "다음 강제 휴식까지 {time}",
   "@homeNextQuizIn": {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/question_bank/bank_question.dart';
+import 'package:screen_tempo/question_bank/bank_question.dart';
 
 void main() {
   group('BankQuestion 构造', () {

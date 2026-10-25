@@ -2,23 +2,23 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "屏幕时间管理入口模块"
+      "value": "ScreenTempo entry module"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "屏幕时间管理主界面"
+      "value": "ScreenTempo main screen"
     },
     {
       "name": "EntryAbility_label",
-      "value": "屏幕时间管理"
+      "value": "ScreenTempo"
     },
     {
       "name": "perm_keep_background_reason",
-      "value": "需要在后台持续统计亮屏时长并在到点时提醒您休息"
+      "value": "Needs to keep counting screen-on time in the background and remind you to rest when the limit is reached"
     },
     {
       "name": "perm_notification_reason",
-      "value": "到达设定的使用时间后，通过通知提醒您进入休息"
+      "value": "Reminds you to take a rest via notification when the configured usage limit is reached"
     }
   ]
 }

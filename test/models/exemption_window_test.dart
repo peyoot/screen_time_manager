@@ -2,7 +2,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/exemption_window.dart';
+import 'package:screen_tempo/models/exemption_window.dart';
 
 void main() {
   // 2026-10-07 是周三（weekday = 3），2026-10-09 是周五，10-10 是周六。

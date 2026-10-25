@@ -5,13 +5,13 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:screen_time_manager/data/database.dart';
-import 'package:screen_time_manager/data/repositories/app_settings_repository.dart';
-import 'package:screen_time_manager/data/repositories/day_snapshot_repository.dart';
-import 'package:screen_time_manager/data/schema.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/day_snapshot.dart';
-import 'package:screen_time_manager/models/exemption_window.dart';
+import 'package:screen_tempo/data/database.dart';
+import 'package:screen_tempo/data/repositories/app_settings_repository.dart';
+import 'package:screen_tempo/data/repositories/day_snapshot_repository.dart';
+import 'package:screen_tempo/data/schema.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/models/day_snapshot.dart';
+import 'package:screen_tempo/models/exemption_window.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '_helpers.dart';

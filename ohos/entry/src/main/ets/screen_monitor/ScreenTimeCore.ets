@@ -15,7 +15,7 @@
  *   屏幕状态由宿主每秒轮询 `display.isScreenOn()` 后经 [setScreenState] 喂入。
  */
 
-/** 持久化键（与 Android `screen_time_core` SharedPreferences 保持一致）。 */
+/** 持久化键（与 Android `screen_tempo_core` SharedPreferences 保持一致）。 */
 const KEY_DAY: string = 'day';
 const KEY_SCREEN_MS: string = 'screen_ms';
 const KEY_THRESHOLD_MS: string = 'threshold_ms';

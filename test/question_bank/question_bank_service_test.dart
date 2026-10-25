@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/config/app_info.dart';
-import 'package:screen_time_manager/question_bank/bank_question.dart';
-import 'package:screen_time_manager/question_bank/question_bank_service.dart';
+import 'package:screen_tempo/config/app_info.dart';
+import 'package:screen_tempo/question_bank/bank_question.dart';
+import 'package:screen_tempo/question_bank/question_bank_service.dart';
 
 void main() {
   /// 快捷构造 N 道题。

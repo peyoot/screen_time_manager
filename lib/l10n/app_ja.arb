@@ -1,6 +1,6 @@
 {
   "@@locale": "ja",
-  "appTitle": "スクリーンタイム管理 · 自律アシスタント",
+  "appTitle": "ScreenTempo",
   "homeTodayScreenTime": "今日の累計画面点灯",
   "homeNextQuizIn": "次の強制休憩まであと {time}",
   "@homeNextQuizIn": {

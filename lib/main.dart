@@ -33,7 +33,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 默认全屏（沉浸模式）：启动即隐藏状态栏与导航栏；
-  // 之后由 [ScreenTimeManagerApp] 的生命周期观察在每次回前台时重新声明。
+  // 之后由 [ScreenTempoApp] 的生命周期观察在每次回前台时重新声明。
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   // 平台监控接线：Android 返回真实通道（亮灭屏事件流 + 干预桥），
@@ -179,7 +179,7 @@ Future<void> main() async {
     }
   }
 
-  runApp(ScreenTimeManagerApp(controller: controller));
+  runApp(ScreenTempoApp(controller: controller));
 }
 
 /// 首次运行时写入默认题库。
@@ -245,16 +245,16 @@ void _seedDefaultQuestionBank(
 /// 持有 [WidgetsBindingObserver]：应用默认全屏（immersiveSticky 隐藏状态栏
 /// 与导航栏），从后台/系统设置返回前台时系统可能已恢复系统栏，
 /// 需在每次 resumed 时重新声明，保证计时页与被干预拉起的休息页都全屏。
-class ScreenTimeManagerApp extends StatefulWidget {
+class ScreenTempoApp extends StatefulWidget {
   final ScreenTimeController controller;
 
-  const ScreenTimeManagerApp({super.key, required this.controller});
+  const ScreenTempoApp({super.key, required this.controller});
 
   @override
-  State<ScreenTimeManagerApp> createState() => _ScreenTimeManagerAppState();
+  State<ScreenTempoApp> createState() => _ScreenTempoAppState();
 }
 
-class _ScreenTimeManagerAppState extends State<ScreenTimeManagerApp>
+class _ScreenTempoAppState extends State<ScreenTempoApp>
     with WidgetsBindingObserver {
   @override
   void initState() {

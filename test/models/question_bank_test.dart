@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/question_bank.dart';
+import 'package:screen_tempo/models/question_bank.dart';
 
 void main() {
   Map<String, dynamic> questionJson(String id, {int correctIndex = 0}) => {

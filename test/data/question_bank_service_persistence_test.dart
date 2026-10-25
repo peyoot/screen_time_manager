@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/data/repositories/question_repository.dart';
-import 'package:screen_time_manager/question_bank/bank_question.dart';
-import 'package:screen_time_manager/question_bank/question_bank_service.dart';
+import 'package:screen_tempo/data/repositories/question_repository.dart';
+import 'package:screen_tempo/question_bank/bank_question.dart';
+import 'package:screen_tempo/question_bank/question_bank_service.dart';
 
 import '_helpers.dart';
 

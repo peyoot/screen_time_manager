@@ -17,7 +17,7 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
-    namespace = "com.keekey.screen_time_manager"
+    namespace = "com.keekey.screentempo"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -28,7 +28,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.keekey.screen_time_manager"
+        applicationId = "com.keekey.screentempo"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

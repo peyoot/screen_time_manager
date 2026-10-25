@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Screen Time Manager · Self-Discipline Assistant",
+  "appTitle": "ScreenTempo",
   "homeTodayScreenTime": "Screen time today",
   "homeNextQuizIn": "Time until next mandatory rest: {time}",
   "@homeNextQuizIn": {

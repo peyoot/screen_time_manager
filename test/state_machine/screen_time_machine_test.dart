@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/exemption_window.dart';
-import 'package:screen_time_manager/models/question.dart';
-import 'package:screen_time_manager/models/question_bank.dart';
-import 'package:screen_time_manager/state_machine/app_phase.dart';
-import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/models/exemption_window.dart';
+import 'package:screen_tempo/models/question.dart';
+import 'package:screen_tempo/models/question_bank.dart';
+import 'package:screen_tempo/state_machine/app_phase.dart';
+import 'package:screen_tempo/state_machine/screen_time_machine.dart';
 
 void main() {
   // 状态机当前到点直接进休息，不再抽题；题库仅作为构造参数保留。

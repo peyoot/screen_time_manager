@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/question.dart';
-import 'package:screen_time_manager/state_machine/quiz_session.dart';
+import 'package:screen_tempo/models/question.dart';
+import 'package:screen_tempo/state_machine/quiz_session.dart';
 
 void main() {
   List<Question> buildQuestions(int n) => [

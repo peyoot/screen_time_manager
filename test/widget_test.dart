@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/l10n/app_localizations.dart';
-import 'package:screen_time_manager/main.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/question.dart';
-import 'package:screen_time_manager/models/question_bank.dart';
-import 'package:screen_time_manager/platform_channel/platform_channels.dart';
-import 'package:screen_time_manager/question_bank/question_bank_service.dart';
-import 'package:screen_time_manager/state_machine/app_phase.dart';
-import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
-import 'package:screen_time_manager/ui/permissions/permission_guide_page.dart';
-import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
+import 'package:screen_tempo/l10n/app_localizations.dart';
+import 'package:screen_tempo/main.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/models/question.dart';
+import 'package:screen_tempo/models/question_bank.dart';
+import 'package:screen_tempo/platform_channel/platform_channels.dart';
+import 'package:screen_tempo/question_bank/question_bank_service.dart';
+import 'package:screen_tempo/state_machine/app_phase.dart';
+import 'package:screen_tempo/state_machine/screen_time_machine.dart';
+import 'package:screen_tempo/ui/permissions/permission_guide_page.dart';
+import 'package:screen_tempo/ui/screen_time/screen_time_controller.dart';
 
 ScreenTimeController buildController({bool restEnabled = true}) {
   final bankService = QuestionBankService.demo();
@@ -71,13 +71,13 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
     // 主计时页的核心元素（测试环境默认 locale 为 en）。
     expect(
-      find.text('Screen Time Manager · Self-Discipline Assistant'),
+      find.text('ScreenTempo'),
       findsOneWidget,
     );
     expect(find.text('Screen time today'), findsOneWidget);
@@ -91,7 +91,7 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
@@ -111,32 +111,32 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
     // 测试环境默认 locale 为英文。
     expect(
-      find.text('Screen Time Manager · Self-Discipline Assistant'),
+      find.text('ScreenTempo'),
       findsOneWidget,
     );
 
     // 切换到中文。
     controller.localeController.setLocale(const Locale('zh'));
     await tester.pumpAndSettle();
-    expect(find.text('屏幕时间管理 · 自律助手'), findsOneWidget);
+    expect(find.text('自律助手'), findsOneWidget);
     expect(find.text('今日累计亮屏'), findsOneWidget);
 
-    // 切换到日文。
+    // 切换到日文（应用内标题与英文同为 ScreenTempo）。
     controller.localeController.setLocale(const Locale('ja'));
     await tester.pumpAndSettle();
-    expect(find.text('スクリーンタイム管理 · 自律アシスタント'), findsOneWidget);
+    expect(find.text('ScreenTempo'), findsOneWidget);
 
     // 恢复系统语言（null 表示跟随系统，测试环境默认 en）。
     controller.localeController.setLocale(null);
     await tester.pumpAndSettle();
     expect(
-      find.text('Screen Time Manager · Self-Discipline Assistant'),
+      find.text('ScreenTempo'),
       findsOneWidget,
     );
   });
@@ -145,7 +145,7 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
@@ -204,7 +204,7 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
     controller.localeController.setLocale(const Locale('zh'));
@@ -243,7 +243,7 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
@@ -298,7 +298,7 @@ void main() {
     controller.updateAdminPassword('abcd');
 
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
@@ -368,7 +368,7 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
@@ -440,7 +440,7 @@ void main() {
     final controller = buildController(restEnabled: false);
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 
@@ -460,7 +460,7 @@ void main() {
     final controller = buildController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      ScreenTimeManagerApp(controller: controller),
+      ScreenTempoApp(controller: controller),
     );
     await tester.pumpAndSettle();
 

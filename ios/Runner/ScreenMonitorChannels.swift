@@ -15,7 +15,7 @@ import UIKit
 /// iOS 无法监听全局亮灭屏、应用退后台即挂起，计时保持 Dart Timer 驱动
 /// （`PlatformMonitoring.timeCore == null`，见 platform_monitoring_native.dart）。
 enum ScreenMonitorChannels {
-    private static let namespace = "com.keekey.screen_time_manager/platform"
+    private static let namespace = "com.keekey.screentempo/platform"
 
     /// 在给定 messenger 上注册全部平台通道（由 AppDelegate 在引擎初始化时调用）。
     static func register(messenger: FlutterBinaryMessenger) {

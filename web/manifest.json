@@ -1,6 +1,6 @@
 {
-    "name": "screen_time_manager",
-    "short_name": "screen_time_manager",
+    "name": "ScreenTempo",
+    "short_name": "ScreenTempo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

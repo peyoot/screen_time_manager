@@ -16,7 +16,7 @@ import 'db_platform_io.dart'
 import 'schema.dart';
 
 /// 数据库文件名。
-const String kDbFileName = 'screen_time_manager.db';
+const String kDbFileName = 'screen_tempo.db';
 
 /// 打开（或创建）应用数据库。
 ///

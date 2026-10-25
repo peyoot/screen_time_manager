@@ -1,4 +1,4 @@
-package com.keekey.screen_time_manager
+package com.keekey.screentempo
 
 import android.accessibilityservice.AccessibilityService
 import android.view.KeyEvent

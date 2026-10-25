@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/models/daily_usage.dart';
+import 'package:screen_tempo/models/daily_usage.dart';
 
 void main() {
   test('today 归零到日期零点', () {

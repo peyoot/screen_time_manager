@@ -1,4 +1,4 @@
-package com.keekey.screen_time_manager
+package com.keekey.screentempo
 
 import android.app.Activity
 import android.app.AlarmManager
@@ -54,7 +54,7 @@ object ScreenEventBus {
  *   （startLockTask / stopLockTask）。
  */
 object ScreenMonitorChannels {
-    private const val NAMESPACE = "com.keekey.screen_time_manager/platform"
+    private const val NAMESPACE = "com.keekey.screentempo/platform"
 
     /** 历史版本到点干预通知的 ID（通知已移除；保留 ID 以便撤销残留通知）。 */
     private const val ALERT_NOTIFICATION_ID = 1002

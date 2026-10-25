@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/data/repositories/app_settings_repository.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
+import 'package:screen_tempo/data/repositories/app_settings_repository.dart';
+import 'package:screen_tempo/models/app_settings.dart';
 
 import '_helpers.dart';
 

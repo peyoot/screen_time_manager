@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/data/repositories/rest_session_repository.dart';
-import 'package:screen_time_manager/data/repositories/screen_session_repository.dart';
-import 'package:screen_time_manager/data/repositories/snooze_record_repository.dart';
-import 'package:screen_time_manager/data/repositories/sync_queue_repository.dart';
-import 'package:screen_time_manager/models/rest_session.dart';
-import 'package:screen_time_manager/models/screen_session.dart';
-import 'package:screen_time_manager/models/snooze_record.dart';
+import 'package:screen_tempo/data/repositories/rest_session_repository.dart';
+import 'package:screen_tempo/data/repositories/screen_session_repository.dart';
+import 'package:screen_tempo/data/repositories/snooze_record_repository.dart';
+import 'package:screen_tempo/data/repositories/sync_queue_repository.dart';
+import 'package:screen_tempo/models/rest_session.dart';
+import 'package:screen_tempo/models/screen_session.dart';
+import 'package:screen_tempo/models/snooze_record.dart';
 
 import '_helpers.dart';
 

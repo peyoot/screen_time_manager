@@ -39,12 +39,12 @@ import {
   ScreenTimeCore,
 } from './ScreenTimeCore';
 
-const NAMESPACE: string = 'com.keekey.screen_time_manager/platform';
+const NAMESPACE: string = 'com.keekey.screentempo/platform';
 
 /** 到点休息通知 ID（撤销时复用）。 */
 const REST_NOTIFICATION_ID: number = 1003;
 
-const PREFS_NAME: string = 'screen_time_core';
+const PREFS_NAME: string = 'screen_tempo_core';
 
 // ---------------------------------------------------------------------
 // 时钟 / 持久化实现
@@ -204,7 +204,7 @@ class TimeCoreHost {
     // 可能标记废弃，需按当前 SDK 文档调整。
     try {
       const agentInfo: wantAgent.WantAgentInfo = {
-        wants: [{ bundleName: 'com.keekey.screen_time_manager', abilityName: 'EntryAbility' }],
+        wants: [{ bundleName: 'com.keekey.screentempo', abilityName: 'EntryAbility' }],
         actionType: wantAgent.OperationType.START_ABILITY,
         requestCode: 0,
         actionFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG],
@@ -240,7 +240,7 @@ class TimeCoreHost {
 
   private publishRestNotification(): void {
     const agentInfo: wantAgent.WantAgentInfo = {
-      wants: [{ bundleName: 'com.keekey.screen_time_manager', abilityName: 'EntryAbility' }],
+      wants: [{ bundleName: 'com.keekey.screentempo', abilityName: 'EntryAbility' }],
       actionType: wantAgent.OperationType.START_ABILITY,
       requestCode: 1,
       actionFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG],

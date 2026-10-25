@@ -5,13 +5,13 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:screen_time_manager/data/repositories/day_snapshot_repository.dart';
-import 'package:screen_time_manager/models/app_settings.dart';
-import 'package:screen_time_manager/models/day_snapshot.dart';
-import 'package:screen_time_manager/question_bank/question_bank_service.dart';
-import 'package:screen_time_manager/state_machine/app_phase.dart';
-import 'package:screen_time_manager/state_machine/screen_time_machine.dart';
-import 'package:screen_time_manager/ui/screen_time/screen_time_controller.dart';
+import 'package:screen_tempo/data/repositories/day_snapshot_repository.dart';
+import 'package:screen_tempo/models/app_settings.dart';
+import 'package:screen_tempo/models/day_snapshot.dart';
+import 'package:screen_tempo/question_bank/question_bank_service.dart';
+import 'package:screen_tempo/state_machine/app_phase.dart';
+import 'package:screen_tempo/state_machine/screen_time_machine.dart';
+import 'package:screen_tempo/ui/screen_time/screen_time_controller.dart';
 
 import '../data/_helpers.dart';
 

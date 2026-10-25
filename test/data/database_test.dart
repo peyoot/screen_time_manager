@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '_helpers.dart';
-import 'package:screen_time_manager/data/schema.dart';
+import 'package:screen_tempo/data/schema.dart';
 
 void main() {
   late Database db;
