@@ -60,6 +60,35 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# 应用图标生成配置：源图为 assets/icon/app_icon.png。
+# 用法：dart run flutter_launcher_icons（修改配置或换图后重跑）。
+flutter_launcher_icons:
+  # Android：传统图标 + 自适应图标（前景缩进 16%，背景为原图高斯模糊版本，
+  # 避免全幅插画被系统圆形/方形遮罩直接裁掉边缘）。
+  android: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "assets/icon/app_icon_adaptive_background.png"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  adaptive_icon_foreground_inset: 16
+  # iOS：去除 alpha（App Store 要求不透明图标）。
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#C7BAA3"
+  # Web / Windows / macOS：同一源图生成各尺寸。
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#C7BAA3"
+    theme_color: "#C7BAA3"
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

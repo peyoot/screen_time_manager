@@ -10,7 +10,7 @@ class SEn extends S {
   SEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'ScreenTempo';
+  String get appTitle => 'ScreenTempo · Self-Discipline Assistant';
 
   @override
   String get homeTodayScreenTime => 'Screen time today';

@@ -1,6 +1,6 @@
 {
   "@@locale": "zh",
-  "appTitle": "自律助手",
+  "appTitle": "ScreenTempo · 自律助手",
   "homeTodayScreenTime": "今日累计亮屏",
   "homeNextQuizIn": "距下次强制休息时间还剩 {time}",
   "@homeNextQuizIn": {

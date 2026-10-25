@@ -77,7 +77,7 @@ void main() {
 
     // 主计时页的核心元素（测试环境默认 locale 为 en）。
     expect(
-      find.text('ScreenTempo'),
+      find.text('ScreenTempo · Self-Discipline Assistant'),
       findsOneWidget,
     );
     expect(find.text('Screen time today'), findsOneWidget);
@@ -117,26 +117,26 @@ void main() {
 
     // 测试环境默认 locale 为英文。
     expect(
-      find.text('ScreenTempo'),
+      find.text('ScreenTempo · Self-Discipline Assistant'),
       findsOneWidget,
     );
 
     // 切换到中文。
     controller.localeController.setLocale(const Locale('zh'));
     await tester.pumpAndSettle();
-    expect(find.text('自律助手'), findsOneWidget);
+    expect(find.text('ScreenTempo · 自律助手'), findsOneWidget);
     expect(find.text('今日累计亮屏'), findsOneWidget);
 
-    // 切换到日文（应用内标题与英文同为 ScreenTempo）。
+    // 切换到日文（应用内标题与英文同为默认品牌标题）。
     controller.localeController.setLocale(const Locale('ja'));
     await tester.pumpAndSettle();
-    expect(find.text('ScreenTempo'), findsOneWidget);
+    expect(find.text('ScreenTempo · Self-Discipline Assistant'), findsOneWidget);
 
     // 恢复系统语言（null 表示跟随系统，测试环境默认 en）。
     controller.localeController.setLocale(null);
     await tester.pumpAndSettle();
     expect(
-      find.text('ScreenTempo'),
+      find.text('ScreenTempo · Self-Discipline Assistant'),
       findsOneWidget,
     );
   });

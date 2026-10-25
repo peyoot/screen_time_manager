@@ -10,7 +10,7 @@ class SKo extends S {
   SKo([String locale = 'ko']) : super(locale);
 
   @override
-  String get appTitle => 'ScreenTempo';
+  String get appTitle => 'ScreenTempo · Self-Discipline Assistant';
 
   @override
   String get homeTodayScreenTime => '오늘 누적 화면 사용';
