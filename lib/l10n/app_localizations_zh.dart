@@ -251,6 +251,15 @@ class SZh extends S {
   String get settingsRestEnabledHint => '关闭后只统计亮屏时长，不再触发或手动进入休息';
 
   @override
+  String get settingsRestPrompt => '休息页提示语';
+
+  @override
+  String get settingsRestPromptHint => '在休息页“休息中”下方显示一行自定义提示语（不超过 60 字）';
+
+  @override
+  String get settingsRestPromptPlaceholder => '如：您今天使用手机有点久，该歇一会儿了';
+
+  @override
   String get settingsMore => '更多设置';
 
   @override

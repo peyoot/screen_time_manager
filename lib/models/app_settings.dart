@@ -54,6 +54,17 @@ class AppSettings {
   /// 阈值进度冻结、不触发休息、不允许手动休息。
   final List<ExemptionWindow> exemptionWindows;
 
+  /// 休息页个性化提示语开关（默认关闭）。
+  final bool restPromptEnabled;
+
+  /// 休息页"休息中"下方展示的提示语文本（不超过 [restPromptMaxLength] 字符）。
+  ///
+  /// 仅在 [restPromptEnabled] 为 true 且文本非空时展示。
+  final String restPromptText;
+
+  /// 提示语最大字符数。
+  static const int restPromptMaxLength = 60;
+
   /// 创建配置并立即校验全部不变量，非法取值抛出 [ArgumentError]。
   AppSettings({
     required this.quizInterval,
@@ -64,6 +75,8 @@ class AppSettings {
     this.adminPasswordHash,
     this.restTimerRefreshMs = 17,
     this.restEnabled = true,
+    this.restPromptEnabled = false,
+    this.restPromptText = '',
     List<ExemptionWindow> exemptionWindows = const [],
   }) : exemptionWindows = List.unmodifiable(exemptionWindows) {
     if (quizInterval <= Duration.zero) {
@@ -104,6 +117,13 @@ class AppSettings {
         restTimerRefreshMs,
         'restTimerRefreshMs',
         '必须大于 0',
+      );
+    }
+    if (restPromptText.length > restPromptMaxLength) {
+      throw ArgumentError.value(
+        restPromptText,
+        'restPromptText',
+        '不能超过 $restPromptMaxLength 个字符',
       );
     }
   }
@@ -177,6 +197,14 @@ class AppSettings {
       }
     }
 
+    // 提示语容错处理：超长截断而不是抛错（UI 层已用 maxLength 拦截，
+    // 这里只防御历史/手工数据）。
+    var restPromptText = json['restPromptText'] as String? ?? '';
+    if (restPromptText.length > AppSettings.restPromptMaxLength) {
+      restPromptText =
+          restPromptText.substring(0, AppSettings.restPromptMaxLength);
+    }
+
     return AppSettings(
       quizInterval: Duration(seconds: quizIntervalSeconds.toInt()),
       questionsPerQuiz: questionsPerQuiz,
@@ -186,6 +214,8 @@ class AppSettings {
       adminPasswordHash: json['adminPasswordHash'] as String?,
       restTimerRefreshMs: (json['restTimerRefreshMs'] as num?)?.toInt() ?? 17,
       restEnabled: json['restEnabled'] as bool? ?? true,
+      restPromptEnabled: json['restPromptEnabled'] as bool? ?? false,
+      restPromptText: restPromptText,
       exemptionWindows: windows,
     );
   }
@@ -200,6 +230,8 @@ class AppSettings {
         'adminPasswordHash': adminPasswordHash,
         'restTimerRefreshMs': restTimerRefreshMs,
         'restEnabled': restEnabled,
+        'restPromptEnabled': restPromptEnabled,
+        'restPromptText': restPromptText,
         'exemptionWindows': [
           for (final window in exemptionWindows) window.toJson(),
         ],
@@ -213,6 +245,8 @@ class AppSettings {
     int? dailyExemptionLimit,
     int? restTimerRefreshMs,
     bool? restEnabled,
+    bool? restPromptEnabled,
+    String? restPromptText,
     List<ExemptionWindow>? exemptionWindows,
     Object? adminPasswordHash = _sentinel,
   }) {
@@ -225,6 +259,8 @@ class AppSettings {
       dailyExemptionLimit: dailyExemptionLimit ?? this.dailyExemptionLimit,
       restTimerRefreshMs: restTimerRefreshMs ?? this.restTimerRefreshMs,
       restEnabled: restEnabled ?? this.restEnabled,
+      restPromptEnabled: restPromptEnabled ?? this.restPromptEnabled,
+      restPromptText: restPromptText ?? this.restPromptText,
       exemptionWindows: exemptionWindows ?? this.exemptionWindows,
       adminPasswordHash: adminPasswordHash == _sentinel
           ? this.adminPasswordHash
@@ -243,6 +279,8 @@ class AppSettings {
       other.adminPasswordHash == adminPasswordHash &&
       other.restTimerRefreshMs == restTimerRefreshMs &&
       other.restEnabled == restEnabled &&
+      other.restPromptEnabled == restPromptEnabled &&
+      other.restPromptText == restPromptText &&
       _windowsEqual(other.exemptionWindows, exemptionWindows);
 
   @override
@@ -255,6 +293,8 @@ class AppSettings {
         adminPasswordHash,
         restTimerRefreshMs,
         restEnabled,
+        restPromptEnabled,
+        restPromptText,
         Object.hashAll(exemptionWindows),
       );
 
@@ -266,6 +306,8 @@ class AppSettings {
       'dailyExemptionLimit: $dailyExemptionLimit, '
       'restTimerRefreshMs: $restTimerRefreshMs, '
       'restEnabled: $restEnabled, '
+      'restPromptEnabled: $restPromptEnabled, '
+      'restPromptText: $restPromptText, '
       'exemptionWindows: ${exemptionWindows.length}, '
       'adminPasswordSet: ${adminPasswordHash != null})';
 }

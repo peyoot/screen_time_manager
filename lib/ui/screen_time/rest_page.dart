@@ -106,6 +106,18 @@ class _RestPageState extends State<RestPage> {
                 ),
               ),
               const SizedBox(height: 24),
+              // 个性化提示语：仅启用且非空时展示在"休息中"下方。
+              if (settings.restPromptEnabled &&
+                  settings.restPromptText.isNotEmpty) ...[
+                Text(
+                  settings.restPromptText,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               GestureDetector(
                 onTap: () {
                   setState(() => _refreshPaused = !_refreshPaused);

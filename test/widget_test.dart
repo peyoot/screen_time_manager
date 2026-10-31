@@ -13,7 +13,11 @@ import 'package:screen_tempo/state_machine/screen_time_machine.dart';
 import 'package:screen_tempo/ui/permissions/permission_guide_page.dart';
 import 'package:screen_tempo/ui/screen_time/screen_time_controller.dart';
 
-ScreenTimeController buildController({bool restEnabled = true}) {
+ScreenTimeController buildController({
+  bool restEnabled = true,
+  bool restPromptEnabled = false,
+  String restPromptText = '',
+}) {
   final bankService = QuestionBankService.demo();
   final machineBank = QuestionBank(
     id: 'machine',
@@ -35,6 +39,8 @@ ScreenTimeController buildController({bool restEnabled = true}) {
       requiredCorrectCount: 1,
       restDuration: const Duration(minutes: 3),
       restEnabled: restEnabled,
+      restPromptEnabled: restPromptEnabled,
+      restPromptText: restPromptText,
     ),
     questionBank: machineBank,
   );
@@ -472,7 +478,8 @@ void main() {
     await tester.tap(find.byTooltip('Timing settings'));
     await tester.pumpAndSettle();
     expect(find.text('Forced rest'), findsOneWidget);
-    final switchTile = find.byType(SwitchListTile);
+    // 对话框内有两个 SwitchListTile（强制休息 + 休息页提示语），按标题文本精确定位。
+    final switchTile = find.widgetWithText(SwitchListTile, 'Forced rest');
     expect(switchTile, findsOneWidget);
     expect(
       tester.widget<SwitchListTile>(switchTile).value,
@@ -491,11 +498,58 @@ void main() {
     // 重新打开设置恢复开关。
     await tester.tap(find.byTooltip('Timing settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Forced rest'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(controller.machine.settings.restEnabled, isTrue);
     expect(find.text('Take a break now'), findsOneWidget);
+  });
+
+  testWidgets('休息页提示语：仅启用且非空时显示在"休息中"下方', (tester) async {
+    const prompt = '您今天使用手机有点久，该歇一会儿了';
+    final controller = buildController(
+      restPromptEnabled: true,
+      restPromptText: prompt,
+    );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTempoApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    // 中文环境便于断言。
+    controller.localeController.setLocale(const Locale('zh'));
+    await tester.pumpAndSettle();
+
+    // 计时页不显示提示语。
+    expect(find.text(prompt), findsNothing);
+
+    // 进入休息页：提示语显示在"休息中"下方。
+    await tester.tap(find.text('手动触发休息'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('休息中'), findsOneWidget);
+    expect(find.text(prompt), findsOneWidget);
+  });
+
+  testWidgets('休息页提示语：未启用时不显示', (tester) async {
+    const prompt = '您今天使用手机有点久，该歇一会儿了';
+    final controller = buildController(
+      restPromptEnabled: false,
+      restPromptText: prompt,
+    );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ScreenTempoApp(controller: controller),
+    );
+    await tester.pumpAndSettle();
+
+    controller.localeController.setLocale(const Locale('zh'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('手动触发休息'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('休息中'), findsOneWidget);
+    expect(find.text(prompt), findsNothing);
   });
 }

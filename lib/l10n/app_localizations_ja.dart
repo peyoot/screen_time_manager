@@ -256,6 +256,15 @@ class SJa extends S {
   String get settingsRestEnabledHint => 'オフにすると画面点灯時間のみを記録し、休憩は発生しません';
 
   @override
+  String get settingsRestPrompt => '休憩ページのメッセージ';
+
+  @override
+  String get settingsRestPromptHint => '休憩ページのタイトル下にカスタムメッセージを表示（60文字以内）';
+
+  @override
+  String get settingsRestPromptPlaceholder => '例：少し長く使っています。少し休みましょう';
+
+  @override
   String get settingsMore => 'その他の設定';
 
   @override

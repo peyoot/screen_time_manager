@@ -7,7 +7,7 @@ library;
 import 'package:sqflite/sqflite.dart';
 
 /// 当前 schema 版本号。
-const int kSchemaVersion = 6;
+const int kSchemaVersion = 7;
 
 /// V1 建表语句：按外键依赖顺序排列。
 const List<String> kSchemaV1Statements = [
@@ -218,6 +218,23 @@ const List<String> kSchemaV6Statements = [
 Future<void> applySchemaV6(Database db) async {
   final batch = db.batch();
   for (final stmt in kSchemaV6Statements) {
+    batch.execute(stmt);
+  }
+  await batch.commit();
+}
+
+/// V7 迁移：app_settings 增加休息页个性化提示语
+/// （`rest_prompt_enabled` 开关，默认 0 关闭；`rest_prompt_text` 文本，
+/// 默认空串，最多 60 字符由模型层校验）。
+const List<String> kSchemaV7Statements = [
+  'ALTER TABLE app_settings ADD COLUMN rest_prompt_enabled INTEGER NOT NULL DEFAULT 0',
+  "ALTER TABLE app_settings ADD COLUMN rest_prompt_text TEXT NOT NULL DEFAULT ''",
+];
+
+/// 在指定数据库上执行 V7 迁移。
+Future<void> applySchemaV7(Database db) async {
+  final batch = db.batch();
+  for (final stmt in kSchemaV7Statements) {
     batch.execute(stmt);
   }
   await batch.commit();

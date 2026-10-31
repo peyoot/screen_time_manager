@@ -186,4 +186,47 @@ void main() {
       expect(disabled.isRestExemptAt(inside), isTrue);
     });
   });
+
+  group('休息页提示语', () {
+    test('默认关闭且文本为空', () {
+      expect(AppSettings.defaults.restPromptEnabled, isFalse);
+      expect(AppSettings.defaults.restPromptText, '');
+    });
+
+    test('超过 60 字符构造时抛 ArgumentError', () {
+      expect(
+        () => AppSettings.defaults.copyWith(
+          restPromptText: '长' * 61,
+        ),
+        throwsArgumentError,
+      );
+      // 恰好 60 字符合法。
+      expect(
+        AppSettings.defaults.copyWith(restPromptText: '长' * 60).restPromptText.length,
+        60,
+      );
+    });
+
+    test('JSON 往返保留开关与文本；超长文本截断为 60 字符', () {
+      final settings = AppSettings.defaults.copyWith(
+        restPromptEnabled: true,
+        restPromptText: '您今天使用手机有点久，该歇一会儿了',
+      );
+      final restored = AppSettings.fromJson(settings.toJson());
+      expect(restored.restPromptEnabled, isTrue);
+      expect(restored.restPromptText, '您今天使用手机有点久，该歇一会儿了');
+      expect(restored, settings);
+
+      // 旧 JSON 无该字段 → 默认关闭；超长文本截断而不是抛错。
+      final json = settings.toJson()
+        ..remove('restPromptEnabled')
+        ..remove('restPromptText');
+      final legacy = AppSettings.fromJson(json);
+      expect(legacy.restPromptEnabled, isFalse);
+      expect(legacy.restPromptText, '');
+
+      json['restPromptText'] = '长' * 100;
+      expect(AppSettings.fromJson(json).restPromptText.length, 60);
+    });
+  });
 }

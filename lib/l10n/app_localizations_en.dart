@@ -261,6 +261,17 @@ class SEn extends S {
       'When off, only screen time is tracked; no forced or manual rest';
 
   @override
+  String get settingsRestPrompt => 'Rest page prompt';
+
+  @override
+  String get settingsRestPromptHint =>
+      'Show a custom prompt below the rest page title (max 60 chars)';
+
+  @override
+  String get settingsRestPromptPlaceholder =>
+      'e.g. You\'ve been on your phone a while — time for a break';
+
+  @override
   String get settingsMore => 'More settings';
 
   @override

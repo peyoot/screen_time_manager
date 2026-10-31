@@ -649,6 +649,8 @@ class ScreenTimeController extends ChangeNotifier {
     required int restMinutes,
     int? restTimerRefreshMs,
     bool? restEnabled,
+    bool? restPromptEnabled,
+    String? restPromptText,
     List<ExemptionWindow>? exemptionWindows,
   }) {
     machine.updateSettings(
@@ -657,6 +659,8 @@ class ScreenTimeController extends ChangeNotifier {
         restDuration: Duration(minutes: restMinutes),
         restTimerRefreshMs: restTimerRefreshMs,
         restEnabled: restEnabled,
+        restPromptEnabled: restPromptEnabled,
+        restPromptText: restPromptText,
         exemptionWindows: exemptionWindows,
       ),
     );

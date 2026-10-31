@@ -4,23 +4,43 @@
   "homeTodayScreenTime": "Screen time today",
   "homeNextQuizIn": "Time until next mandatory rest: {time}",
   "@homeNextQuizIn": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "homeRoundExemptions": "Exemptions available: {count}",
   "@homeRoundExemptions": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeRestExemptionsToday": "Rest exemptions today: {count}",
   "@homeRestExemptionsToday": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeRestTriggeredToday": "Breaks today: {count}",
   "@homeRestTriggeredToday": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeAwaySaved": "Away from phone {time}",
   "@homeAwaySaved": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "homeManualRest": "Take a break now",
   "homeRestDisabled": "Forced rest disabled",
@@ -62,7 +82,6 @@
   "homeExitToBackground": "Exit to background",
   "homeExitToBackgroundCountdown": "Exit to background ({seconds}s)",
   "homeExitAutoHint": "Auto-runs in background in {seconds}s; tap to exit now.",
-
   "permGuideTitle": "Permissions & Reliability",
   "permUnavailable": "Permission status is only available on Android",
   "permGranted": "Granted",
@@ -85,34 +104,49 @@
   "permAutoStartDesc": "Some ROMs (MIUI, EMUI, ColorOS, OriginOS, etc.) require allowing auto-start so monitoring resumes after reboot.",
   "permScreenTimeTitle": "Screen Time authorization (Family Controls)",
   "permScreenTimeDesc": "iOS cannot observe global screen-on time; it can only monitor apps you select. Tap to authorize and choose the apps to limit; when time is up those apps are shielded until you pass a quiz exemption.",
-
   "settingsTitle": "Timing settings",
   "settingsQuizMinutes": "Screen time before break",
   "settingsRestMinutes": "Mandatory break duration",
   "settingsRestEnabled": "Forced rest",
   "settingsRestEnabledHint": "When off, only screen time is tracked; no forced or manual rest",
+  "settingsRestPrompt": "Rest page prompt",
+  "settingsRestPromptHint": "Show a custom prompt below the rest page title (max 60 chars)",
+  "settingsRestPromptPlaceholder": "e.g. You've been on your phone a while — time for a break",
   "settingsMore": "More settings",
   "settingsRestTimerRefresh": "Rest stopwatch refresh interval",
   "settingsMinutesUnit": "min",
   "settingsInvalid": "Please enter an integer between 1 and 99",
   "settingsInvalidQuiz": "Please enter an integer between 1 and 300",
   "settingsSave": "Save",
-
   "reminderTitle": "Time for a break",
   "reminderContinuous": "You've been on screen for {minutes} minutes",
   "@reminderContinuous": {
-    "placeholders": {"minutes": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
   "reminderQuizToPass": "Answer correctly to continue. {count} exemption(s) left today",
   "@reminderQuizToPass": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "reminderContinueQuiz": "Continue (quiz)",
   "reminderRestNow": "Rest now",
-
   "quizTitle": "Quiz exemption ({current}/{total})",
   "@quizTitle": {
-    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "quizGiveUpTooltip": "Give up",
   "quizYourAnswer": "Your answer",
@@ -120,16 +154,26 @@
   "quizShowHint": "Show hint",
   "quizHint": "Hint: {hint}",
   "@quizHint": {
-    "placeholders": {"hint": {"type": "String"}}
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
   },
   "quizSubmit": "Submit",
   "quizInsufficient": "Not enough questions in the bank",
   "quizGoRest": "Go rest",
-
   "restTitle": "Resting",
   "restTarget": "Target: {minutes}m {seconds}s",
   "@restTarget": {
-    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "restAutoReturn": "Will return automatically after rest",
   "restCountUp": "Count up",
@@ -139,18 +183,28 @@
   "restExemptWrong": "Wrong answer. Correct answer: {answer}",
   "restExemptRetry": "Try again",
   "restExemptUnavailable": "No exemptions left today. Please wait for the break to end",
-
   "bankGroups": "Question Groups",
   "bankNewGroup": "New Group",
   "bankImportToNew": "Import to new group",
   "bankImportToGroup": "Import to \"{name}\"",
   "@bankImportToGroup": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bankEmptyHint": "No groups yet. Create or import one.",
   "bankGroupSummary": "{count} questions · {type}",
   "@bankGroupSummary": {
-    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "bankGroupDisabled": "Disabled",
   "bankActionEdit": "Edit",
@@ -163,14 +217,24 @@
   "bankDeleteGroup": "Delete Group",
   "bankDeleteGroupMsg": "Delete group \"{name}\" and its {count} questions?",
   "@bankDeleteGroupMsg": {
-    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
   "groupDetailTitle": "Group Details",
   "groupDetailNotFound": "Group not found",
   "groupDetailSelected": "{count} selected",
   "@groupDetailSelected": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "groupDetailAddTooltip": "Add manually",
   "groupDetailEditTooltip": "Edit question",
@@ -182,16 +246,28 @@
   "groupDetailDeleteSelectedTitle": "Delete Selected",
   "groupDetailDeleteSelectedMsg": "Delete the selected {count} questions?",
   "@groupDetailDeleteSelectedMsg": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "groupDetailEmpty": "No questions yet. Add one from the top right.",
   "groupDetailAnswer": "Answer: {answer}",
   "@groupDetailAnswer": {
-    "placeholders": {"answer": {"type": "String"}}
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
   },
   "groupDetailHint": "Hint: {hint}",
   "@groupDetailHint": {
-    "placeholders": {"hint": {"type": "String"}}
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
   },
   "groupDetailAddTitle": "Add Question",
   "groupDetailQuestionLabel": "Question",
@@ -199,7 +275,6 @@
   "groupDetailHintLabel": "Hint (optional)",
   "groupDetailAddConfirm": "Add",
   "groupDetailAddRequired": "Question and answer cannot be empty",
-
   "importNameLabel": "Group name",
   "importNameHint": "Required for CSV; leave empty for JSON to use groupName",
   "importContentCsv": "CSV content",
@@ -210,7 +285,6 @@
   "importErrorNameRequired": "Please enter a group name",
   "importErrorCsvEmpty": "No questions parsed from CSV",
   "importErrorJsonEmpty": "No questions parsed from JSON",
-
   "homeAboutTooltip": "About",
   "aboutTitle": "About",
   "aboutVersion": "Version {version}",

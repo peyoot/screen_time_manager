@@ -256,6 +256,15 @@ class SKo extends S {
   String get settingsRestEnabledHint => '끄면 화면 사용 시간만 기록하고 휴식이 시작되지 않습니다';
 
   @override
+  String get settingsRestPrompt => '휴식 페이지 안내 문구';
+
+  @override
+  String get settingsRestPromptHint => '휴식 페이지 제목 아래에 사용자 문구를 표시합니다 (최대 60자)';
+
+  @override
+  String get settingsRestPromptPlaceholder => '예: 오늘 휴대폰을 오래 사용했어요. 잠깐 쉬어가세요';
+
+  @override
   String get settingsMore => '추가 설정';
 
   @override

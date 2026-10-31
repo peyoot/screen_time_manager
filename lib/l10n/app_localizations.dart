@@ -545,6 +545,24 @@ abstract class S {
   /// **'关闭后只统计亮屏时长，不再触发或手动进入休息'**
   String get settingsRestEnabledHint;
 
+  /// No description provided for @settingsRestPrompt.
+  ///
+  /// In zh, this message translates to:
+  /// **'休息页提示语'**
+  String get settingsRestPrompt;
+
+  /// No description provided for @settingsRestPromptHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在休息页“休息中”下方显示一行自定义提示语（不超过 60 字）'**
+  String get settingsRestPromptHint;
+
+  /// No description provided for @settingsRestPromptPlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'如：您今天使用手机有点久，该歇一会儿了'**
+  String get settingsRestPromptPlaceholder;
+
   /// No description provided for @settingsMore.
   ///
   /// In zh, this message translates to:

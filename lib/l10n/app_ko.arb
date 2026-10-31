@@ -4,23 +4,43 @@
   "homeTodayScreenTime": "오늘 누적 화면 사용",
   "homeNextQuizIn": "다음 강제 휴식까지 {time}",
   "@homeNextQuizIn": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "homeRoundExemptions": "이번 차례 면제 {count} 회",
   "@homeRoundExemptions": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeRestExemptionsToday": "오늘 면제한 휴식 {count} 회",
   "@homeRestExemptionsToday": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeRestTriggeredToday": "오늘 휴식 {count}회",
   "@homeRestTriggeredToday": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeAwaySaved": "휴지폰에서 벗어난 시간 {time}",
   "@homeAwaySaved": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "homeManualRest": "지금 휴식하기",
   "homeRestDisabled": "강제 휴식이 비활성화됨",
@@ -62,7 +82,6 @@
   "homeExitToBackground": "백그라운드로 전환",
   "homeExitToBackgroundCountdown": "백그라운드로 전환 ({seconds}초)",
   "homeExitAutoHint": "{seconds}초 후 자동으로 백그라운드로 전환됩니다. 탭하면 지금 전환합니다.",
-
   "permGuideTitle": "권한 및 백그라운드 설정",
   "permUnavailable": "권한 상태 확인은 Android에서만 사용할 수 있습니다",
   "permGranted": "허용됨",
@@ -85,34 +104,49 @@
   "permAutoStartDesc": "MIUI, EMUI, ColorOS, OriginOS 등 일부 ROM은 자동 실행을 허용해야 재부팅 후 모니터링이 재개됩니다.",
   "permScreenTimeTitle": "스크린 타임 인증(Family Controls)",
   "permScreenTimeDesc": "iOS는 전역 화면 켜짐을 감지할 수 없어 선택한 앱만 모니터링할 수 있습니다. 탭하여 인증하고 제한할 앱을 선택하세요. 시간이 되면 해당 앱이 전체 화면으로 차단되며, 퀴즈 면제로 해제할 수 있습니다.",
-
   "settingsTitle": "타이밍 설정",
   "settingsQuizMinutes": "휴식 전 화면 켜짐 시간",
   "settingsRestMinutes": "강제 휴식 시간",
   "settingsRestEnabled": "강제 휴식",
   "settingsRestEnabledHint": "끄면 화면 사용 시간만 기록하고 휴식이 시작되지 않습니다",
+  "settingsRestPrompt": "휴식 페이지 안내 문구",
+  "settingsRestPromptHint": "휴식 페이지 제목 아래에 사용자 문구를 표시합니다 (최대 60자)",
+  "settingsRestPromptPlaceholder": "예: 오늘 휴대폰을 오래 사용했어요. 잠깐 쉬어가세요",
   "settingsMore": "추가 설정",
   "settingsRestTimerRefresh": "휴식 스톱워치 새로고침 간격",
   "settingsMinutesUnit": "분",
   "settingsInvalid": "1부터 99 사이의 정수를 입력하세요",
   "settingsInvalidQuiz": "1부터 300 사이의 정수를 입력하세요",
   "settingsSave": "저장",
-
   "reminderTitle": "휴식할 시간입니다",
   "reminderContinuous": "연속으로 {minutes} 분 동안 화면을 사용했습니다",
   "@reminderContinuous": {
-    "placeholders": {"minutes": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
   "reminderQuizToPass": "정답을 맞히면 계속 사용할 수 있습니다. 오늘 남은 면제 {count}회",
   "@reminderQuizToPass": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "reminderContinueQuiz": "계속 사용 (퀴즈 면제)",
   "reminderRestNow": "지금 휴식",
-
   "quizTitle": "퀴즈 면제 ({current}/{total})",
   "@quizTitle": {
-    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "quizGiveUpTooltip": "퀴즈 포기",
   "quizYourAnswer": "당신의 답",
@@ -120,16 +154,26 @@
   "quizShowHint": "힌트 보기",
   "quizHint": "힌트: {hint}",
   "@quizHint": {
-    "placeholders": {"hint": {"type": "String"}}
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
   },
   "quizSubmit": "답 제출",
   "quizInsufficient": "문제 은행의 문제가 부족합니다",
   "quizGoRest": "휴식하러 가기",
-
   "restTitle": "휴식 중",
   "restTarget": "목표 시간 {minutes} 분 {seconds} 초",
   "@restTarget": {
-    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "restAutoReturn": "휴식이 끝나면 자동으로 돌아갑니다",
   "restCountUp": "카운트업",
@@ -139,18 +183,28 @@
   "restExemptWrong": "오답입니다. 정답: {answer}",
   "restExemptRetry": "다시 시도",
   "restExemptUnavailable": "오늘의 면제 횟수를 모두 사용했습니다. 휴식이 끝날 때까지 기다려 주세요",
-
   "bankGroups": "문제 그룹",
   "bankNewGroup": "새 그룹",
   "bankImportToNew": "새 그룹으로 가져오기",
   "bankImportToGroup": "'{name}'(으)로 가져오기",
   "@bankImportToGroup": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bankEmptyHint": "그룹이 없습니다. 오른쪽 아래에서 생성 또는 가져오기",
   "bankGroupSummary": "{count} 문항 · {type}",
   "@bankGroupSummary": {
-    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "bankGroupDisabled": "비활성화됨",
   "bankActionEdit": "수정",
@@ -163,14 +217,24 @@
   "bankDeleteGroup": "그룹 삭제",
   "bankDeleteGroupMsg": "그룹 '{name}' 및 {count} 문항을 삭제하시겠습니까?",
   "@bankDeleteGroupMsg": {
-    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
   "groupDetailTitle": "그룹 상세",
   "groupDetailNotFound": "그룹을 찾을 수 없습니다",
   "groupDetailSelected": "{count} 문항 선택됨",
   "@groupDetailSelected": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "groupDetailAddTooltip": "수동 추가",
   "groupDetailEditTooltip": "문제 편집",
@@ -182,16 +246,28 @@
   "groupDetailDeleteSelectedTitle": "선택한 문제 삭제",
   "groupDetailDeleteSelectedMsg": "선택한 {count} 문항을 삭제하시겠습니까?",
   "@groupDetailDeleteSelectedMsg": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "groupDetailEmpty": "문제가 없습니다. 오른쪽 위에서 추가하세요",
   "groupDetailAnswer": "정답: {answer}",
   "@groupDetailAnswer": {
-    "placeholders": {"answer": {"type": "String"}}
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
   },
   "groupDetailHint": "힌트: {hint}",
   "@groupDetailHint": {
-    "placeholders": {"hint": {"type": "String"}}
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
   },
   "groupDetailAddTitle": "문제 추가",
   "groupDetailQuestionLabel": "문제",
@@ -199,7 +275,6 @@
   "groupDetailHintLabel": "힌트 (선택 사항)",
   "groupDetailAddConfirm": "추가",
   "groupDetailAddRequired": "문제와 정답은 필수입니다",
-
   "importNameLabel": "그룹 이름",
   "importNameHint": "CSV는 필수, JSON은 비워두면 groupName 사용",
   "importContentCsv": "CSV 내용",
@@ -210,7 +285,6 @@
   "importErrorNameRequired": "그룹 이름을 입력하세요",
   "importErrorCsvEmpty": "CSV에서 문제를 파싱하지 못했습니다",
   "importErrorJsonEmpty": "JSON에서 문제를 파싱하지 못했습니다",
-
   "homeAboutTooltip": "앱 정보",
   "aboutTitle": "앱 정보",
   "aboutVersion": "버전 {version}",

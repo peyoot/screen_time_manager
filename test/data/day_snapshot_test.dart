@@ -1,4 +1,4 @@
-/// day_snapshot 表：repo 读写 + V2→V3 / V3→V4 / V5→V6 迁移测试。
+/// day_snapshot 表：repo 读写 + V2→V3 / V3→V4 / V5→V6 / V6→V7 迁移测试。
 library;
 
 import 'dart:io';
@@ -237,5 +237,57 @@ void main() {
     );
     await repo.flush();
     expect((await repo.loadOrInit()).exemptionWindows, [window]);
+  });
+
+  test('V6 旧库打开后自动迁移出休息提示语列', () async {
+    // 手工构造 V6 结构的旧库（含一行 app_settings），经 openAppDatabase
+    // 升级到 V7 后新增列默认关闭/空串，写入后可正常往返。
+    final dir = await Directory.systemTemp.createTemp('stm_v6_');
+    final oldPath = p.join(dir.path, 'old.db');
+    final old = await openDatabase(
+      oldPath,
+      version: 6,
+      onCreate: (db, _) async {
+        await applySchemaV1(db);
+        await applySchemaV2(db);
+        await applySchemaV3(db);
+        await applySchemaV4(db);
+        await applySchemaV5(db);
+        await applySchemaV6(db);
+        await db.insert('app_settings', {
+          'id': 1,
+          'quiz_interval_seconds': 900,
+          'questions_per_quiz': 1,
+          'required_correct_count': 1,
+          'rest_duration_seconds': 600,
+          'daily_exemption_limit': 2,
+          'created_at': '2026-10-17T00:00:00.000Z',
+          'updated_at': '2026-10-17T00:00:00.000Z',
+          'deleted': 0,
+        });
+      },
+    );
+    await old.close();
+
+    final upgraded = await openAppDatabase(dbPath: oldPath);
+    final rows = await upgraded.query('app_settings');
+    expect(rows.single['rest_prompt_enabled'], 0);
+    expect(rows.single['rest_prompt_text'], '');
+
+    final repo = AppSettingsRepository(upgraded);
+    final loaded = await repo.loadOrInit();
+    expect(loaded.restPromptEnabled, isFalse);
+    expect(loaded.restPromptText, '');
+
+    await repo.upsert(
+      AppSettings.defaults.copyWith(
+        restPromptEnabled: true,
+        restPromptText: '您今天使用手机有点久，该歇一会儿了',
+      ),
+    );
+    await repo.flush();
+    final reloaded = await repo.loadOrInit();
+    expect(reloaded.restPromptEnabled, isTrue);
+    expect(reloaded.restPromptText, '您今天使用手机有点久，该歇一会儿了');
   });
 }

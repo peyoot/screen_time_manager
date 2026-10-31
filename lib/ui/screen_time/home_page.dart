@@ -456,8 +456,10 @@ class _TimingSettingsDialog extends StatefulWidget {
 class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   late final TextEditingController _quizController;
   late final TextEditingController _restController;
+  late final TextEditingController _promptController;
   late int _refreshMs;
   late bool _restEnabled;
+  late bool _restPromptEnabled;
 
   /// 豁免时间段本地副本：保存时才随其他配置一起提交。
   late List<ExemptionWindow> _exemptWindows;
@@ -473,6 +475,9 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
         TextEditingController(text: '${settings.restDuration.inMinutes}');
     _refreshMs = settings.restTimerRefreshMs;
     _restEnabled = settings.restEnabled;
+    _restPromptEnabled = settings.restPromptEnabled;
+    _promptController =
+        TextEditingController(text: settings.restPromptText);
     _exemptWindows = [...settings.exemptionWindows];
   }
 
@@ -512,6 +517,7 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
   void dispose() {
     _quizController.dispose();
     _restController.dispose();
+    _promptController.dispose();
     super.dispose();
   }
 
@@ -532,6 +538,8 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
       restMinutes: restMinutes,
       restTimerRefreshMs: _refreshMs,
       restEnabled: _restEnabled,
+      restPromptEnabled: _restPromptEnabled,
+      restPromptText: _promptController.text.trim(),
       exemptionWindows: _exemptWindows,
     );
     Navigator.of(context).pop();
@@ -661,6 +669,29 @@ class _TimingSettingsDialogState extends State<_TimingSettingsDialog> {
                       ],
                     ),
                   ),
+              // 休息页提示语：开关 + 输入框（仅强制休息开启时展示，
+              // 与豁免时间段同属休息相关设置）。
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  l10n.settingsRestPrompt,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Text(l10n.settingsRestPromptHint),
+                value: _restPromptEnabled,
+                onChanged: (value) =>
+                    setState(() => _restPromptEnabled = value),
+              ),
+              if (_restPromptEnabled)
+                TextField(
+                  controller: _promptController,
+                  maxLength: 60,
+                  decoration: InputDecoration(
+                    hintText: l10n.settingsRestPromptPlaceholder,
+                    isDense: true,
+                  ),
+                ),
             ],
             // 进阶选项统一收纳在"更多设置"子对话框，便于后续继续添加；
             // 纯入口样式（图标 + 标题 + 箭头）与上方豁免时间段标题行一致。

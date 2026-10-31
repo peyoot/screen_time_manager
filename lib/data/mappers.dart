@@ -44,6 +44,8 @@ Map<String, Object?> appSettingsToRow(
     'admin_password_hash': s.adminPasswordHash,
     'rest_timer_refresh_ms': s.restTimerRefreshMs,
     'rest_enabled': s.restEnabled ? 1 : 0,
+    'rest_prompt_enabled': s.restPromptEnabled ? 1 : 0,
+    'rest_prompt_text': s.restPromptText,
     'exemption_windows': jsonEncode([
       for (final window in s.exemptionWindows) window.toJson(),
     ]),
@@ -55,6 +57,11 @@ Map<String, Object?> appSettingsToRow(
 
 /// 从 DB 行构造 [AppSettings]。
 AppSettings appSettingsFromRow(Map<String, Object?> row) {
+  // 提示语超长时截断（模型层对超长文本抛 ArgumentError，DB 数据需容错）。
+  var promptText = (row['rest_prompt_text'] as String?) ?? '';
+  if (promptText.length > AppSettings.restPromptMaxLength) {
+    promptText = promptText.substring(0, AppSettings.restPromptMaxLength);
+  }
   return AppSettings(
     quizInterval: Duration(seconds: _asInt(row['quiz_interval_seconds'])),
     questionsPerQuiz: _asInt(row['questions_per_quiz']),
@@ -67,6 +74,9 @@ AppSettings appSettingsFromRow(Map<String, Object?> row) {
         : _asInt(row['rest_timer_refresh_ms']),
     restEnabled:
         row['rest_enabled'] == null || _asInt(row['rest_enabled']) != 0,
+    restPromptEnabled: row['rest_prompt_enabled'] != null &&
+        _asInt(row['rest_prompt_enabled']) != 0,
+    restPromptText: promptText,
     exemptionWindows: _windowsFromRow(row['exemption_windows']),
   );
 }

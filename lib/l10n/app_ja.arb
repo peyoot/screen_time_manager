@@ -4,23 +4,43 @@
   "homeTodayScreenTime": "今日の累計画面点灯",
   "homeNextQuizIn": "次の強制休憩まであと {time}",
   "@homeNextQuizIn": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "homeRoundExemptions": "今回の免除 残り {count} 回",
   "@homeRoundExemptions": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeRestExemptionsToday": "今日の免除合計 {count} 回",
   "@homeRestExemptionsToday": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeRestTriggeredToday": "今日の休憩発動 {count} 回",
   "@homeRestTriggeredToday": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "homeAwaySaved": "スマホから離れた時間 {time}",
   "@homeAwaySaved": {
-    "placeholders": {"time": {"type": "String"}}
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   },
   "homeManualRest": "今すぐ休憩",
   "homeRestDisabled": "強制休憩は無効です",
@@ -62,7 +82,6 @@
   "homeExitToBackground": "バックグラウンドへ移行",
   "homeExitToBackgroundCountdown": "バックグラウンドへ移行（{seconds}秒）",
   "homeExitAutoHint": "{seconds}秒後に自動でバックグラウンドへ移行します。タップで今すぐ移行。",
-
   "permGuideTitle": "権限とバックグラウンド動作",
   "permUnavailable": "権限の状態確認は Android でのみ利用できます",
   "permGranted": "許可済み",
@@ -85,34 +104,49 @@
   "permAutoStartDesc": "MIUI・EMUI・ColorOS・OriginOS などの ROM では自動起動を許可しないと、再起動後に監視が再開されません。",
   "permScreenTimeTitle": "スクリーンタイム認証（Family Controls）",
   "permScreenTimeDesc": "iOS では画面点灯を全局監視できず、選択したアプリのみ監視できます。タップして認証し、制限するアプリを選択してください。時間到達後、それらのアプリは全屏シールドで遮断され、クイズ免除で解除できます。",
-
   "settingsTitle": "タイミング設定",
   "settingsQuizMinutes": "休憩までの画面点灯時間",
   "settingsRestMinutes": "強制休憩時間",
   "settingsRestEnabled": "強制休憩",
   "settingsRestEnabledHint": "オフにすると画面点灯時間のみを記録し、休憩は発生しません",
+  "settingsRestPrompt": "休憩ページのメッセージ",
+  "settingsRestPromptHint": "休憩ページのタイトル下にカスタムメッセージを表示（60文字以内）",
+  "settingsRestPromptPlaceholder": "例：少し長く使っています。少し休みましょう",
   "settingsMore": "その他の設定",
   "settingsRestTimerRefresh": "休憩ストップウォッチ更新間隔",
   "settingsMinutesUnit": "分",
   "settingsInvalid": "1〜99 の整数を入力してください",
   "settingsInvalidQuiz": "1〜300 の整数を入力してください",
   "settingsSave": "保存",
-
   "reminderTitle": "休憩しましょう",
   "reminderContinuous": "{minutes} 分連続で画面を見ています",
   "@reminderContinuous": {
-    "placeholders": {"minutes": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
   "reminderQuizToPass": "正解すると続行できます。本日の残り免除回数：{count} 回",
   "@reminderQuizToPass": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "reminderContinueQuiz": "続行（クイズ免除）",
   "reminderRestNow": "今すぐ休憩",
-
   "quizTitle": "クイズ免除（{current}/{total}）",
   "@quizTitle": {
-    "placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "quizGiveUpTooltip": "クイズを諦める",
   "quizYourAnswer": "あなたの答え",
@@ -120,16 +154,26 @@
   "quizShowHint": "ヒントを見る",
   "quizHint": "ヒント：{hint}",
   "@quizHint": {
-    "placeholders": {"hint": {"type": "String"}}
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
   },
   "quizSubmit": "回答を送信",
   "quizInsufficient": "問題バンクの問題が不足しています",
   "quizGoRest": "休憩へ",
-
   "restTitle": "休憩中",
   "restTarget": "目標時間 {minutes} 分 {seconds} 秒",
   "@restTarget": {
-    "placeholders": {"minutes": {"type": "int"}, "seconds": {"type": "int"}}
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "restAutoReturn": "休憩終了後に自動で戻ります",
   "restCountUp": "カウントアップ",
@@ -139,18 +183,28 @@
   "restExemptWrong": "不正解です。正しい答え：{answer}",
   "restExemptRetry": "もう一度挑戦",
   "restExemptUnavailable": "本日の免除回数を使い切りました。休憩終了までお待ちください",
-
   "bankGroups": "問題グループ",
   "bankNewGroup": "新規グループ",
   "bankImportToNew": "新規グループへインポート",
   "bankImportToGroup": "「{name}」へインポート",
   "@bankImportToGroup": {
-    "placeholders": {"name": {"type": "String"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "bankEmptyHint": "グループがありません。右下から作成またはインポート",
   "bankGroupSummary": "{count} 問 · {type}",
   "@bankGroupSummary": {
-    "placeholders": {"count": {"type": "int"}, "type": {"type": "String"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "bankGroupDisabled": "無効",
   "bankActionEdit": "編集",
@@ -163,14 +217,24 @@
   "bankDeleteGroup": "グループ削除",
   "bankDeleteGroupMsg": "グループ「{name}」とその {count} 問を削除しますか？",
   "@bankDeleteGroupMsg": {
-    "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
   "groupDetailTitle": "グループ詳細",
   "groupDetailNotFound": "グループが見つかりません",
   "groupDetailSelected": "{count} 問選択中",
   "@groupDetailSelected": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "groupDetailAddTooltip": "手動追加",
   "groupDetailEditTooltip": "問題を編集",
@@ -182,16 +246,28 @@
   "groupDetailDeleteSelectedTitle": "選択した問題を削除",
   "groupDetailDeleteSelectedMsg": "選択した {count} 問を削除しますか？",
   "@groupDetailDeleteSelectedMsg": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "groupDetailEmpty": "問題がありません。右上から追加してください",
   "groupDetailAnswer": "答え：{answer}",
   "@groupDetailAnswer": {
-    "placeholders": {"answer": {"type": "String"}}
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
   },
   "groupDetailHint": "ヒント：{hint}",
   "@groupDetailHint": {
-    "placeholders": {"hint": {"type": "String"}}
+    "placeholders": {
+      "hint": {
+        "type": "String"
+      }
+    }
   },
   "groupDetailAddTitle": "問題を追加",
   "groupDetailQuestionLabel": "問題文",
@@ -199,7 +275,6 @@
   "groupDetailHintLabel": "ヒント（任意）",
   "groupDetailAddConfirm": "追加",
   "groupDetailAddRequired": "問題文と答えは必須です",
-
   "importNameLabel": "グループ名",
   "importNameHint": "CSV は必須；JSON は空欄なら groupName を使用",
   "importContentCsv": "CSV 内容",
@@ -210,7 +285,6 @@
   "importErrorNameRequired": "グループ名を入力してください",
   "importErrorCsvEmpty": "CSV から問題が解析できませんでした",
   "importErrorJsonEmpty": "JSON から問題が解析できませんでした",
-
   "homeAboutTooltip": "このアプリについて",
   "aboutTitle": "このアプリについて",
   "aboutVersion": "バージョン {version}",
